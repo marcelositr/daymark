@@ -6,7 +6,9 @@ Daymark is a minimal, local-first Bullet Journal application for Linux and Andro
 
 ## Project status
 
-Daymark is in foundation / pre-alpha development. The project is intentionally defining domain, security, data, workflow, and toolchain constraints before the first application scaffold.
+Daymark is in foundation / pre-alpha development. The product, domain, security, data, workflow, and toolchain constraints are being established before journal features are implemented.
+
+The first Flutter scaffold is currently under review in PR #3. The pinned toolchain is Flutter 3.47.2 with Dart 3.13.2, targeting Linux and Android.
 
 The canonical live development checkpoint is [`PROJECT.md`](PROJECT.md).
 
@@ -30,7 +32,7 @@ The current reviewed baseline is documented in [`docs/ARCHITECTURE.md`](docs/ARC
 
 At a glance:
 
-- Flutter / Dart;
+- Flutter 3.47.2 / Dart 3.13.2;
 - Material 3 with a custom minimal dotted-notebook visual language;
 - Riverpod for state/dependency wiring;
 - go_router for application routing;
@@ -39,7 +41,9 @@ At a glance:
 - Argon2id and reviewed authenticated cryptography for the application key hierarchy;
 - Flutter ARB / `gen_l10n` localization.
 
-Exact SDK and dependency versions are pinned when the scaffold exists and are changed only through reviewed updates.
+English is the canonical and fallback UI locale. An exact Brazilian Portuguese system locale selects Portuguese (Brazil); unsupported locales fall back to English.
+
+Exact dependency versions are locked in `pubspec.lock` once the scaffold bootstrap completes and are changed only through reviewed updates.
 
 ## Initial scope
 
