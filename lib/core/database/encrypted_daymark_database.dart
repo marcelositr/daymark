@@ -44,23 +44,7 @@ abstract final class EncryptedDaymarkDatabase {
       throw StateError('Journal key material has been destroyed.');
     }
 
-    final List<int> journalKeyBytes = await keyMaterial.journalKey
-        .extractBytes();
-    final Uint8List rawKeyMaterial = Uint8List(
-      JournalKeyMaterial.serializedLength,
-    );
-    rawKeyMaterial.setRange(
-      0,
-      JournalKeyMaterial.journalKeyLength,
-      journalKeyBytes,
-    );
-    rawKeyMaterial.setRange(
-      JournalKeyMaterial.journalKeyLength,
-      JournalKeyMaterial.serializedLength,
-      keyMaterial.cipherSalt,
-    );
-
-    journalKeyBytes.fillRange(0, journalKeyBytes.length, 0);
+    final Uint8List rawKeyMaterial = keyMaterial.serialize();
     final String rawKeyHex = _toHex(rawKeyMaterial);
     rawKeyMaterial.fillRange(0, rawKeyMaterial.length, 0);
 
