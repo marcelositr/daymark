@@ -149,11 +149,14 @@ void main() {
       '00000000-0000-7000-8000-000000000031',
       '00000000-0000-7000-8000-000000000032',
     ]) {
-      await database.customStatement('''
+      await database.customStatement(
+        '''
         INSERT INTO entries (
           id, entry_type, task_state, content, created_at, updated_at
         ) VALUES (?, 'task', 'open', 'task', 1, 1)
-      ''', <Object>[id]);
+      ''',
+        <Object>[id],
+      );
     }
 
     await database.customStatement('''
@@ -192,13 +195,10 @@ void main() {
       ORDER BY id
     ''').get();
 
-    expect(
-      rows.map((row) => row.read<String>('id')).toList(),
-      <String>[
-        'builtin:explore',
-        'builtin:inspiration',
-        'builtin:priority',
-      ],
-    );
+    expect(rows.map((row) => row.read<String>('id')).toList(), <String>[
+      'builtin:explore',
+      'builtin:inspiration',
+      'builtin:priority',
+    ]);
   });
 }
