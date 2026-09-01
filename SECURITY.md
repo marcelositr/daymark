@@ -89,7 +89,9 @@ The focused security spike in `PROJECT.md` must define and test the exact key-en
 
 Device-specific unlock mechanisms are convenience layers, not replacements for the portable master-password security model.
 
-The current cross-platform integration direction is `flutter_secure_storage` for device-local wrapped material.
+The exact secure-storage integration is deliberately deferred to the focused security spike. A maintained platform secure-storage package may be used, but it must be compatible with Daymark's pinned Flutter/Android/Linux toolchain and threat model at the time it is introduced.
+
+`flutter_secure_storage` remains a candidate rather than a scaffold dependency. During the Flutter 3.47.2 scaffold validation, version 11.0.0 required Android `compileSdk` 37 while the generated project used API 36 with Android Gradle Plugin 9.1.0. Daymark chose not to distort the Android toolchain or pin an older bridge release for a convenience feature that is not yet implemented.
 
 On supported Android devices, Daymark may protect device-local unlock material using Android secure storage/Keystore mechanisms and require strong biometric or device-credential authentication before that material can be used.
 
