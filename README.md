@@ -8,7 +8,7 @@ Daymark is a minimal, local-first Bullet Journal application for Linux and Andro
 
 Daymark is in foundation / pre-alpha development. The product, domain, security, data, workflow, and toolchain constraints are being established before journal features are implemented.
 
-The first Flutter scaffold is currently under review in PR #3. The pinned toolchain is Flutter 3.47.2 with Dart 3.13.2, targeting Linux and Android.
+The Flutter scaffold is integrated on `main`. The current development cycle is defining and validating relational schema v1 in PR #6. The pinned toolchain is Flutter 3.47.2 with Dart 3.13.2, targeting Linux and Android.
 
 The canonical live development checkpoint is [`PROJECT.md`](PROJECT.md).
 
@@ -28,7 +28,7 @@ Any human or AI contributor should read [`AGENTS.md`](AGENTS.md) before continui
 
 ## Technology direction
 
-The current reviewed baseline is documented in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
+The current reviewed baseline is documented in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md), with the relational persistence contract in [`docs/DATA_MODEL.md`](docs/DATA_MODEL.md).
 
 At a glance:
 
@@ -36,7 +36,7 @@ At a glance:
 - Material 3 with a custom minimal dotted-notebook visual language;
 - Riverpod for state/dependency wiring;
 - go_router for application routing;
-- Drift for typed relational persistence;
+- Drift for typed relational persistence and tested schema evolution;
 - sqlite3 with SQLite3MultipleCiphers for encrypted native storage;
 - Argon2id and reviewed authenticated cryptography for the application key hierarchy;
 - Flutter ARB / `gen_l10n` localization.
@@ -88,6 +88,7 @@ Release candidates are not promoted automatically. Stable `1.0.0` happens only a
 - [`AGENTS.md`](AGENTS.md): mandatory operating contract for AI-assisted development
 - [`docs/PRODUCT.md`](docs/PRODUCT.md): product boundaries and principles
 - [`docs/DOMAIN.md`](docs/DOMAIN.md): Bullet Journal semantics
+- [`docs/DATA_MODEL.md`](docs/DATA_MODEL.md): relational schema, persistence invariants, and migration policy
 - [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md): technical architecture and technology baseline
 - [`SECURITY.md`](SECURITY.md): threat model and security constraints
 - [`docs/WORKFLOW.md`](docs/WORKFLOW.md): branches, PRs, versioning, and releases

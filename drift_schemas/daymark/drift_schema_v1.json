@@ -1,0 +1,1004 @@
+{
+  "_meta": {
+    "description": "This file contains a serialized version of schema entities for drift.",
+    "version": "1.3.0"
+  },
+  "options": {
+    "store_date_time_values_as_text": false
+  },
+  "entities": [
+    {
+      "id": 0,
+      "references": [],
+      "type": "table",
+      "data": {
+        "name": "journal_metadata",
+        "was_declared_in_moor": true,
+        "columns": [
+          {
+            "name": "id",
+            "getter_name": "id",
+            "moor_type": "string",
+            "nullable": false,
+            "customConstraints": "NOT NULL PRIMARY KEY",
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": [
+              "primary-key"
+            ]
+          },
+          {
+            "name": "singleton",
+            "getter_name": "singleton",
+            "moor_type": "int",
+            "nullable": false,
+            "customConstraints": "NOT NULL DEFAULT 1 UNIQUE CHECK (singleton = 1)",
+            "default_dart": "const CustomExpression('1')",
+            "default_client_dart": null,
+            "dsl_features": [
+              "unique"
+            ]
+          },
+          {
+            "name": "created_at",
+            "getter_name": "createdAt",
+            "moor_type": "int",
+            "nullable": false,
+            "customConstraints": "NOT NULL CHECK (created_at >= 0)",
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "updated_at",
+            "getter_name": "updatedAt",
+            "moor_type": "int",
+            "nullable": false,
+            "customConstraints": "NOT NULL CHECK (updated_at >= created_at)",
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          }
+        ],
+        "is_virtual": false,
+        "without_rowid": false,
+        "constraints": []
+      }
+    },
+    {
+      "id": 1,
+      "references": [],
+      "type": "table",
+      "data": {
+        "name": "logs",
+        "was_declared_in_moor": true,
+        "columns": [
+          {
+            "name": "id",
+            "getter_name": "id",
+            "moor_type": "string",
+            "nullable": false,
+            "customConstraints": "NOT NULL PRIMARY KEY",
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": [
+              "primary-key"
+            ]
+          },
+          {
+            "name": "kind",
+            "getter_name": "kind",
+            "moor_type": "string",
+            "nullable": false,
+            "customConstraints": "NOT NULL CHECK (kind IN ('daily', 'monthly', 'future'))",
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "period_start",
+            "getter_name": "periodStart",
+            "moor_type": "string",
+            "nullable": false,
+            "customConstraints": "NOT NULL CHECK (length(period_start) = 10)",
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "created_at",
+            "getter_name": "createdAt",
+            "moor_type": "int",
+            "nullable": false,
+            "customConstraints": "NOT NULL CHECK (created_at >= 0)",
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          }
+        ],
+        "is_virtual": false,
+        "without_rowid": false,
+        "constraints": [
+          "UNIQUE(kind, period_start)"
+        ],
+        "unique_keys": [
+          [
+            "kind",
+            "period_start"
+          ]
+        ]
+      }
+    },
+    {
+      "id": 2,
+      "references": [],
+      "type": "table",
+      "data": {
+        "name": "collections",
+        "was_declared_in_moor": true,
+        "columns": [
+          {
+            "name": "id",
+            "getter_name": "id",
+            "moor_type": "string",
+            "nullable": false,
+            "customConstraints": "NOT NULL PRIMARY KEY",
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": [
+              "primary-key"
+            ]
+          },
+          {
+            "name": "title",
+            "getter_name": "title",
+            "moor_type": "string",
+            "nullable": false,
+            "customConstraints": "NOT NULL CHECK (length(trim(title)) > 0)",
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "created_at",
+            "getter_name": "createdAt",
+            "moor_type": "int",
+            "nullable": false,
+            "customConstraints": "NOT NULL CHECK (created_at >= 0)",
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "updated_at",
+            "getter_name": "updatedAt",
+            "moor_type": "int",
+            "nullable": false,
+            "customConstraints": "NOT NULL CHECK (updated_at >= created_at)",
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          }
+        ],
+        "is_virtual": false,
+        "without_rowid": false,
+        "constraints": []
+      }
+    },
+    {
+      "id": 3,
+      "references": [],
+      "type": "table",
+      "data": {
+        "name": "entries",
+        "was_declared_in_moor": true,
+        "columns": [
+          {
+            "name": "id",
+            "getter_name": "id",
+            "moor_type": "string",
+            "nullable": false,
+            "customConstraints": "NOT NULL PRIMARY KEY",
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": [
+              "primary-key"
+            ]
+          },
+          {
+            "name": "entry_type",
+            "getter_name": "entryType",
+            "moor_type": "string",
+            "nullable": false,
+            "customConstraints": "NOT NULL CHECK (entry_type IN ('task', 'event', 'note'))",
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "task_state",
+            "getter_name": "taskState",
+            "moor_type": "string",
+            "nullable": true,
+            "customConstraints": "CHECK (task_state IN ('open', 'completed', 'migrated', 'scheduled', 'discarded'))",
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "content",
+            "getter_name": "content",
+            "moor_type": "string",
+            "nullable": false,
+            "customConstraints": "NOT NULL CHECK (length(trim(content)) > 0)",
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "created_at",
+            "getter_name": "createdAt",
+            "moor_type": "int",
+            "nullable": false,
+            "customConstraints": "NOT NULL CHECK (created_at >= 0)",
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "updated_at",
+            "getter_name": "updatedAt",
+            "moor_type": "int",
+            "nullable": false,
+            "customConstraints": "NOT NULL CHECK (updated_at >= created_at)",
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          }
+        ],
+        "is_virtual": false,
+        "without_rowid": false,
+        "constraints": [
+          "CHECK((entry_type = 'task' AND task_state IS NOT NULL)OR(entry_type IN ('event', 'note') AND task_state IS NULL))"
+        ]
+      }
+    },
+    {
+      "id": 4,
+      "references": [
+        3,
+        1,
+        2
+      ],
+      "type": "table",
+      "data": {
+        "name": "entry_placements",
+        "was_declared_in_moor": true,
+        "columns": [
+          {
+            "name": "entry_id",
+            "getter_name": "entryId",
+            "moor_type": "string",
+            "nullable": false,
+            "customConstraints": "NOT NULL PRIMARY KEY REFERENCES entries(id)ON DELETE CASCADE",
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": [
+              "primary-key",
+              {
+                "foreign_key": {
+                  "to": {
+                    "table": "entries",
+                    "column": "id"
+                  },
+                  "initially_deferred": false,
+                  "on_update": null,
+                  "on_delete": "cascade"
+                }
+              }
+            ]
+          },
+          {
+            "name": "log_id",
+            "getter_name": "logId",
+            "moor_type": "string",
+            "nullable": true,
+            "customConstraints": "REFERENCES logs(id)ON DELETE RESTRICT",
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": [
+              {
+                "foreign_key": {
+                  "to": {
+                    "table": "logs",
+                    "column": "id"
+                  },
+                  "initially_deferred": false,
+                  "on_update": null,
+                  "on_delete": "restrict"
+                }
+              }
+            ]
+          },
+          {
+            "name": "collection_id",
+            "getter_name": "collectionId",
+            "moor_type": "string",
+            "nullable": true,
+            "customConstraints": "REFERENCES collections(id)ON DELETE RESTRICT",
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": [
+              {
+                "foreign_key": {
+                  "to": {
+                    "table": "collections",
+                    "column": "id"
+                  },
+                  "initially_deferred": false,
+                  "on_update": null,
+                  "on_delete": "restrict"
+                }
+              }
+            ]
+          },
+          {
+            "name": "ordinal",
+            "getter_name": "ordinal",
+            "moor_type": "int",
+            "nullable": false,
+            "customConstraints": "NOT NULL CHECK (ordinal >= 0)",
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "monthly_section",
+            "getter_name": "monthlySection",
+            "moor_type": "string",
+            "nullable": true,
+            "customConstraints": "CHECK (monthly_section IN ('calendar', 'tasks'))",
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "monthly_calendar_date",
+            "getter_name": "monthlyCalendarDate",
+            "moor_type": "string",
+            "nullable": true,
+            "customConstraints": "CHECK (monthly_calendar_date IS NULL OR length(monthly_calendar_date) = 10)",
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          }
+        ],
+        "is_virtual": false,
+        "without_rowid": false,
+        "constraints": [
+          "CHECK((log_id IS NOT NULL AND collection_id IS NULL)OR(log_id IS NULL AND collection_id IS NOT NULL))",
+          "CHECK(collection_id IS NULL OR monthly_section IS NULL)",
+          "CHECK((monthly_section = 'calendar' AND monthly_calendar_date IS NOT NULL)OR(monthly_section IS NULL AND monthly_calendar_date IS NULL)OR(monthly_section = 'tasks' AND monthly_calendar_date IS NULL))"
+        ]
+      }
+    },
+    {
+      "id": 5,
+      "references": [
+        4
+      ],
+      "type": "index",
+      "data": {
+        "on": 4,
+        "name": "entry_placements_log_ordinal",
+        "sql": "CREATE UNIQUE INDEX entry_placements_log_ordinal\n  ON entry_placements (log_id, ordinal)\n  WHERE log_id IS NOT NULL;",
+        "unique": true,
+        "columns": []
+      }
+    },
+    {
+      "id": 6,
+      "references": [
+        4
+      ],
+      "type": "index",
+      "data": {
+        "on": 4,
+        "name": "entry_placements_collection_ordinal",
+        "sql": "CREATE UNIQUE INDEX entry_placements_collection_ordinal\n  ON entry_placements (collection_id, ordinal)\n  WHERE collection_id IS NOT NULL;",
+        "unique": true,
+        "columns": []
+      }
+    },
+    {
+      "id": 7,
+      "references": [
+        3
+      ],
+      "type": "table",
+      "data": {
+        "name": "migrations",
+        "was_declared_in_moor": true,
+        "columns": [
+          {
+            "name": "id",
+            "getter_name": "id",
+            "moor_type": "string",
+            "nullable": false,
+            "customConstraints": "NOT NULL PRIMARY KEY",
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": [
+              "primary-key"
+            ]
+          },
+          {
+            "name": "source_entry_id",
+            "getter_name": "sourceEntryId",
+            "moor_type": "string",
+            "nullable": false,
+            "customConstraints": "NOT NULL UNIQUE REFERENCES entries(id)ON DELETE RESTRICT",
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": [
+              "unique",
+              {
+                "foreign_key": {
+                  "to": {
+                    "table": "entries",
+                    "column": "id"
+                  },
+                  "initially_deferred": false,
+                  "on_update": null,
+                  "on_delete": "restrict"
+                }
+              }
+            ]
+          },
+          {
+            "name": "destination_entry_id",
+            "getter_name": "destinationEntryId",
+            "moor_type": "string",
+            "nullable": false,
+            "customConstraints": "NOT NULL UNIQUE REFERENCES entries(id)ON DELETE RESTRICT",
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": [
+              "unique",
+              {
+                "foreign_key": {
+                  "to": {
+                    "table": "entries",
+                    "column": "id"
+                  },
+                  "initially_deferred": false,
+                  "on_update": null,
+                  "on_delete": "restrict"
+                }
+              }
+            ]
+          },
+          {
+            "name": "kind",
+            "getter_name": "kind",
+            "moor_type": "string",
+            "nullable": false,
+            "customConstraints": "NOT NULL CHECK (kind IN ('migrated', 'scheduled'))",
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "created_at",
+            "getter_name": "createdAt",
+            "moor_type": "int",
+            "nullable": false,
+            "customConstraints": "NOT NULL CHECK (created_at >= 0)",
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          }
+        ],
+        "is_virtual": false,
+        "without_rowid": false,
+        "constraints": [
+          "CHECK(source_entry_id <> destination_entry_id)"
+        ]
+      }
+    },
+    {
+      "id": 8,
+      "references": [
+        2,
+        3
+      ],
+      "type": "table",
+      "data": {
+        "name": "collection_references",
+        "was_declared_in_moor": true,
+        "columns": [
+          {
+            "name": "collection_id",
+            "getter_name": "collectionId",
+            "moor_type": "string",
+            "nullable": false,
+            "customConstraints": "NOT NULL REFERENCES collections(id)ON DELETE CASCADE",
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": [
+              {
+                "foreign_key": {
+                  "to": {
+                    "table": "collections",
+                    "column": "id"
+                  },
+                  "initially_deferred": false,
+                  "on_update": null,
+                  "on_delete": "cascade"
+                }
+              }
+            ]
+          },
+          {
+            "name": "entry_id",
+            "getter_name": "entryId",
+            "moor_type": "string",
+            "nullable": false,
+            "customConstraints": "NOT NULL REFERENCES entries(id)ON DELETE CASCADE",
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": [
+              {
+                "foreign_key": {
+                  "to": {
+                    "table": "entries",
+                    "column": "id"
+                  },
+                  "initially_deferred": false,
+                  "on_update": null,
+                  "on_delete": "cascade"
+                }
+              }
+            ]
+          },
+          {
+            "name": "ordinal",
+            "getter_name": "ordinal",
+            "moor_type": "int",
+            "nullable": false,
+            "customConstraints": "NOT NULL CHECK (ordinal >= 0)",
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "created_at",
+            "getter_name": "createdAt",
+            "moor_type": "int",
+            "nullable": false,
+            "customConstraints": "NOT NULL CHECK (created_at >= 0)",
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          }
+        ],
+        "is_virtual": false,
+        "without_rowid": true,
+        "constraints": [
+          "PRIMARY KEY(collection_id, entry_id)",
+          "UNIQUE(collection_id, ordinal)"
+        ],
+        "explicit_pk": [
+          "collection_id",
+          "entry_id"
+        ],
+        "unique_keys": [
+          [
+            "collection_id",
+            "ordinal"
+          ]
+        ]
+      }
+    },
+    {
+      "id": 9,
+      "references": [],
+      "type": "table",
+      "data": {
+        "name": "signifiers",
+        "was_declared_in_moor": true,
+        "columns": [
+          {
+            "name": "id",
+            "getter_name": "id",
+            "moor_type": "string",
+            "nullable": false,
+            "customConstraints": "NOT NULL PRIMARY KEY",
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": [
+              "primary-key"
+            ]
+          },
+          {
+            "name": "kind",
+            "getter_name": "kind",
+            "moor_type": "string",
+            "nullable": false,
+            "customConstraints": "NOT NULL CHECK (kind IN ('builtin', 'custom'))",
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "builtin_code",
+            "getter_name": "builtinCode",
+            "moor_type": "string",
+            "nullable": true,
+            "customConstraints": "UNIQUE",
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": [
+              "unique"
+            ]
+          },
+          {
+            "name": "custom_label",
+            "getter_name": "customLabel",
+            "moor_type": "string",
+            "nullable": true,
+            "customConstraints": "",
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "custom_symbol",
+            "getter_name": "customSymbol",
+            "moor_type": "string",
+            "nullable": true,
+            "customConstraints": "",
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "created_at",
+            "getter_name": "createdAt",
+            "moor_type": "int",
+            "nullable": false,
+            "customConstraints": "NOT NULL CHECK (created_at >= 0)",
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          }
+        ],
+        "is_virtual": false,
+        "without_rowid": false,
+        "constraints": [
+          "CHECK((kind = 'builtin' AND builtin_code IS NOT NULL AND custom_label IS NULL AND custom_symbol IS NULL)OR(kind = 'custom' AND builtin_code IS NULL AND custom_label IS NOT NULL AND length(trim(custom_label)) > 0))"
+        ]
+      }
+    },
+    {
+      "id": 10,
+      "references": [
+        3,
+        9
+      ],
+      "type": "table",
+      "data": {
+        "name": "entry_signifiers",
+        "was_declared_in_moor": true,
+        "columns": [
+          {
+            "name": "entry_id",
+            "getter_name": "entryId",
+            "moor_type": "string",
+            "nullable": false,
+            "customConstraints": "NOT NULL REFERENCES entries(id)ON DELETE CASCADE",
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": [
+              {
+                "foreign_key": {
+                  "to": {
+                    "table": "entries",
+                    "column": "id"
+                  },
+                  "initially_deferred": false,
+                  "on_update": null,
+                  "on_delete": "cascade"
+                }
+              }
+            ]
+          },
+          {
+            "name": "signifier_id",
+            "getter_name": "signifierId",
+            "moor_type": "string",
+            "nullable": false,
+            "customConstraints": "NOT NULL REFERENCES signifiers(id)ON DELETE CASCADE",
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": [
+              {
+                "foreign_key": {
+                  "to": {
+                    "table": "signifiers",
+                    "column": "id"
+                  },
+                  "initially_deferred": false,
+                  "on_update": null,
+                  "on_delete": "cascade"
+                }
+              }
+            ]
+          }
+        ],
+        "is_virtual": false,
+        "without_rowid": true,
+        "constraints": [
+          "PRIMARY KEY(entry_id, signifier_id)"
+        ],
+        "explicit_pk": [
+          "entry_id",
+          "signifier_id"
+        ]
+      }
+    },
+    {
+      "id": 11,
+      "references": [
+        1,
+        2
+      ],
+      "type": "table",
+      "data": {
+        "name": "index_items",
+        "was_declared_in_moor": true,
+        "columns": [
+          {
+            "name": "id",
+            "getter_name": "id",
+            "moor_type": "string",
+            "nullable": false,
+            "customConstraints": "NOT NULL PRIMARY KEY",
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": [
+              "primary-key"
+            ]
+          },
+          {
+            "name": "ordinal",
+            "getter_name": "ordinal",
+            "moor_type": "int",
+            "nullable": false,
+            "customConstraints": "NOT NULL UNIQUE CHECK (ordinal >= 0)",
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": [
+              "unique"
+            ]
+          },
+          {
+            "name": "log_id",
+            "getter_name": "logId",
+            "moor_type": "string",
+            "nullable": true,
+            "customConstraints": "REFERENCES logs(id)ON DELETE RESTRICT",
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": [
+              {
+                "foreign_key": {
+                  "to": {
+                    "table": "logs",
+                    "column": "id"
+                  },
+                  "initially_deferred": false,
+                  "on_update": null,
+                  "on_delete": "restrict"
+                }
+              }
+            ]
+          },
+          {
+            "name": "collection_id",
+            "getter_name": "collectionId",
+            "moor_type": "string",
+            "nullable": true,
+            "customConstraints": "REFERENCES collections(id)ON DELETE RESTRICT",
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": [
+              {
+                "foreign_key": {
+                  "to": {
+                    "table": "collections",
+                    "column": "id"
+                  },
+                  "initially_deferred": false,
+                  "on_update": null,
+                  "on_delete": "restrict"
+                }
+              }
+            ]
+          },
+          {
+            "name": "created_at",
+            "getter_name": "createdAt",
+            "moor_type": "int",
+            "nullable": false,
+            "customConstraints": "NOT NULL CHECK (created_at >= 0)",
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          }
+        ],
+        "is_virtual": false,
+        "without_rowid": false,
+        "constraints": [
+          "CHECK((log_id IS NOT NULL AND collection_id IS NULL)OR(log_id IS NULL AND collection_id IS NOT NULL))"
+        ]
+      }
+    },
+    {
+      "id": 12,
+      "references": [
+        11
+      ],
+      "type": "index",
+      "data": {
+        "on": 11,
+        "name": "index_items_log_target",
+        "sql": "CREATE UNIQUE INDEX index_items_log_target\n  ON index_items (log_id)\n  WHERE log_id IS NOT NULL;",
+        "unique": true,
+        "columns": []
+      }
+    },
+    {
+      "id": 13,
+      "references": [
+        11
+      ],
+      "type": "index",
+      "data": {
+        "on": 11,
+        "name": "index_items_collection_target",
+        "sql": "CREATE UNIQUE INDEX index_items_collection_target\n  ON index_items (collection_id)\n  WHERE collection_id IS NOT NULL;",
+        "unique": true,
+        "columns": []
+      }
+    }
+  ],
+  "fixed_sql": [
+    {
+      "name": "journal_metadata",
+      "sql": [
+        {
+          "dialect": "sqlite",
+          "sql": "CREATE TABLE IF NOT EXISTS \"journal_metadata\" (\"id\" TEXT NOT NULL PRIMARY KEY, \"singleton\" INTEGER NOT NULL DEFAULT 1 UNIQUE CHECK (singleton = 1), \"created_at\" INTEGER NOT NULL CHECK (created_at >= 0), \"updated_at\" INTEGER NOT NULL CHECK (updated_at >= created_at));"
+        }
+      ]
+    },
+    {
+      "name": "logs",
+      "sql": [
+        {
+          "dialect": "sqlite",
+          "sql": "CREATE TABLE IF NOT EXISTS \"logs\" (\"id\" TEXT NOT NULL PRIMARY KEY, \"kind\" TEXT NOT NULL CHECK (kind IN ('daily', 'monthly', 'future')), \"period_start\" TEXT NOT NULL CHECK (length(period_start) = 10), \"created_at\" INTEGER NOT NULL CHECK (created_at >= 0), UNIQUE(kind, period_start));"
+        }
+      ]
+    },
+    {
+      "name": "collections",
+      "sql": [
+        {
+          "dialect": "sqlite",
+          "sql": "CREATE TABLE IF NOT EXISTS \"collections\" (\"id\" TEXT NOT NULL PRIMARY KEY, \"title\" TEXT NOT NULL CHECK (length(trim(title)) > 0), \"created_at\" INTEGER NOT NULL CHECK (created_at >= 0), \"updated_at\" INTEGER NOT NULL CHECK (updated_at >= created_at));"
+        }
+      ]
+    },
+    {
+      "name": "entries",
+      "sql": [
+        {
+          "dialect": "sqlite",
+          "sql": "CREATE TABLE IF NOT EXISTS \"entries\" (\"id\" TEXT NOT NULL PRIMARY KEY, \"entry_type\" TEXT NOT NULL CHECK (entry_type IN ('task', 'event', 'note')), \"task_state\" TEXT CHECK (task_state IN ('open', 'completed', 'migrated', 'scheduled', 'discarded')), \"content\" TEXT NOT NULL CHECK (length(trim(content)) > 0), \"created_at\" INTEGER NOT NULL CHECK (created_at >= 0), \"updated_at\" INTEGER NOT NULL CHECK (updated_at >= created_at), CHECK((entry_type = 'task' AND task_state IS NOT NULL)OR(entry_type IN ('event', 'note') AND task_state IS NULL)));"
+        }
+      ]
+    },
+    {
+      "name": "entry_placements",
+      "sql": [
+        {
+          "dialect": "sqlite",
+          "sql": "CREATE TABLE IF NOT EXISTS \"entry_placements\" (\"entry_id\" TEXT NOT NULL PRIMARY KEY REFERENCES entries(id)ON DELETE CASCADE, \"log_id\" TEXT REFERENCES logs(id)ON DELETE RESTRICT, \"collection_id\" TEXT REFERENCES collections(id)ON DELETE RESTRICT, \"ordinal\" INTEGER NOT NULL CHECK (ordinal >= 0), \"monthly_section\" TEXT CHECK (monthly_section IN ('calendar', 'tasks')), \"monthly_calendar_date\" TEXT CHECK (monthly_calendar_date IS NULL OR length(monthly_calendar_date) = 10), CHECK((log_id IS NOT NULL AND collection_id IS NULL)OR(log_id IS NULL AND collection_id IS NOT NULL)), CHECK(collection_id IS NULL OR monthly_section IS NULL), CHECK((monthly_section = 'calendar' AND monthly_calendar_date IS NOT NULL)OR(monthly_section IS NULL AND monthly_calendar_date IS NULL)OR(monthly_section = 'tasks' AND monthly_calendar_date IS NULL)));"
+        }
+      ]
+    },
+    {
+      "name": "entry_placements_log_ordinal",
+      "sql": [
+        {
+          "dialect": "sqlite",
+          "sql": "CREATE UNIQUE INDEX entry_placements_log_ordinal ON entry_placements (log_id, ordinal) WHERE log_id IS NOT NULL"
+        }
+      ]
+    },
+    {
+      "name": "entry_placements_collection_ordinal",
+      "sql": [
+        {
+          "dialect": "sqlite",
+          "sql": "CREATE UNIQUE INDEX entry_placements_collection_ordinal ON entry_placements (collection_id, ordinal) WHERE collection_id IS NOT NULL"
+        }
+      ]
+    },
+    {
+      "name": "migrations",
+      "sql": [
+        {
+          "dialect": "sqlite",
+          "sql": "CREATE TABLE IF NOT EXISTS \"migrations\" (\"id\" TEXT NOT NULL PRIMARY KEY, \"source_entry_id\" TEXT NOT NULL UNIQUE REFERENCES entries(id)ON DELETE RESTRICT, \"destination_entry_id\" TEXT NOT NULL UNIQUE REFERENCES entries(id)ON DELETE RESTRICT, \"kind\" TEXT NOT NULL CHECK (kind IN ('migrated', 'scheduled')), \"created_at\" INTEGER NOT NULL CHECK (created_at >= 0), CHECK(source_entry_id <> destination_entry_id));"
+        }
+      ]
+    },
+    {
+      "name": "collection_references",
+      "sql": [
+        {
+          "dialect": "sqlite",
+          "sql": "CREATE TABLE IF NOT EXISTS \"collection_references\" (\"collection_id\" TEXT NOT NULL REFERENCES collections(id)ON DELETE CASCADE, \"entry_id\" TEXT NOT NULL REFERENCES entries(id)ON DELETE CASCADE, \"ordinal\" INTEGER NOT NULL CHECK (ordinal >= 0), \"created_at\" INTEGER NOT NULL CHECK (created_at >= 0), PRIMARY KEY(collection_id, entry_id), UNIQUE(collection_id, ordinal)) WITHOUT ROWID;"
+        }
+      ]
+    },
+    {
+      "name": "signifiers",
+      "sql": [
+        {
+          "dialect": "sqlite",
+          "sql": "CREATE TABLE IF NOT EXISTS \"signifiers\" (\"id\" TEXT NOT NULL PRIMARY KEY, \"kind\" TEXT NOT NULL CHECK (kind IN ('builtin', 'custom')), \"builtin_code\" TEXT UNIQUE, \"custom_label\" TEXT, \"custom_symbol\" TEXT, \"created_at\" INTEGER NOT NULL CHECK (created_at >= 0), CHECK((kind = 'builtin' AND builtin_code IS NOT NULL AND custom_label IS NULL AND custom_symbol IS NULL)OR(kind = 'custom' AND builtin_code IS NULL AND custom_label IS NOT NULL AND length(trim(custom_label)) > 0)));"
+        }
+      ]
+    },
+    {
+      "name": "entry_signifiers",
+      "sql": [
+        {
+          "dialect": "sqlite",
+          "sql": "CREATE TABLE IF NOT EXISTS \"entry_signifiers\" (\"entry_id\" TEXT NOT NULL REFERENCES entries(id)ON DELETE CASCADE, \"signifier_id\" TEXT NOT NULL REFERENCES signifiers(id)ON DELETE CASCADE, PRIMARY KEY(entry_id, signifier_id)) WITHOUT ROWID;"
+        }
+      ]
+    },
+    {
+      "name": "index_items",
+      "sql": [
+        {
+          "dialect": "sqlite",
+          "sql": "CREATE TABLE IF NOT EXISTS \"index_items\" (\"id\" TEXT NOT NULL PRIMARY KEY, \"ordinal\" INTEGER NOT NULL UNIQUE CHECK (ordinal >= 0), \"log_id\" TEXT REFERENCES logs(id)ON DELETE RESTRICT, \"collection_id\" TEXT REFERENCES collections(id)ON DELETE RESTRICT, \"created_at\" INTEGER NOT NULL CHECK (created_at >= 0), CHECK((log_id IS NOT NULL AND collection_id IS NULL)OR(log_id IS NULL AND collection_id IS NOT NULL)));"
+        }
+      ]
+    },
+    {
+      "name": "index_items_log_target",
+      "sql": [
+        {
+          "dialect": "sqlite",
+          "sql": "CREATE UNIQUE INDEX index_items_log_target ON index_items (log_id) WHERE log_id IS NOT NULL"
+        }
+      ]
+    },
+    {
+      "name": "index_items_collection_target",
+      "sql": [
+        {
+          "dialect": "sqlite",
+          "sql": "CREATE UNIQUE INDEX index_items_collection_target ON index_items (collection_id) WHERE collection_id IS NOT NULL"
+        }
+      ]
+    }
+  ]
+}
