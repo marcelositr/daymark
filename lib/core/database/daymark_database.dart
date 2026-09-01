@@ -4,7 +4,7 @@ part 'daymark_database.g.dart';
 
 @DriftDatabase(include: {'daymark.drift'})
 class DaymarkDatabase extends _$DaymarkDatabase {
-  DaymarkDatabase(super.executor);
+  DaymarkDatabase(QueryExecutor executor) : super(executor);
 
   @override
   int get schemaVersion => 1;
