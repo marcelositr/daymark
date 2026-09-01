@@ -10,10 +10,11 @@ Every agent must read it before meaningful work and update it before handing wor
 - Public release status: no release yet
 - Intended first public release stage: `v1.0.0-alpha.1`
 - Current integration branch: `main`
-- Current working branch: `docs/foundation-decisions`
-- Current pull request: `#2`
+- Current working branch: `chore/flutter-scaffold`
+- Current pull request: `#3`
 - Merge status: **DO NOT MERGE until explicitly requested by the user**
 - Initial runtime targets: Linux and Android
+- Pinned toolchain: Flutter 3.47.2 / Dart 3.13.2
 - Last updated: 2026-09-01
 
 ## How to maintain this file
@@ -34,6 +35,7 @@ The goal is not to pretend development is linear. The goal is to make the next c
 - [x] Local-first requirement
 - [x] Initial platform scope: Linux and Android
 - [x] Internationalization baseline: English and Portuguese (Brazil)
+- [x] English canonical/fallback locale policy with exact `pt_BR` system matching
 - [x] RTL-safe architectural direction for future locales
 - [x] Visual direction: light/dark dotted-notebook metaphor without a freeform canvas
 - [x] Security threat model for lost, stolen, sold, or removable storage
@@ -43,12 +45,14 @@ The goal is not to pretend development is linear. The goal is to make the next c
 - [x] AI continuity and handoff protocol
 - [x] Git branch, pull request, versioning, and release policy
 - [x] Technology baseline re-evaluated against current Flutter/Drift ecosystem
+- [x] Pin Flutter 3.47.2 / Dart 3.13.2 for the initial scaffold
+- [ ] Complete the Flutter scaffold bootstrap with committed Android/Linux platform files and `pubspec.lock`
+- [ ] Replace the temporary bootstrap workflow with permanent CI quality gates
+- [ ] Bind the real stable CI check names into the main-branch ruleset
 - [ ] Finalize the initial relational data schema
 - [ ] Define and test database migration strategy with real schema fixtures
 - [ ] Build a security spike for key derivation, key wrapping, encrypted database opening, lock, and recovery
 - [ ] Specify the encrypted backup container format and restore transaction behavior
-- [ ] Scaffold the Flutter application with the exact pinned SDK and dependencies
-- [ ] Add CI quality gates and then bind real check names into the main-branch ruleset
 
 ## Alpha milestone
 
@@ -116,10 +120,10 @@ Stable `v1.0.0` is released only after RC testing is deliberately considered suf
 
 The authoritative technical details live in `docs/ARCHITECTURE.md`. This section is only the operational snapshot.
 
-Current direction after the 2026-09-01 review:
+Current direction after the 2026-09-01 review and first scaffold validation:
 
-- Flutter stable 3.47 line, with the exact patch pinned when the scaffold is created
-- Dart 3.13 line supplied by Flutter
+- Flutter 3.47.2 stable, pinned in the repository
+- Dart 3.13.2 supplied by Flutter
 - Material 3 as the widget/theme foundation
 - Riverpod 3.x for presentation/application state and dependency wiring, without generator use initially
 - go_router 18.x for application routing
@@ -127,13 +131,15 @@ Current direction after the 2026-09-01 review:
 - sqlite3 3.x with SQLite3MultipleCiphers selected through build hooks for encrypted native storage
 - ChaCha20-Poly1305 database cipher as the current encrypted-storage default unless the security spike finds a concrete reason to change it
 - `cryptography` 2.9.x for Argon2id and application-level authenticated cryptography
-- `flutter_secure_storage` 11.x only for device-local assisted unlock material, never as the sole portable security model
+- platform secure storage for optional device-assisted unlock, with the concrete package/version deferred to the security spike
 - UUID v7 identifiers through the `uuid` package
-- Flutter `gen_l10n` with ARB resources
+- Flutter `gen_l10n` with English as canonical/fallback and Portuguese (Brazil) as the first additional product locale
 - official Flutter file/path plugins where native file selection or application directories are required
 - GitHub Actions for CI
 
-Do not treat these version families as permission to float dependencies. Exact resolved versions belong in the committed lockfile once the scaffold exists.
+`flutter_secure_storage` 11.0.0 was intentionally removed from the scaffold dependency set after validation showed that it requires Android `compileSdk` 37 while the Flutter 3.47.2 generated Android project currently uses API 36 with Android Gradle Plugin 9.1.0. Re-evaluate secure-storage integration when the device-assisted unlock security spike is implemented rather than distorting the baseline toolchain for an unused convenience layer.
+
+Do not treat version families as permission to float dependencies. Exact resolved package versions belong in the committed lockfile once the scaffold bootstrap completes.
 
 ## Open questions and required validation
 
@@ -143,10 +149,9 @@ These are not permission to invent behavior silently. Resolve them through a foc
 2. Exact application-level AEAD format for wrapping the journal key, recovery material, and portable backup payloads.
 3. Argon2id parameters after benchmarking representative Linux and Android hardware.
 4. Exact SQLite3MultipleCiphers raw-key and salt handling after a working prototype.
-5. Exact secure-storage behavior when the Linux keyring is unavailable or locked.
+5. Exact secure-storage package and behavior when Android Keystore assistance or the Linux keyring is unavailable or locked.
 6. Exact backup container versioning, atomic restore, and rollback behavior.
-7. Exact Flutter stable patch to pin at scaffold time. Re-check the current stable channel instead of relying on an old chat.
-8. Packaging/distribution formats for Linux and Android. Packaging must not dictate core architecture.
+7. Packaging/distribution formats for Linux and Android. Packaging must not dictate core architecture.
 
 ## Recent work log
 
@@ -158,7 +163,14 @@ These are not permission to invent behavior silently. Resolve them through a foc
 - Defined GitHub-flow-style branches, squash PR integration, SemVer prereleases, and explicit alpha/beta/RC gates.
 - Re-evaluated the technical stack against the current Flutter and Drift ecosystem.
 - Superseded the earlier SQLCipher-first assumption with Drift's current native encrypted-database direction: `sqlite3` 3.x plus SQLite3MultipleCiphers.
-- Kept the current foundation work in PR #2 and explicitly left it unmerged.
+- Merged the foundation contract from PR #2 and moved normal implementation work to short-lived branches.
+- Opened PR #3 on `chore/flutter-scaffold` for the first technical scaffold.
+- Pinned Flutter 3.47.2 / Dart 3.13.2.
+- Proved Linux scaffold generation, dependency resolution, localization generation, static analysis, tests, and Linux debug build on GitHub Actions.
+- Found the first Android compatibility issue before merge: `flutter_secure_storage` 11.0.0 requires compileSdk 37 while the current generated Flutter Android baseline uses API 36 / AGP 9.1.0.
+- Deferred device secure-storage integration to the security spike instead of forcing the Android toolchain or pinning an unnecessary compatibility bridge.
+- Clarified localization behavior: English is canonical and fallback; exact `pt_BR` system locale selects Brazilian Portuguese; unsupported locales fall back to English.
+- Added workflow concurrency so superseded bootstrap runs are cancelled rather than duplicated.
 
 ## Handoff
 
