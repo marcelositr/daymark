@@ -48,8 +48,8 @@ The goal is not to pretend development is linear. The goal is to make the next c
 - [x] Pin Flutter 3.47.2 / Dart 3.13.2 for the initial scaffold
 - [x] Complete the Flutter scaffold bootstrap with committed Android/Linux platform files and `pubspec.lock`
 - [x] Replace the temporary bootstrap workflow with permanent CI quality gates
-- [ ] Validate the permanent CI gates on the final PR #3 head
-- [ ] Bind the real stable CI check names into the main-branch ruleset
+- [x] Validate the permanent CI gates on the PR #3 development head
+- [ ] Apply and verify the required CI check names in the live main-branch ruleset
 - [ ] Finalize the initial relational data schema
 - [ ] Define and test database migration strategy with real schema fixtures
 - [ ] Build a security spike for key derivation, key wrapping, encrypted database opening, lock, and recovery
@@ -153,6 +153,7 @@ These are not permission to invent behavior silently. Resolve them through a foc
 5. Exact secure-storage package and behavior when Android Keystore assistance or the Linux keyring is unavailable or locked.
 6. Exact backup container versioning, atomic restore, and rollback behavior.
 7. Packaging/distribution formats for Linux and Android. Packaging must not dictate core architecture.
+8. The repository copy of the main ruleset now records required checks `quality`, `linux-build`, `android-build`, and `dependency-review`, but the connected GitHub tool available in this session exposes ruleset reads rather than a live ruleset mutation action. The live repository ruleset must therefore be applied and verified separately before this checklist item is closed.
 
 ## Recent work log
 
@@ -175,6 +176,9 @@ These are not permission to invent behavior silently. Resolve them through a foc
 - Bootstrap run #29 passed dependency resolution, localization generation, strict analysis, tests, Linux debug build, and Android debug APK build, then committed the official Flutter Android/Linux platform files and `pubspec.lock`.
 - Removed the temporary bootstrap workflow and added permanent CI jobs named `quality`, `linux-build`, `android-build`, and `dependency-review`.
 - Enabled strict Dart analyzer modes for casts, inference, and raw types.
+- Permanent CI run #7 passed all four jobs on the post-documentation head: lockfile-enforced quality checks, Linux build, Android build, and dependency review.
+- Dependency review found no introduced vulnerable dependency at severity `low` or higher. It reported missing license metadata for a small set of transitive build/test packages as informational; a full license audit remains an explicit release-candidate gate.
+- Updated the repository ruleset definition with the four stable CI check names. Live ruleset mutation remains pending because the connected GitHub interface in this session is read-only for ruleset administration.
 
 ## Handoff
 
