@@ -42,6 +42,8 @@ The core vocabulary is intentionally small:
 
 Migration is a deliberate decision. Unresolved entries must never be silently rolled forward merely because software can automate it.
 
+The detailed domain semantics are defined in `docs/DOMAIN.md`.
+
 ## Local-first
 
 The journal belongs to the user.
@@ -73,6 +75,40 @@ The application should follow the operating system locale by default while allow
 English is the canonical localization source for interface messages and translation keys. Product behavior, domain rules, persistence values, and identifiers must never depend on translated display strings.
 
 The interface must avoid layout assumptions that make future right-to-left languages unnecessarily difficult to support. Hebrew, Arabic, and other RTL languages are future possibilities, not part of the initial release scope.
+
+## Navigation
+
+The primary product destinations are:
+
+- Today;
+- Monthly;
+- Future;
+- Collections;
+- Search.
+
+The exact control used to reach them may differ by screen size. Desktop can keep these destinations visible in a compact sidebar or equivalent navigation. Android may move Search to a global action when five persistent destinations would create unnecessary clutter.
+
+The Index remains a deliberate Bullet Journal structure and is not replaced by Search. It should remain directly accessible from the journal navigation model and may appear as an additional sidebar destination on wider layouts.
+
+Reflection is contextual rather than a permanent top-level workspace. Reflection actions should appear where they belong, such as Daily or Monthly review flows.
+
+Settings are secondary application controls and must not compete with journal navigation.
+
+## Visual direction
+
+Daymark supports light and dark appearance, with a system-following option where the platform provides one.
+
+The shared visual metaphor is a minimal dotted notebook or sketchbook page:
+
+- restrained dotted background;
+- comfortable page-like spacing;
+- strong emphasis on journal content;
+- minimal chrome;
+- light and dark palettes designed as equivalent reading surfaces rather than unrelated themes.
+
+The notebook metaphor is visual, not structural. Daymark is not a freeform canvas, drawing application, ruler tool, page designer, or drag-and-drop layout system.
+
+Linux and Android should feel like the same journal while using layouts appropriate to each form factor. The interface should preserve usable screen space on phones rather than drawing decorative notebook hardware, bindings, page shadows, or other literal simulations.
 
 ## Feature test
 
