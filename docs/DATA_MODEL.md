@@ -133,7 +133,8 @@ Fields:
 - `log_id` — nullable foreign key to `logs`;
 - `collection_id` — nullable foreign key to `collections`;
 - `ordinal` — integer order within the owner;
-- `monthly_section` — nullable `calendar` or `tasks` when the owner is a Monthly Log.
+- `monthly_section` — nullable `calendar` or `tasks` when the owner is a Monthly Log;
+- `monthly_calendar_date` — nullable ISO date, required exactly when `monthly_section = calendar`.
 
 Ownership invariant:
 
@@ -142,6 +143,8 @@ Exactly one of `log_id` and `collection_id` is non-null.
 `ordinal` preserves deliberate/capture ordering independently of timestamps and leaves room for transactional reordering later without changing entry identity.
 
 `monthly_section` preserves the original Monthly Log distinction between the calendar side and task-list side. It is null for Daily Log, Future Log, and Collection ownership.
+
+A Monthly calendar placement stores its calendar date explicitly. Daymark must not infer a date by parsing entry text such as `15 dentist`. Repository/application validation must also ensure that a Monthly calendar date belongs to the month represented by its owning Monthly Log; that cross-table invariant cannot be expressed as a normal SQLite `CHECK` constraint.
 
 An entry is never moved between owners in-place to implement Bullet Journal migration. Migration creates a destination entry and a lineage record, leaving the source in its historical location.
 
