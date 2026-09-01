@@ -1,0 +1,46 @@
+name: Format security bootstrap
+
+on:
+  push:
+    branches:
+      - feat/security-foundation
+
+concurrency:
+  group: format-security-bootstrap-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+jobs:
+  format:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out security branch
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: feat/security-foundation
+
+      - name: Set up Flutter 3.47.2
+        uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2
+        with:
+          flutter-version: '3.47.2'
+          channel: stable
+          cache: true
+
+      - name: Format corrected test
+        run: dart format test/database/encrypted_daymark_database_test.dart
+
+      - name: Commit formatting
+        shell: bash
+        run: |
+          set -euo pipefail
+          git add test/database/encrypted_daymark_database_test.dart
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "chore(security): format encrypted database test"
+          git push origin HEAD:feat/security-foundation
