@@ -4,11 +4,8 @@ import 'dart:typed_data';
 import 'package:cryptography/cryptography.dart';
 
 final class JournalKeyMaterial {
-  JournalKeyMaterial({
-    required SecretKeyData journalKey,
-    required Uint8List cipherSalt,
-  }) : _journalKey = journalKey,
-       cipherSalt = Uint8List.fromList(cipherSalt) {
+  JournalKeyMaterial._(this._journalKey, Uint8List cipherSalt)
+    : cipherSalt = Uint8List.fromList(cipherSalt) {
     if (_journalKey.bytes.length != journalKeyLength) {
       throw ArgumentError.value(
         _journalKey.bytes.length,
@@ -25,17 +22,6 @@ final class JournalKeyMaterial {
     }
   }
 
-  static const int journalKeyLength = 32;
-  static const int cipherSaltLength = 16;
-  static const int serializedLength = journalKeyLength + cipherSaltLength;
-
-  final SecretKeyData _journalKey;
-  final Uint8List cipherSalt;
-
-  SecretKey get journalKey => _journalKey;
-
-  bool get isDestroyed => _journalKey.isDestroyed;
-
   factory JournalKeyMaterial.generate() {
     final Uint8List keyBuffer = Uint8List(journalKeyLength);
     final SecretKeyData journalKey = SecretKeyData.randomWithBuffer(
@@ -44,9 +30,9 @@ final class JournalKeyMaterial {
       debugLabel: 'Daymark journal data-encryption key',
     );
 
-    return JournalKeyMaterial(
-      journalKey: journalKey,
-      cipherSalt: _secureRandomBytes(cipherSaltLength),
+    return JournalKeyMaterial._(
+      journalKey,
+      _secureRandomBytes(cipherSaltLength),
     );
   }
 
@@ -64,15 +50,26 @@ final class JournalKeyMaterial {
     );
     final Uint8List salt = Uint8List.fromList(bytes.sublist(journalKeyLength));
 
-    return JournalKeyMaterial(
-      journalKey: SecretKeyData(
+    return JournalKeyMaterial._(
+      SecretKeyData(
         keyBytes,
         overwriteWhenDestroyed: true,
         debugLabel: 'Daymark recovered journal data-encryption key',
       ),
-      cipherSalt: salt,
+      salt,
     );
   }
+
+  static const int journalKeyLength = 32;
+  static const int cipherSaltLength = 16;
+  static const int serializedLength = journalKeyLength + cipherSaltLength;
+
+  final SecretKeyData _journalKey;
+  final Uint8List cipherSalt;
+
+  SecretKey get journalKey => _journalKey;
+
+  bool get isDestroyed => _journalKey.isDestroyed;
 
   Uint8List serialize() {
     if (isDestroyed) {
