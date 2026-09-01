@@ -143,6 +143,64 @@ void main() {
     );
   });
 
+  test('Monthly calendar placements require an explicit calendar date', () async {
+    await database.customStatement('''
+      INSERT INTO logs (id, kind, period_start, created_at)
+      VALUES (
+        '00000000-0000-7000-8000-000000000023',
+        'monthly', '2026-09-01', 1
+      )
+    ''');
+
+    await database.customStatement('''
+      INSERT INTO entries (
+        id, entry_type, task_state, content, created_at, updated_at
+      ) VALUES (
+        '00000000-0000-7000-8000-000000000024',
+        'event', NULL, 'Dentist', 1, 1
+      )
+    ''');
+
+    expect(
+      () => database.customStatement('''
+        INSERT INTO entry_placements (
+          entry_id,
+          log_id,
+          collection_id,
+          ordinal,
+          monthly_section,
+          monthly_calendar_date
+        ) VALUES (
+          '00000000-0000-7000-8000-000000000024',
+          '00000000-0000-7000-8000-000000000023',
+          NULL,
+          0,
+          'calendar',
+          NULL
+        )
+      '''),
+      throwsA(isA<SqliteException>()),
+    );
+
+    await database.customStatement('''
+      INSERT INTO entry_placements (
+        entry_id,
+        log_id,
+        collection_id,
+        ordinal,
+        monthly_section,
+        monthly_calendar_date
+      ) VALUES (
+        '00000000-0000-7000-8000-000000000024',
+        '00000000-0000-7000-8000-000000000023',
+        NULL,
+        0,
+        'calendar',
+        '2026-09-15'
+      )
+    ''');
+  });
+
   test('migration lineage is a one-to-one chain edge', () async {
     for (final id in <String>[
       '00000000-0000-7000-8000-000000000030',
