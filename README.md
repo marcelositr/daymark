@@ -6,43 +6,90 @@ Daymark is a minimal, local-first Bullet Journal application for Linux and Andro
 
 ## Project status
 
-Daymark is in pre-development. The repository is being prepared before the application scaffold is introduced.
+Daymark is in foundation / pre-alpha development. The project is intentionally defining domain, security, data, workflow, and toolchain constraints before the first application scaffold.
+
+The canonical live development checkpoint is [`PROJECT.md`](PROJECT.md).
+
+Any human or AI contributor should read [`AGENTS.md`](AGENTS.md) before continuing work. The repository is designed so development can be resumed across chat limits, CLI restarts, API quotas, and different agents without depending on hidden conversation context.
 
 ## Product principles
 
 - Faithful to the core Bullet Journal method.
 - Digital minimalism by default.
 - Local-first and offline-first.
+- Encryption at rest from the first persisted journal.
 - Linux and Android are the initial supported platforms.
-- Architecture must remain portable to future desktop and mobile targets.
+- Architecture remains portable to future desktop and mobile targets.
 - Open, exportable user data.
 - No advertising, engagement loops, streaks, productivity scoring, or attention-seeking UI.
 - Automation must not remove deliberate reflection or migration decisions from the method.
 
-## Planned foundation
+## Technology direction
 
-- Flutter
-- Dart
-- SQLite
-- Drift
+The current reviewed baseline is documented in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
+
+At a glance:
+
+- Flutter / Dart;
+- Material 3 with a custom minimal dotted-notebook visual language;
+- Riverpod for state/dependency wiring;
+- go_router for application routing;
+- Drift for typed relational persistence;
+- sqlite3 with SQLite3MultipleCiphers for encrypted native storage;
+- Argon2id and reviewed authenticated cryptography for the application key hierarchy;
+- Flutter ARB / `gen_l10n` localization.
+
+Exact SDK and dependency versions are pinned when the scaffold exists and are changed only through reviewed updates.
 
 ## Initial scope
 
 The first product milestone is expected to cover:
 
-- Rapid Logging
-- Daily Log
-- Monthly Log
-- Future Log
-- Migration
-- Collections
-- Index
-- Search
-- Backup
-- Open export formats
+- Rapid Logging;
+- Daily Log;
+- Monthly Log;
+- Future Log;
+- deliberate Migration;
+- Collections;
+- Index;
+- Search;
+- master-password protection and locking;
+- encrypted portable backup/restore;
+- explicit open export formats;
+- English and Portuguese (Brazil);
+- light, dark, and system appearance.
 
-Cloud sync, collaboration, AI features, gamification, dashboards, and unrelated productivity systems are explicitly outside the initial scope.
+Cloud sync, collaboration, AI features inside the product, gamification, dashboards, unrelated productivity systems, and freeform page/canvas editing are outside the initial scope.
+
+## Development workflow
+
+Development uses one permanent integration branch (`main`), short-lived task branches, pull requests, squash merges by default, and explicit release gates.
+
+See [`docs/WORKFLOW.md`](docs/WORKFLOW.md).
+
+The first public release train progresses deliberately through:
+
+```text
+v1.0.0-alpha.N
+v1.0.0-beta.N
+v1.0.0-rc.N
+v1.0.0
+```
+
+Release candidates are not promoted automatically. Stable `1.0.0` happens only after deliberate testing and approval.
+
+## Documentation map
+
+- [`PROJECT.md`](PROJECT.md): live checklist, current state, blockers, next steps, and handoff log
+- [`AGENTS.md`](AGENTS.md): mandatory operating contract for AI-assisted development
+- [`docs/PRODUCT.md`](docs/PRODUCT.md): product boundaries and principles
+- [`docs/DOMAIN.md`](docs/DOMAIN.md): Bullet Journal semantics
+- [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md): technical architecture and technology baseline
+- [`SECURITY.md`](SECURITY.md): threat model and security constraints
+- [`docs/WORKFLOW.md`](docs/WORKFLOW.md): branches, PRs, versioning, and releases
+- [`CONTRIBUTING.md`](CONTRIBUTING.md): contribution expectations
+- [`CHANGELOG.md`](CHANGELOG.md): release-facing history
 
 ## License
 
-Daymark is intended to be distributed under the GNU General Public License v3.0 or later (`GPL-3.0-or-later`).
+Daymark is distributed under the GNU General Public License v3.0 or later (`GPL-3.0-or-later`).
