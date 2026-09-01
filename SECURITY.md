@@ -39,6 +39,14 @@ Daymark is local-first. Core journal data must not be transmitted to remote serv
 
 Any future network feature must be optional, explicit, documented, and isolated from the core local workflow.
 
+## Threat model baseline
+
+Daymark must assume that a phone, computer, removable storage device, or backup medium containing journal data may be lost, stolen, sold, transferred, or accessed by a curious third party.
+
+The expected protection goal is that possession of the storage medium alone must not reveal journal contents.
+
+User-requested plaintext export is outside this guarantee because exporting is an explicit decision to create an unencrypted copy.
+
 ## Data-at-rest baseline
 
 Daymark must assume that journal entries may contain highly sensitive information, including credentials, access instructions, recovery material, private notes, and references to physical keys or locations.
@@ -62,7 +70,12 @@ This applies to:
 - temporary files;
 - logs and crash diagnostics;
 - internal backups;
+- removable storage;
 - attachments when attachment support is introduced.
+
+Internal backups created by Daymark must remain encrypted by default, including backups stored on removable media such as SD cards or external drives.
+
+Copying or relocating Daymark's own database or backup files to removable storage must not silently convert protected data into plaintext.
 
 User-requested exports are an explicit security boundary. Human-readable exports such as Markdown or JSON may be plaintext and must clearly communicate that the exported file is no longer protected by the journal's encrypted store unless an encrypted export mode is explicitly selected.
 
