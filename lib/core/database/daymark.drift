@@ -42,11 +42,19 @@ CREATE TABLE entry_placements (
   collection_id TEXT REFERENCES collections(id) ON DELETE RESTRICT,
   ordinal INTEGER NOT NULL CHECK (ordinal >= 0),
   monthly_section TEXT CHECK (monthly_section IN ('calendar', 'tasks')),
+  monthly_calendar_date TEXT CHECK (
+    monthly_calendar_date IS NULL OR length(monthly_calendar_date) = 10
+  ),
   CHECK (
     (log_id IS NOT NULL AND collection_id IS NULL) OR
     (log_id IS NULL AND collection_id IS NOT NULL)
   ),
-  CHECK (collection_id IS NULL OR monthly_section IS NULL)
+  CHECK (collection_id IS NULL OR monthly_section IS NULL),
+  CHECK (
+    (monthly_section = 'calendar' AND monthly_calendar_date IS NOT NULL) OR
+    (monthly_section IS NULL AND monthly_calendar_date IS NULL) OR
+    (monthly_section = 'tasks' AND monthly_calendar_date IS NULL)
+  )
 );
 
 CREATE UNIQUE INDEX entry_placements_log_ordinal
