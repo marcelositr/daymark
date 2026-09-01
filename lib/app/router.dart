@@ -26,9 +26,8 @@ final GoRouter daymarkRouter = GoRouter(
           routes: [
             GoRoute(
               path: '/monthly',
-              builder: (context, state) => const PlaceholderScreen(
-                section: DaymarkSection.monthly,
-              ),
+              builder: (context, state) =>
+                  const PlaceholderScreen(section: DaymarkSection.monthly),
             ),
           ],
         ),
@@ -36,9 +35,8 @@ final GoRouter daymarkRouter = GoRouter(
           routes: [
             GoRoute(
               path: '/future',
-              builder: (context, state) => const PlaceholderScreen(
-                section: DaymarkSection.future,
-              ),
+              builder: (context, state) =>
+                  const PlaceholderScreen(section: DaymarkSection.future),
             ),
           ],
         ),
@@ -46,9 +44,8 @@ final GoRouter daymarkRouter = GoRouter(
           routes: [
             GoRoute(
               path: '/collections',
-              builder: (context, state) => const PlaceholderScreen(
-                section: DaymarkSection.collections,
-              ),
+              builder: (context, state) =>
+                  const PlaceholderScreen(section: DaymarkSection.collections),
             ),
           ],
         ),
@@ -56,9 +53,8 @@ final GoRouter daymarkRouter = GoRouter(
           routes: [
             GoRoute(
               path: '/search',
-              builder: (context, state) => const PlaceholderScreen(
-                section: DaymarkSection.search,
-              ),
+              builder: (context, state) =>
+                  const PlaceholderScreen(section: DaymarkSection.search),
             ),
           ],
         ),

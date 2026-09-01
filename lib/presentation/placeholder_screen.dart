@@ -2,13 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../l10n/app_localizations.dart';
 
-enum DaymarkSection {
-  today,
-  monthly,
-  future,
-  collections,
-  search,
-}
+enum DaymarkSection { today, monthly, future, collections, search }
 
 class PlaceholderScreen extends StatelessWidget {
   const PlaceholderScreen({

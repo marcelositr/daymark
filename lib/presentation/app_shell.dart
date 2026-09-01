@@ -4,10 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../l10n/app_localizations.dart';
 
 class AppShell extends StatelessWidget {
-  const AppShell({
-    required this.navigationShell,
-    super.key,
-  });
+  const AppShell({required this.navigationShell, super.key});
 
   final StatefulNavigationShell navigationShell;
 
@@ -15,10 +12,22 @@ class AppShell extends StatelessWidget {
   Widget build(BuildContext context) {
     final AppLocalizations l10n = AppLocalizations.of(context);
     final List<NavigationDestination> bottomDestinations = [
-      NavigationDestination(icon: const Icon(Icons.today_outlined), label: l10n.today),
-      NavigationDestination(icon: const Icon(Icons.calendar_month_outlined), label: l10n.monthly),
-      NavigationDestination(icon: const Icon(Icons.event_outlined), label: l10n.future),
-      NavigationDestination(icon: const Icon(Icons.book_outlined), label: l10n.collections),
+      NavigationDestination(
+        icon: const Icon(Icons.today_outlined),
+        label: l10n.today,
+      ),
+      NavigationDestination(
+        icon: const Icon(Icons.calendar_month_outlined),
+        label: l10n.monthly,
+      ),
+      NavigationDestination(
+        icon: const Icon(Icons.event_outlined),
+        label: l10n.future,
+      ),
+      NavigationDestination(
+        icon: const Icon(Icons.book_outlined),
+        label: l10n.collections,
+      ),
       NavigationDestination(icon: const Icon(Icons.search), label: l10n.search),
     ];
 
