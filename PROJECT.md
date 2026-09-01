@@ -46,8 +46,9 @@ The goal is not to pretend development is linear. The goal is to make the next c
 - [x] Git branch, pull request, versioning, and release policy
 - [x] Technology baseline re-evaluated against current Flutter/Drift ecosystem
 - [x] Pin Flutter 3.47.2 / Dart 3.13.2 for the initial scaffold
-- [ ] Complete the Flutter scaffold bootstrap with committed Android/Linux platform files and `pubspec.lock`
-- [ ] Replace the temporary bootstrap workflow with permanent CI quality gates
+- [x] Complete the Flutter scaffold bootstrap with committed Android/Linux platform files and `pubspec.lock`
+- [x] Replace the temporary bootstrap workflow with permanent CI quality gates
+- [ ] Validate the permanent CI gates on the final PR #3 head
 - [ ] Bind the real stable CI check names into the main-branch ruleset
 - [ ] Finalize the initial relational data schema
 - [ ] Define and test database migration strategy with real schema fixtures
@@ -139,7 +140,7 @@ Current direction after the 2026-09-01 review and first scaffold validation:
 
 `flutter_secure_storage` 11.0.0 was intentionally removed from the scaffold dependency set after validation showed that it requires Android `compileSdk` 37 while the Flutter 3.47.2 generated Android project currently uses API 36 with Android Gradle Plugin 9.1.0. Re-evaluate secure-storage integration when the device-assisted unlock security spike is implemented rather than distorting the baseline toolchain for an unused convenience layer.
 
-Do not treat version families as permission to float dependencies. Exact resolved package versions belong in the committed lockfile once the scaffold bootstrap completes.
+Exact resolved dependency versions and package hashes are committed in `pubspec.lock`. Dependency changes must update and review that lockfile rather than silently floating beneath an unchanged source commit.
 
 ## Open questions and required validation
 
@@ -171,6 +172,9 @@ These are not permission to invent behavior silently. Resolve them through a foc
 - Deferred device secure-storage integration to the security spike instead of forcing the Android toolchain or pinning an unnecessary compatibility bridge.
 - Clarified localization behavior: English is canonical and fallback; exact `pt_BR` system locale selects Brazilian Portuguese; unsupported locales fall back to English.
 - Added workflow concurrency so superseded bootstrap runs are cancelled rather than duplicated.
+- Bootstrap run #29 passed dependency resolution, localization generation, strict analysis, tests, Linux debug build, and Android debug APK build, then committed the official Flutter Android/Linux platform files and `pubspec.lock`.
+- Removed the temporary bootstrap workflow and added permanent CI jobs named `quality`, `linux-build`, `android-build`, and `dependency-review`.
+- Enabled strict Dart analyzer modes for casts, inference, and raw types.
 
 ## Handoff
 
