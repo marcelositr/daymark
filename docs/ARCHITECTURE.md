@@ -2,21 +2,21 @@
 
 ## Status
 
-This document defines architectural constraints before the application scaffold exists. Concrete package versions may evolve through reviewed dependency updates, but the boundaries and technology choices below are intentional.
+This document defines Daymark's architectural constraints. Concrete package versions may evolve through reviewed dependency updates, but the boundaries and technology choices below are intentional.
 
-The exact resolved dependency set becomes authoritative through the committed `pubspec.lock` once the Flutter scaffold exists.
+The first Flutter scaffold is being established in PR #3. The exact resolved dependency set becomes authoritative through the committed `pubspec.lock` once that scaffold bootstrap completes successfully.
 
 ## Current toolchain baseline
 
 Daymark is a Flutter application.
 
-Current baseline after the 2026-09-01 technology review:
+Current baseline after the 2026-09-01 technology and scaffold review:
 
-- Flutter stable 3.47 line;
-- Dart 3.13 line supplied by Flutter;
+- Flutter stable 3.47.2;
+- Dart 3.13.2 supplied by Flutter;
 - Linux and Android as initial runtime targets.
 
-The exact Flutter patch must be pinned when the scaffold is created and then changed only through a reviewed toolchain-update PR. Agents must re-check the stable channel before creating or changing that pin rather than relying on stale chat memory.
+Flutter 3.47.2 is pinned in `.flutter-version` and `pubspec.yaml`. Future toolchain changes require a reviewed update rather than silently following the stable channel.
 
 Android should target Flutter's currently supported Android baseline rather than deliberately supporting versions the framework itself no longer supports. At the current review point, API 24 is the minimum supported Flutter deployment level.
 
@@ -177,7 +177,11 @@ The journal data-encryption key is generated from cryptographically secure rando
 
 The master password protects access to the journal key through a versioned password-based key-derivation and key-wrapping layer.
 
-Device-local assisted unlock may use `flutter_secure_storage` 11.x. On Android this can rely on platform secure storage and authentication mechanisms; on Linux it can use a compatible secret service. Device-local storage is a convenience layer only and must not become the sole portable recovery mechanism.
+Device-local assisted unlock requires a platform secure-storage abstraction, but that integration is intentionally deferred to the focused security spike rather than being forced into the general scaffold.
+
+`flutter_secure_storage` remains a candidate, not a baseline scaffold dependency. Version 11.0.0 raised Android `compileSdk` to 37, while the Flutter 3.47.2 generated Android project currently uses API 36 with Android Gradle Plugin 9.1.0, whose own build diagnostics recommend API 36 as its maximum compile SDK. Daymark will not distort the Android toolchain or pin a compatibility bridge merely for an unused convenience layer. Re-evaluate the maintained secure-storage option when device-assisted unlock is implemented.
+
+Whatever integration is selected, device-local storage is a convenience layer only and must not become the sole portable recovery mechanism.
 
 ## Backup architecture
 
@@ -203,21 +207,24 @@ Internationalization is part of the initial architecture.
 
 Use Flutter's built-in localization tooling with ARB resources and generated localization accessors. Do not add a competing localization framework without a concrete reason.
 
-English is the canonical source locale and Portuguese (Brazil) is the first additional locale.
+English is the canonical source locale and product fallback locale. Portuguese (Brazil) is the first additional product locale.
 
-Expected resources:
+The scaffold resources are:
 
 ```text
 lib/l10n/
 ├── app_en.arb
+├── app_pt.arb
 └── app_pt_BR.arb
 ```
+
+`app_pt.arb` exists because Flutter 3.47.2's localization generator requires a parent locale when `pt_BR` is present. It is a technical generation fallback, not a third initial product language.
+
+On first run, exact `pt_BR` system locales select Brazilian Portuguese, English locales select English, and unsupported locales fall back to English. A future explicit user override takes precedence over automatic system resolution.
 
 User-facing strings must not be scattered as hardcoded presentation literals when they belong in localization resources.
 
 Domain values, enum-like states, database records, migration logic, export schema identifiers, and application decisions use stable language-neutral identifiers. Translated strings are presentation only.
-
-The application follows the system locale by default and supports an explicit user override.
 
 Layouts should use directional concepts such as start/end instead of assuming left/right wherever practical, keeping future RTL support possible without requiring a UI rewrite.
 
@@ -290,17 +297,19 @@ GitHub Actions should be pinned to immutable commit SHAs when workflows are intr
 
 ## Foundation-first development order
 
-Daymark establishes correctness and safety before visual or convenience features.
+Daymark establishes correctness and safety before product polish. A minimal toolchain scaffold is allowed early because it validates the selected Flutter, localization, native SQLite, Linux, and Android build assumptions without implementing journal behavior or persistence semantics.
 
-The current order is maintained in `PROJECT.md`. Architecturally, the dependency sequence is:
+The current dependency sequence is:
 
-1. domain behavior;
-2. relational schema and migrations;
-3. encryption/key-management prototype and backup format;
-4. Flutter scaffold and localization/theme foundations;
-5. application/data/presentation wiring;
-6. minimal end-to-end journal workflow;
-7. UI refinement and convenience features only after the core path is correct, testable, and secure.
+1. define the Bullet Journal domain semantics and product/security constraints;
+2. establish the minimal pinned Flutter scaffold and repeatable CI/build baseline;
+3. finalize the relational schema, identifiers, and migration strategy;
+4. implement and benchmark the encryption/key-management and backup security prototype;
+5. wire application, data, and presentation layers around those established contracts;
+6. build the minimal end-to-end journal workflow;
+7. refine UI and convenience features only after the core path is correct, testable, and secure.
+
+The scaffold must not be used as an excuse to implement journal persistence, key handling, or product features ahead of the focused foundation work that governs them.
 
 ## Non-goals for the initial architecture
 
