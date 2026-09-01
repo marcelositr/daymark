@@ -30,7 +30,7 @@ Features that turn Daymark into a generic planner, dashboard, social product, co
 
 ## Development expectations
 
-Once the Flutter scaffold exists, changes should:
+Changes should:
 
 - keep domain logic independent from Flutter and platform APIs;
 - include tests for domain behavior;
@@ -93,7 +93,7 @@ Before adding one:
 - avoid mutable Git dependencies;
 - document the reason in the pull request.
 
-Do not add packages solely to save a few lines of straightforward code.
+Do not add packages solely to save a few lines of straightforward code or to reserve a future implementation choice before that feature exists.
 
 Generated-code tooling has a maintenance cost. The architecture baseline currently permits Drift and Flutter localization generation and intentionally avoids additional generators until there is demonstrated need.
 
