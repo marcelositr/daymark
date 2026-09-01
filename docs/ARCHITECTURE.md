@@ -4,7 +4,7 @@
 
 This document defines Daymark's architectural constraints. Concrete package versions may evolve through reviewed dependency updates, but the boundaries and technology choices below are intentional.
 
-The first Flutter scaffold is being established in PR #3. The exact resolved dependency set becomes authoritative through the committed `pubspec.lock` once that scaffold bootstrap completes successfully.
+The first Flutter scaffold is established in PR #3. The committed `pubspec.lock` is authoritative for the exact resolved dependency set on this development line.
 
 ## Current toolchain baseline
 
@@ -257,20 +257,19 @@ Use normal Dart classes, sealed classes, records, patterns, and explicit seriali
 
 Use Flutter's standard formatting and analysis tools.
 
-The scaffold should enable strict analyzer behavior including strong treatment of casts, inference, and raw types where compatible with the chosen package set.
+The scaffold enables strict analyzer behavior for casts, inference, and raw types, with `flutter_lints` as the baseline rather than a large third-party lint profile.
 
-Use `flutter_lints` as the baseline rather than installing a large third-party lint profile before the team has evidence it improves this codebase.
+The permanent CI workflow in `.github/workflows/ci.yml` currently gates:
 
-The canonical quality gate, once implemented, should cover at minimum:
-
-1. dependency resolution from the committed lockfile;
-2. formatting check;
+1. dependency resolution from the committed lockfile with lockfile enforcement;
+2. formatting;
 3. static analysis;
 4. unit/widget tests;
-5. database migration tests;
-6. Linux build;
-7. Android build;
-8. dependency/security review.
+5. Linux debug build;
+6. Android debug APK build;
+7. dependency/security review for pull requests.
+
+Database migration fixture tests become an additional required gate as soon as a persistent schema exists. CI requirements should grow with real architecture rather than pretending nonexistent migrations can already be tested.
 
 ## Testing strategy
 
@@ -289,11 +288,11 @@ Do not treat screenshot/golden testing as a substitute for behavioral tests. Add
 
 Applications commit `pubspec.lock`.
 
-CI should use lockfile enforcement when practical so dependency resolution cannot silently change beneath an unchanged commit.
+CI uses lockfile enforcement so dependency resolution cannot silently change beneath an unchanged commit.
 
 Dependencies must come from stable published packages unless an explicit temporary exception is documented. Mutable Git dependencies are not acceptable production defaults.
 
-GitHub Actions should be pinned to immutable commit SHAs when workflows are introduced. Dependency review should reject newly introduced known-vulnerable dependencies according to repository policy.
+GitHub Actions are pinned to immutable commit SHAs. Pull-request dependency review rejects introduced dependencies at the configured severity threshold according to repository policy.
 
 ## Foundation-first development order
 
