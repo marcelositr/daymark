@@ -5,7 +5,6 @@ import 'package:daymark/core/crypto/journal_key_material.dart';
 import 'package:daymark/core/crypto/security_exception.dart';
 import 'package:daymark/core/database/daymark_database.dart';
 import 'package:daymark/core/database/encrypted_daymark_database.dart';
-import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sqlite3/sqlite3.dart';
 
