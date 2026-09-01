@@ -60,13 +60,12 @@ void main() {
           file: journalFile,
           keyMaterial: keyMaterial,
         );
-        final List<QueryRow> rows = await database
-            .customSelect(
-              'SELECT content FROM entries WHERE id = ?',
-              variables: const <Variable<Object>>[
-                Variable<String>('00000000-0000-7000-8000-000000000701'),
-              ],
-            )
+        final rows = await database
+            .customSelect('''
+              SELECT content
+              FROM entries
+              WHERE id = '00000000-0000-7000-8000-000000000701'
+            ''')
             .get();
 
         expect(rows.single.read<String>('content'), sensitiveText);
