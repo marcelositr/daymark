@@ -60,13 +60,11 @@ void main() {
           file: journalFile,
           keyMaterial: keyMaterial,
         );
-        final rows = await database
-            .customSelect('''
+        final rows = await database.customSelect('''
               SELECT content
               FROM entries
               WHERE id = '00000000-0000-7000-8000-000000000701'
-            ''')
-            .get();
+            ''').get();
 
         expect(rows.single.read<String>('content'), sensitiveText);
         await database.close();
