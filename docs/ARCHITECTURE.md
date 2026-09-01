@@ -9,7 +9,9 @@ This document defines architectural constraints before the application scaffold 
 - Flutter
 - Dart
 - Drift
-- SQLite
+- SQLite-compatible encrypted persistence
+
+SQLCipher is the expected implementation direction for encrypted database storage unless technical validation before persistence implementation identifies a better maintained equivalent.
 
 Initial supported platforms:
 
@@ -31,7 +33,7 @@ domain
     ↓
 data / repositories
     ↓
-SQLite
+encrypted SQLite-compatible storage
 ```
 
 Platform integrations belong outside the domain:
@@ -63,13 +65,15 @@ The exact schema must follow domain behavior rather than mirror screens.
 
 ## Persistence
 
-SQLite is the source of truth for structured application data.
+Encrypted SQLite-compatible storage is the source of truth for structured application data.
 
 Drift provides typed persistence and migrations.
 
 Database migrations must be explicit, versioned, tested, and forward-only in normal operation. Destructive schema changes require an explicit data migration strategy.
 
-Attachments, if introduced, should normally remain files rather than opaque database blobs. SQLite should store metadata and references.
+Encryption at rest is part of the persistence architecture from the beginning. It must not be retrofitted after plaintext journal databases have become part of the normal product lifecycle.
+
+Attachments, if introduced, should normally remain files rather than opaque database blobs. Their storage must follow the same security requirement and must not create a plaintext side channel around the encrypted journal.
 
 ## Localization
 
@@ -103,6 +107,8 @@ The application should eventually provide:
 - a human-readable export, expected to include Markdown;
 - documented schema/version metadata.
 
+Exports must be treated as a deliberate security boundary because portable human-readable formats may be plaintext outside the encrypted journal store.
+
 ## UI architecture
 
 Linux and Android share product behavior but do not need identical layouts.
@@ -110,6 +116,21 @@ Linux and Android share product behavior but do not need identical layouts.
 Desktop may use wider navigation and keyboard-oriented interactions. Android should optimize for fast capture and minimal taps.
 
 Responsive design must not become a desktop interface merely squeezed onto a phone.
+
+## Foundation-first development order
+
+Daymark should establish correctness and safety before visual or convenience features.
+
+The initial implementation order is:
+
+1. Bullet Journal domain model and behavior;
+2. data model, identifiers, migrations, and migration history;
+3. encryption, key handling, locking, and storage security boundaries;
+4. localization foundation;
+5. architectural wiring between domain, application, data, presentation, and platform layers;
+6. minimal end-to-end workflow for capture, completion, deliberate migration, Monthly Log, and Future Log.
+
+Visual refinement, advanced attachments, sophisticated backups, optional biometric convenience, importers, additional themes, and other non-core enhancements come after the core workflow is correct, testable, and secure.
 
 ## Non-goals for the initial architecture
 
