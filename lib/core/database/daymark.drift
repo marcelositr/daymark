@@ -1,0 +1,131 @@
+CREATE TABLE journal_metadata (
+  id TEXT NOT NULL PRIMARY KEY,
+  singleton INTEGER NOT NULL DEFAULT 1 UNIQUE CHECK (singleton = 1),
+  created_at INTEGER NOT NULL CHECK (created_at >= 0),
+  updated_at INTEGER NOT NULL CHECK (updated_at >= created_at)
+);
+
+CREATE TABLE logs (
+  id TEXT NOT NULL PRIMARY KEY,
+  kind TEXT NOT NULL CHECK (kind IN ('daily', 'monthly', 'future')),
+  period_start TEXT NOT NULL CHECK (length(period_start) = 10),
+  created_at INTEGER NOT NULL CHECK (created_at >= 0),
+  UNIQUE (kind, period_start)
+);
+
+CREATE TABLE collections (
+  id TEXT NOT NULL PRIMARY KEY,
+  title TEXT NOT NULL CHECK (length(trim(title)) > 0),
+  created_at INTEGER NOT NULL CHECK (created_at >= 0),
+  updated_at INTEGER NOT NULL CHECK (updated_at >= created_at)
+);
+
+CREATE TABLE entries (
+  id TEXT NOT NULL PRIMARY KEY,
+  entry_type TEXT NOT NULL CHECK (entry_type IN ('task', 'event', 'note')),
+  task_state TEXT CHECK (
+    task_state IN ('open', 'completed', 'migrated', 'scheduled', 'discarded')
+  ),
+  content TEXT NOT NULL CHECK (length(trim(content)) > 0),
+  created_at INTEGER NOT NULL CHECK (created_at >= 0),
+  updated_at INTEGER NOT NULL CHECK (updated_at >= created_at),
+  CHECK (
+    (entry_type = 'task' AND task_state IS NOT NULL) OR
+    (entry_type IN ('event', 'note') AND task_state IS NULL)
+  )
+);
+
+CREATE TABLE entry_placements (
+  entry_id TEXT NOT NULL PRIMARY KEY
+    REFERENCES entries(id) ON DELETE CASCADE,
+  log_id TEXT REFERENCES logs(id) ON DELETE RESTRICT,
+  collection_id TEXT REFERENCES collections(id) ON DELETE RESTRICT,
+  ordinal INTEGER NOT NULL CHECK (ordinal >= 0),
+  monthly_section TEXT CHECK (monthly_section IN ('calendar', 'tasks')),
+  CHECK (
+    (log_id IS NOT NULL AND collection_id IS NULL) OR
+    (log_id IS NULL AND collection_id IS NOT NULL)
+  ),
+  CHECK (collection_id IS NULL OR monthly_section IS NULL)
+);
+
+CREATE UNIQUE INDEX entry_placements_log_ordinal
+  ON entry_placements (log_id, ordinal)
+  WHERE log_id IS NOT NULL;
+
+CREATE UNIQUE INDEX entry_placements_collection_ordinal
+  ON entry_placements (collection_id, ordinal)
+  WHERE collection_id IS NOT NULL;
+
+CREATE TABLE migrations (
+  id TEXT NOT NULL PRIMARY KEY,
+  source_entry_id TEXT NOT NULL UNIQUE
+    REFERENCES entries(id) ON DELETE RESTRICT,
+  destination_entry_id TEXT NOT NULL UNIQUE
+    REFERENCES entries(id) ON DELETE RESTRICT,
+  kind TEXT NOT NULL CHECK (kind IN ('migrated', 'scheduled')),
+  created_at INTEGER NOT NULL CHECK (created_at >= 0),
+  CHECK (source_entry_id <> destination_entry_id)
+);
+
+CREATE TABLE collection_references (
+  collection_id TEXT NOT NULL
+    REFERENCES collections(id) ON DELETE CASCADE,
+  entry_id TEXT NOT NULL
+    REFERENCES entries(id) ON DELETE CASCADE,
+  ordinal INTEGER NOT NULL CHECK (ordinal >= 0),
+  created_at INTEGER NOT NULL CHECK (created_at >= 0),
+  PRIMARY KEY (collection_id, entry_id),
+  UNIQUE (collection_id, ordinal)
+) WITHOUT ROWID;
+
+CREATE TABLE signifiers (
+  id TEXT NOT NULL PRIMARY KEY,
+  kind TEXT NOT NULL CHECK (kind IN ('builtin', 'custom')),
+  builtin_code TEXT UNIQUE,
+  custom_label TEXT,
+  custom_symbol TEXT,
+  created_at INTEGER NOT NULL CHECK (created_at >= 0),
+  CHECK (
+    (
+      kind = 'builtin' AND
+      builtin_code IS NOT NULL AND
+      custom_label IS NULL AND
+      custom_symbol IS NULL
+    ) OR
+    (
+      kind = 'custom' AND
+      builtin_code IS NULL AND
+      custom_label IS NOT NULL AND
+      length(trim(custom_label)) > 0
+    )
+  )
+);
+
+CREATE TABLE entry_signifiers (
+  entry_id TEXT NOT NULL
+    REFERENCES entries(id) ON DELETE CASCADE,
+  signifier_id TEXT NOT NULL
+    REFERENCES signifiers(id) ON DELETE CASCADE,
+  PRIMARY KEY (entry_id, signifier_id)
+) WITHOUT ROWID;
+
+CREATE TABLE index_items (
+  id TEXT NOT NULL PRIMARY KEY,
+  ordinal INTEGER NOT NULL UNIQUE CHECK (ordinal >= 0),
+  log_id TEXT REFERENCES logs(id) ON DELETE RESTRICT,
+  collection_id TEXT REFERENCES collections(id) ON DELETE RESTRICT,
+  created_at INTEGER NOT NULL CHECK (created_at >= 0),
+  CHECK (
+    (log_id IS NOT NULL AND collection_id IS NULL) OR
+    (log_id IS NULL AND collection_id IS NOT NULL)
+  )
+);
+
+CREATE UNIQUE INDEX index_items_log_target
+  ON index_items (log_id)
+  WHERE log_id IS NOT NULL;
+
+CREATE UNIQUE INDEX index_items_collection_target
+  ON index_items (collection_id)
+  WHERE collection_id IS NOT NULL;
