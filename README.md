@@ -43,7 +43,7 @@ At a glance:
 
 English is the canonical and fallback UI locale. An exact Brazilian Portuguese system locale selects Portuguese (Brazil); unsupported locales fall back to English.
 
-Exact dependency versions are locked in `pubspec.lock` once the scaffold bootstrap completes and are changed only through reviewed updates.
+The exact resolved dependency set is committed in `pubspec.lock` and changes only through reviewed dependency updates.
 
 ## Initial scope
 
