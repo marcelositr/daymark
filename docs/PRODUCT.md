@@ -70,9 +70,13 @@ The initial product languages are:
 - English;
 - Portuguese (Brazil).
 
-The application should follow the operating system locale by default while allowing the user to choose a language explicitly.
+English is the canonical source locale and the product fallback locale.
 
-English is the canonical localization source for interface messages and translation keys. Product behavior, domain rules, persistence values, and identifiers must never depend on translated display strings.
+On first run, Daymark follows the operating-system locale only when it matches a supported product locale. An exact Brazilian Portuguese locale selects `pt_BR`; English locales select English; unsupported locales fall back to English. A future explicit user language override takes precedence over system detection.
+
+The Flutter localization generator requires a parent `pt` resource when `pt_BR` exists. That parent resource is a technical generation fallback and does not expand the initial product-language promise beyond English and Portuguese (Brazil).
+
+Product behavior, domain rules, persistence values, and identifiers must never depend on translated display strings.
 
 The interface must avoid layout assumptions that make future right-to-left languages unnecessarily difficult to support. Hebrew, Arabic, and other RTL languages are future possibilities, not part of the initial release scope.
 

@@ -92,7 +92,7 @@ In particular:
 - do not create tags or releases casually;
 - never merge a pull request, publish a release, or advance a release stage unless the user explicitly requests it.
 
-The current long-lived foundation PR is an intentional temporary exception while the pre-development contract is being assembled. After it is merged, normal short-lived task branches apply.
+The earlier long-lived foundation PR was a temporary pre-development exception and is finished. Normal short-lived task branches now apply.
 
 ## Dependency discipline
 
@@ -107,6 +107,8 @@ Before adding any new dependency:
 5. update the lockfile and validation as one change.
 
 Do not add code generation merely to avoid straightforward Dart code. The baseline intentionally limits generated code.
+
+A dependency chosen for a future feature should not be forced into an earlier scaffold merely to reserve the choice. If current platform compatibility or threat-model validation is unresolved, defer the dependency to the focused task that actually uses it.
 
 ## When uncertain
 
