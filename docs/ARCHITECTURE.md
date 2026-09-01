@@ -71,6 +71,28 @@ Database migrations must be explicit, versioned, tested, and forward-only in nor
 
 Attachments, if introduced, should normally remain files rather than opaque database blobs. SQLite should store metadata and references.
 
+## Localization
+
+Internationalization is part of the initial architecture.
+
+Daymark should use Flutter's localization tooling with ARB resources and generated localization accessors. English is the canonical source locale and Portuguese (Brazil) is the first additional locale.
+
+Expected localization resources:
+
+```text
+lib/l10n/
+├── app_en.arb
+└── app_pt_BR.arb
+```
+
+User-facing strings must not be hardcoded throughout presentation code when they belong in localization resources.
+
+Domain values, enum-like states, database records, migration logic, export schema identifiers, and application decisions must use stable language-neutral identifiers. Translated strings are presentation only and must never become persistence keys or business logic inputs.
+
+The application should select the system locale by default and support an explicit user override.
+
+Layouts should use directional concepts such as start/end instead of assuming left/right wherever practical, keeping future RTL support possible without requiring a UI rewrite. RTL languages are not an initial release target.
+
 ## Portability
 
 User data must never depend on undocumented internal serialization as the only recovery path.

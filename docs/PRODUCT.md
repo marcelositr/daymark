@@ -59,6 +59,21 @@ The supported targets for the first development phase are:
 
 The domain and application layers must not depend on platform-specific APIs. Windows, macOS, and iOS are future targets, not current scope.
 
+## Languages and localization
+
+Daymark is multilingual by design, not as a later retrofit.
+
+The initial product languages are:
+
+- English;
+- Portuguese (Brazil).
+
+The application should follow the operating system locale by default while allowing the user to choose a language explicitly.
+
+English is the canonical localization source for interface messages and translation keys. Product behavior, domain rules, persistence values, and identifiers must never depend on translated display strings.
+
+The interface must avoid layout assumptions that make future right-to-left languages unnecessarily difficult to support. Hebrew, Arabic, and other RTL languages are future possibilities, not part of the initial release scope.
+
 ## Feature test
 
 Before adding a feature, ask:
