@@ -13,7 +13,7 @@ class AppShell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final AppLocalizations l10n = AppLocalizations.of(context)!;
+    final AppLocalizations l10n = AppLocalizations.of(context);
     final List<NavigationDestination> bottomDestinations = [
       NavigationDestination(icon: const Icon(Icons.today_outlined), label: l10n.today),
       NavigationDestination(icon: const Icon(Icons.calendar_month_outlined), label: l10n.monthly),
