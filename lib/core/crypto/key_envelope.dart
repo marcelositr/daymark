@@ -206,7 +206,12 @@ final class KeyEnvelopeService {
     }
 
     if (decoded is! Map<String, Object?> ||
-        !_hasExactKeys(decoded, const <String>{'format', 'version', 'kdf', 'wrap'}) ||
+        !_hasExactKeys(decoded, const <String>{
+          'format',
+          'version',
+          'kdf',
+          'wrap',
+        }) ||
         decoded['format'] != format ||
         decoded['version'] != version) {
       throw const KeyEnvelopeFormatException();
@@ -324,7 +329,8 @@ final class _ParsedEnvelope {
 }
 
 bool _hasExactKeys(Map<String, Object?> map, Set<String> expected) {
-  return map.length == expected.length && map.keys.toSet().containsAll(expected);
+  return map.length == expected.length &&
+      map.keys.toSet().containsAll(expected);
 }
 
 Uint8List _decodeBytes(String encoded) {

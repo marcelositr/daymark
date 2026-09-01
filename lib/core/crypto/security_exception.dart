@@ -13,8 +13,7 @@ final class KeyEnvelopeFormatException extends DaymarkSecurityException {
 }
 
 final class JournalUnlockException extends DaymarkSecurityException {
-  const JournalUnlockException()
-    : super('The journal could not be unlocked.');
+  const JournalUnlockException() : super('The journal could not be unlocked.');
 }
 
 final class EncryptedDatabaseUnavailableException

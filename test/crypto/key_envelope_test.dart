@@ -71,10 +71,7 @@ void main() {
       );
 
       await expectLater(
-        service.unwrap(
-          masterPassword: 'password',
-          encodedEnvelope: tampered,
-        ),
+        service.unwrap(masterPassword: 'password', encodedEnvelope: tampered),
         throwsA(isA<JournalUnlockException>()),
       );
     } finally {
@@ -129,29 +126,32 @@ void main() {
     }
   });
 
-  test('unreasonable Argon2 parameters are rejected before allocation', () async {
-    final JournalKeyMaterial material = JournalKeyMaterial.generate();
+  test(
+    'unreasonable Argon2 parameters are rejected before allocation',
+    () async {
+      final JournalKeyMaterial material = JournalKeyMaterial.generate();
 
-    try {
-      final String envelope = await service.wrap(
-        masterPassword: 'password',
-        keyMaterial: material,
-      );
-      final Map<String, Object?> root = _decodeEnvelope(envelope);
-      final Map<String, Object?> kdf = _section(root, 'kdf');
-      kdf['memoryKiB'] = Argon2Parameters.maxMemoryKiB + 1;
-
-      await expectLater(
-        service.unwrap(
+      try {
+        final String envelope = await service.wrap(
           masterPassword: 'password',
-          encodedEnvelope: jsonEncode(root),
-        ),
-        throwsA(isA<KeyEnvelopeFormatException>()),
-      );
-    } finally {
-      material.destroy();
-    }
-  });
+          keyMaterial: material,
+        );
+        final Map<String, Object?> root = _decodeEnvelope(envelope);
+        final Map<String, Object?> kdf = _section(root, 'kdf');
+        kdf['memoryKiB'] = Argon2Parameters.maxMemoryKiB + 1;
+
+        await expectLater(
+          service.unwrap(
+            masterPassword: 'password',
+            encodedEnvelope: jsonEncode(root),
+          ),
+          throwsA(isA<KeyEnvelopeFormatException>()),
+        );
+      } finally {
+        material.destroy();
+      }
+    },
+  );
 }
 
 Map<String, Object?> _decodeEnvelope(String encoded) {

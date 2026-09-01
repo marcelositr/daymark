@@ -62,9 +62,7 @@ final class JournalKeyMaterial {
     final Uint8List keyBytes = Uint8List.fromList(
       bytes.sublist(0, journalKeyLength),
     );
-    final Uint8List salt = Uint8List.fromList(
-      bytes.sublist(journalKeyLength),
-    );
+    final Uint8List salt = Uint8List.fromList(bytes.sublist(journalKeyLength));
 
     return JournalKeyMaterial(
       journalKey: SecretKeyData(
