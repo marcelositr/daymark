@@ -143,8 +143,10 @@ void main() {
     );
   });
 
-  test('Monthly calendar placements require an explicit calendar date', () async {
-    await database.customStatement('''
+  test(
+    'Monthly calendar placements require an explicit calendar date',
+    () async {
+      await database.customStatement('''
       INSERT INTO logs (id, kind, period_start, created_at)
       VALUES (
         '00000000-0000-7000-8000-000000000023',
@@ -152,7 +154,7 @@ void main() {
       )
     ''');
 
-    await database.customStatement('''
+      await database.customStatement('''
       INSERT INTO entries (
         id, entry_type, task_state, content, created_at, updated_at
       ) VALUES (
@@ -161,8 +163,8 @@ void main() {
       )
     ''');
 
-    expect(
-      () => database.customStatement('''
+      expect(
+        () => database.customStatement('''
         INSERT INTO entry_placements (
           entry_id,
           log_id,
@@ -179,10 +181,10 @@ void main() {
           NULL
         )
       '''),
-      throwsA(isA<SqliteException>()),
-    );
+        throwsA(isA<SqliteException>()),
+      );
 
-    await database.customStatement('''
+      await database.customStatement('''
       INSERT INTO entry_placements (
         entry_id,
         log_id,
@@ -199,7 +201,8 @@ void main() {
         '2026-09-15'
       )
     ''');
-  });
+    },
+  );
 
   test('migration lineage is a one-to-one chain edge', () async {
     for (final id in <String>[

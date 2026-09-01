@@ -1425,6 +1425,17 @@ class EntryPlacements extends Table
     requiredDuringInsert: false,
     $customConstraints: 'CHECK (monthly_section IN (\'calendar\', \'tasks\'))',
   );
+  static const VerificationMeta _monthlyCalendarDateMeta =
+      const VerificationMeta('monthlyCalendarDate');
+  late final GeneratedColumn<String> monthlyCalendarDate =
+      GeneratedColumn<String>(
+        'monthly_calendar_date',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+        $customConstraints: 'CHECK (monthly_calendar_date IS NULL OR length(monthly_calendar_date) = 10)',
+      );
   @override
   List<GeneratedColumn> get $columns => [
     entryId,
@@ -1432,6 +1443,7 @@ class EntryPlacements extends Table
     collectionId,
     ordinal,
     monthlySection,
+    monthlyCalendarDate,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -1485,6 +1497,15 @@ class EntryPlacements extends Table
         ),
       );
     }
+    if (data.containsKey('monthly_calendar_date')) {
+      context.handle(
+        _monthlyCalendarDateMeta,
+        monthlyCalendarDate.isAcceptableOrUnknown(
+          data['monthly_calendar_date']!,
+          _monthlyCalendarDateMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -1514,6 +1535,10 @@ class EntryPlacements extends Table
         DriftSqlType.string,
         data['${effectivePrefix}monthly_section'],
       ),
+      monthlyCalendarDate: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}monthly_calendar_date'],
+      ),
     );
   }
 
@@ -1526,6 +1551,7 @@ class EntryPlacements extends Table
   List<String> get customConstraints => const [
     'CHECK((log_id IS NOT NULL AND collection_id IS NULL)OR(log_id IS NULL AND collection_id IS NOT NULL))',
     'CHECK(collection_id IS NULL OR monthly_section IS NULL)',
+    'CHECK((monthly_section = \'calendar\' AND monthly_calendar_date IS NOT NULL)OR(monthly_section IS NULL AND monthly_calendar_date IS NULL)OR(monthly_section = \'tasks\' AND monthly_calendar_date IS NULL))',
   ];
   @override
   bool get dontWriteConstraints => true;
@@ -1537,12 +1563,14 @@ class EntryPlacement extends DataClass implements Insertable<EntryPlacement> {
   final String? collectionId;
   final int ordinal;
   final String? monthlySection;
+  final String? monthlyCalendarDate;
   const EntryPlacement({
     required this.entryId,
     this.logId,
     this.collectionId,
     required this.ordinal,
     this.monthlySection,
+    this.monthlyCalendarDate,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -1557,6 +1585,9 @@ class EntryPlacement extends DataClass implements Insertable<EntryPlacement> {
     map['ordinal'] = Variable<int>(ordinal);
     if (!nullToAbsent || monthlySection != null) {
       map['monthly_section'] = Variable<String>(monthlySection);
+    }
+    if (!nullToAbsent || monthlyCalendarDate != null) {
+      map['monthly_calendar_date'] = Variable<String>(monthlyCalendarDate);
     }
     return map;
   }
@@ -1574,6 +1605,9 @@ class EntryPlacement extends DataClass implements Insertable<EntryPlacement> {
       monthlySection: monthlySection == null && nullToAbsent
           ? const Value.absent()
           : Value(monthlySection),
+      monthlyCalendarDate: monthlyCalendarDate == null && nullToAbsent
+          ? const Value.absent()
+          : Value(monthlyCalendarDate),
     );
   }
 
@@ -1588,6 +1622,9 @@ class EntryPlacement extends DataClass implements Insertable<EntryPlacement> {
       collectionId: serializer.fromJson<String?>(json['collection_id']),
       ordinal: serializer.fromJson<int>(json['ordinal']),
       monthlySection: serializer.fromJson<String?>(json['monthly_section']),
+      monthlyCalendarDate: serializer.fromJson<String?>(
+        json['monthly_calendar_date'],
+      ),
     );
   }
   @override
@@ -1599,6 +1636,7 @@ class EntryPlacement extends DataClass implements Insertable<EntryPlacement> {
       'collection_id': serializer.toJson<String?>(collectionId),
       'ordinal': serializer.toJson<int>(ordinal),
       'monthly_section': serializer.toJson<String?>(monthlySection),
+      'monthly_calendar_date': serializer.toJson<String?>(monthlyCalendarDate),
     };
   }
 
@@ -1608,6 +1646,7 @@ class EntryPlacement extends DataClass implements Insertable<EntryPlacement> {
     Value<String?> collectionId = const Value.absent(),
     int? ordinal,
     Value<String?> monthlySection = const Value.absent(),
+    Value<String?> monthlyCalendarDate = const Value.absent(),
   }) => EntryPlacement(
     entryId: entryId ?? this.entryId,
     logId: logId.present ? logId.value : this.logId,
@@ -1616,6 +1655,9 @@ class EntryPlacement extends DataClass implements Insertable<EntryPlacement> {
     monthlySection: monthlySection.present
         ? monthlySection.value
         : this.monthlySection,
+    monthlyCalendarDate: monthlyCalendarDate.present
+        ? monthlyCalendarDate.value
+        : this.monthlyCalendarDate,
   );
   EntryPlacement copyWithCompanion(EntryPlacementsCompanion data) {
     return EntryPlacement(
@@ -1628,6 +1670,9 @@ class EntryPlacement extends DataClass implements Insertable<EntryPlacement> {
       monthlySection: data.monthlySection.present
           ? data.monthlySection.value
           : this.monthlySection,
+      monthlyCalendarDate: data.monthlyCalendarDate.present
+          ? data.monthlyCalendarDate.value
+          : this.monthlyCalendarDate,
     );
   }
 
@@ -1638,14 +1683,21 @@ class EntryPlacement extends DataClass implements Insertable<EntryPlacement> {
           ..write('logId: $logId, ')
           ..write('collectionId: $collectionId, ')
           ..write('ordinal: $ordinal, ')
-          ..write('monthlySection: $monthlySection')
+          ..write('monthlySection: $monthlySection, ')
+          ..write('monthlyCalendarDate: $monthlyCalendarDate')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode =>
-      Object.hash(entryId, logId, collectionId, ordinal, monthlySection);
+  int get hashCode => Object.hash(
+    entryId,
+    logId,
+    collectionId,
+    ordinal,
+    monthlySection,
+    monthlyCalendarDate,
+  );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -1654,7 +1706,8 @@ class EntryPlacement extends DataClass implements Insertable<EntryPlacement> {
           other.logId == this.logId &&
           other.collectionId == this.collectionId &&
           other.ordinal == this.ordinal &&
-          other.monthlySection == this.monthlySection);
+          other.monthlySection == this.monthlySection &&
+          other.monthlyCalendarDate == this.monthlyCalendarDate);
 }
 
 class EntryPlacementsCompanion extends UpdateCompanion<EntryPlacement> {
@@ -1663,6 +1716,7 @@ class EntryPlacementsCompanion extends UpdateCompanion<EntryPlacement> {
   final Value<String?> collectionId;
   final Value<int> ordinal;
   final Value<String?> monthlySection;
+  final Value<String?> monthlyCalendarDate;
   final Value<int> rowid;
   const EntryPlacementsCompanion({
     this.entryId = const Value.absent(),
@@ -1670,6 +1724,7 @@ class EntryPlacementsCompanion extends UpdateCompanion<EntryPlacement> {
     this.collectionId = const Value.absent(),
     this.ordinal = const Value.absent(),
     this.monthlySection = const Value.absent(),
+    this.monthlyCalendarDate = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   EntryPlacementsCompanion.insert({
@@ -1678,6 +1733,7 @@ class EntryPlacementsCompanion extends UpdateCompanion<EntryPlacement> {
     this.collectionId = const Value.absent(),
     required int ordinal,
     this.monthlySection = const Value.absent(),
+    this.monthlyCalendarDate = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : entryId = Value(entryId),
        ordinal = Value(ordinal);
@@ -1687,6 +1743,7 @@ class EntryPlacementsCompanion extends UpdateCompanion<EntryPlacement> {
     Expression<String>? collectionId,
     Expression<int>? ordinal,
     Expression<String>? monthlySection,
+    Expression<String>? monthlyCalendarDate,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -1695,6 +1752,8 @@ class EntryPlacementsCompanion extends UpdateCompanion<EntryPlacement> {
       if (collectionId != null) 'collection_id': collectionId,
       if (ordinal != null) 'ordinal': ordinal,
       if (monthlySection != null) 'monthly_section': monthlySection,
+      if (monthlyCalendarDate != null)
+        'monthly_calendar_date': monthlyCalendarDate,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -1705,6 +1764,7 @@ class EntryPlacementsCompanion extends UpdateCompanion<EntryPlacement> {
     Value<String?>? collectionId,
     Value<int>? ordinal,
     Value<String?>? monthlySection,
+    Value<String?>? monthlyCalendarDate,
     Value<int>? rowid,
   }) {
     return EntryPlacementsCompanion(
@@ -1713,6 +1773,7 @@ class EntryPlacementsCompanion extends UpdateCompanion<EntryPlacement> {
       collectionId: collectionId ?? this.collectionId,
       ordinal: ordinal ?? this.ordinal,
       monthlySection: monthlySection ?? this.monthlySection,
+      monthlyCalendarDate: monthlyCalendarDate ?? this.monthlyCalendarDate,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -1735,6 +1796,11 @@ class EntryPlacementsCompanion extends UpdateCompanion<EntryPlacement> {
     if (monthlySection.present) {
       map['monthly_section'] = Variable<String>(monthlySection.value);
     }
+    if (monthlyCalendarDate.present) {
+      map['monthly_calendar_date'] = Variable<String>(
+        monthlyCalendarDate.value,
+      );
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -1749,6 +1815,7 @@ class EntryPlacementsCompanion extends UpdateCompanion<EntryPlacement> {
           ..write('collectionId: $collectionId, ')
           ..write('ordinal: $ordinal, ')
           ..write('monthlySection: $monthlySection, ')
+          ..write('monthlyCalendarDate: $monthlyCalendarDate, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -5138,6 +5205,7 @@ typedef $EntryPlacementsCreateCompanionBuilder =
       Value<String?> collectionId,
       required int ordinal,
       Value<String?> monthlySection,
+      Value<String?> monthlyCalendarDate,
       Value<int> rowid,
     });
 typedef $EntryPlacementsUpdateCompanionBuilder =
@@ -5147,6 +5215,7 @@ typedef $EntryPlacementsUpdateCompanionBuilder =
       Value<String?> collectionId,
       Value<int> ordinal,
       Value<String?> monthlySection,
+      Value<String?> monthlyCalendarDate,
       Value<int> rowid,
     });
 
@@ -5222,6 +5291,11 @@ class $EntryPlacementsFilterComposer
 
   ColumnFilters<String> get monthlySection => $composableBuilder(
     column: $table.monthlySection,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get monthlyCalendarDate => $composableBuilder(
+    column: $table.monthlyCalendarDate,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -5314,6 +5388,11 @@ class $EntryPlacementsOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get monthlyCalendarDate => $composableBuilder(
+    column: $table.monthlyCalendarDate,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   $EntriesOrderingComposer get entryId {
     final $EntriesOrderingComposer composer = $composerBuilder(
       composer: this,
@@ -5398,6 +5477,11 @@ class $EntryPlacementsAnnotationComposer
 
   GeneratedColumn<String> get monthlySection => $composableBuilder(
     column: $table.monthlySection,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get monthlyCalendarDate => $composableBuilder(
+    column: $table.monthlyCalendarDate,
     builder: (column) => column,
   );
 
@@ -5504,6 +5588,7 @@ class $EntryPlacementsTableManager
                 Value<String?> collectionId = const Value.absent(),
                 Value<int> ordinal = const Value.absent(),
                 Value<String?> monthlySection = const Value.absent(),
+                Value<String?> monthlyCalendarDate = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => EntryPlacementsCompanion(
                 entryId: entryId,
@@ -5511,6 +5596,7 @@ class $EntryPlacementsTableManager
                 collectionId: collectionId,
                 ordinal: ordinal,
                 monthlySection: monthlySection,
+                monthlyCalendarDate: monthlyCalendarDate,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -5520,6 +5606,7 @@ class $EntryPlacementsTableManager
                 Value<String?> collectionId = const Value.absent(),
                 required int ordinal,
                 Value<String?> monthlySection = const Value.absent(),
+                Value<String?> monthlyCalendarDate = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => EntryPlacementsCompanion.insert(
                 entryId: entryId,
@@ -5527,6 +5614,7 @@ class $EntryPlacementsTableManager
                 collectionId: collectionId,
                 ordinal: ordinal,
                 monthlySection: monthlySection,
+                monthlyCalendarDate: monthlyCalendarDate,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
