@@ -69,7 +69,16 @@ abstract final class EncryptedDaymarkDatabase {
         );
       }
 
-      return DaymarkDatabase(NativeDatabase.opened(rawDatabase));
+      final DaymarkDatabase database = DaymarkDatabase(
+        NativeDatabase.opened(rawDatabase),
+      );
+
+      // Force Drift to run its open lifecycle before returning. In particular,
+      // createNew must finish schema creation instead of returning a database
+      // whose onCreate callback has not executed yet.
+      await database.customSelect('SELECT 1').get();
+
+      return database;
     } on DaymarkSecurityException {
       rawDatabase.close();
       rethrow;
