@@ -28,8 +28,10 @@ Permanent blanket ignores are not acceptable.
 
 - Lockfiles are versioned.
 - Dependency updates are reviewed through pull requests.
+- Stable published packages are preferred over mutable Git dependencies.
 - GitHub Actions should be pinned to immutable commit SHAs when introduced.
 - CI must include static analysis and tests once the application scaffold exists.
+- Dependency/security review must be part of the merge gate once CI exists.
 - Secrets must never be committed to the repository.
 - Production code must not rely on dependencies fetched from mutable Git branches.
 
@@ -47,39 +49,55 @@ The expected protection goal is that possession of the storage medium alone must
 
 User-requested plaintext export is outside this guarantee because exporting is an explicit decision to create an unencrypted copy.
 
+Daymark does not claim to protect an already-unlocked device against a fully privileged attacker executing arbitrary code in the user's session. The at-rest threat model remains meaningful even though runtime compromise is a different class of problem.
+
 ## Data-at-rest baseline
 
 Daymark must assume that journal entries may contain highly sensitive information, including credentials, access instructions, recovery material, private notes, and references to physical keys or locations.
 
 Encryption at rest is therefore a baseline requirement rather than an optional feature.
 
-The persistence design must use a mature, reviewed full-database encryption solution compatible with the application's SQLite architecture. SQLCipher is the expected implementation direction unless technical review identifies a better maintained equivalent before the persistence layer is finalized.
+The current persistence direction is Drift with `package:sqlite3` 3.x configured to bundle SQLite3MultipleCiphers through native build hooks.
 
-The database encryption key must be generated from cryptographically secure random material. User authentication material must protect access to that key rather than being stored or used as an unprotected database secret.
+This supersedes the earlier SQLCipher-first assumption because the current Drift ecosystem recommends the native encrypted executor with SQLite3MultipleCiphers for new applications and no longer requires the obsolete `sqlcipher_flutter_libs` path.
 
-Platform keystores or secret services may be used to improve unlocking convenience, but the security model must not silently reduce journal protection to the security of a desktop keyring alone.
+Daymark must verify during database initialization that the encrypted SQLite implementation is actually present. If cipher support is missing or misconfigured, the application must fail safely rather than opening or creating a plaintext journal database.
+
+SQLite3MultipleCiphers currently uses authenticated ChaCha20-Poly1305 as its recommended/default cipher. Daymark should begin with the current non-legacy authenticated mode and may change schemes only after a documented security and migration review.
+
+The database encryption key must be generated from cryptographically secure random material. User authentication material protects access to that key rather than serving as an unreviewed raw database password.
 
 ## Master password and key hierarchy
 
 A master password is required when a journal is created.
 
-The master password is not used directly as the database encryption key. Daymark generates a cryptographically random journal data-encryption key and protects access to that key using a password-derived key-encryption key.
+The master password is not used directly as the database encryption key.
 
-Password-based key derivation should use a mature memory-hard KDF, with Argon2id as the preferred direction unless platform validation identifies a better established equivalent. Salt and KDF parameters are stored as non-secret metadata and must be versioned so parameters can be strengthened over time.
+Daymark generates cryptographically random journal key material and protects access to it using a password-derived key-encryption key.
+
+Password-based key derivation uses a mature memory-hard KDF. Argon2id is the current baseline through the published Dart `cryptography` package unless implementation benchmarking or security review identifies a stronger practical reason to change.
+
+Salt and KDF parameters are non-secret metadata and must be versioned so parameters can be strengthened over time.
 
 The master password itself is never stored.
 
 Changing the master password should re-protect the journal key rather than require semantic journal data to be rewritten merely because authentication material changed.
 
+The focused security spike in `PROJECT.md` must define and test the exact key-envelope format, authenticated-encryption algorithm, nonce handling, raw database-key/salt handling, and Argon2id parameters before the security layer is considered stable.
+
 ## Device-assisted unlock
 
 Device-specific unlock mechanisms are convenience layers, not replacements for the portable master-password security model.
 
-On supported Android devices, Daymark may protect a device-local wrapped journal key using Android Keystore and require strong biometric or device-credential authentication before that key can be used.
+The current cross-platform integration direction is `flutter_secure_storage` for device-local wrapped material.
 
-On Linux, a compatible secret service or keyring may be used for optional convenience, but enabling it must not make the journal unrecoverable without that desktop environment or silently store the master password.
+On supported Android devices, Daymark may protect device-local unlock material using Android secure storage/Keystore mechanisms and require strong biometric or device-credential authentication before that material can be used.
 
-The master password remains required for operations such as restoring the journal on a new device when device-bound key material is unavailable.
+On Linux, a compatible secret service or keyring may be used for optional convenience. A locked, missing, or unavailable keyring must be treated as a recoverable device-assist failure, not as loss of the journal itself.
+
+Device-assisted unlock must never silently store the master password in plaintext.
+
+The master password remains sufficient for portable unlock/restore when device-bound key material is unavailable.
 
 ## Recovery
 
@@ -100,6 +118,8 @@ The security default is automatic lock after five minutes without journal intera
 An operating-system session lock, device lock, or equivalent protected state should lock Daymark immediately when the platform exposes a reliable signal.
 
 Moving the app to the background starts or continues the lock timeout rather than implicitly exposing decrypted content indefinitely.
+
+When the journal is locked, application components must release or invalidate decrypted journal-key material as far as the platform/runtime design reasonably permits and must not keep decrypted entry caches merely for convenience.
 
 Platform-specific presentation layers should prevent sensitive journal contents from being unnecessarily exposed through operating-system surfaces such as recent-app previews or notification text when the platform allows this protection.
 
@@ -123,17 +143,27 @@ Copying or relocating Daymark's own database or backup files to removable storag
 
 User-requested exports are an explicit security boundary. Human-readable exports such as Markdown or JSON may be plaintext and must clearly communicate that the exported file is no longer protected by the journal's encrypted store unless an encrypted export mode is explicitly selected.
 
+## Search security
+
+Search must not create an unencrypted shadow index of journal content.
+
+If full-text indexing is used, the index must live within the same encrypted database/security boundary or use an equivalently protected design.
+
+Search convenience is never a justification for persisting plaintext journal terms outside the encrypted store.
+
 ## Backup security
 
 The initial product must support manual full encrypted backup and restore. Automatic scheduling and retention policies can be added later.
 
 A Daymark backup must be portable across supported devices and must not depend solely on a device-bound Android Keystore key, Linux keyring entry, filesystem path, or machine identity.
 
-The backup format must be versioned and self-describing enough to identify the Daymark backup format, application/schema compatibility, and integrity information before destructive restore work begins.
+The backup format must be versioned and self-describing enough to identify the Daymark backup format, application/schema compatibility, cryptographic parameters, and integrity information before destructive restore work begins.
 
-Backup payloads remain encrypted. The current master password may protect a portable backup key for the initial implementation. If a master password is changed, existing external backups remain protected by the credentials with which they were created; Daymark should recommend creating a fresh backup after a password change.
+Backup payloads remain encrypted and authenticated.
 
-Restore must validate integrity and compatibility before replacing existing journal data.
+Restore must validate authentication/integrity, format compatibility, and schema compatibility before replacing existing journal data. Restore should be designed as an atomic or rollback-safe operation so a failed restore does not destroy a working journal.
+
+If a master password is changed, existing external backups remain protected by the credentials with which they were created; Daymark should recommend creating a fresh backup after a password change.
 
 Plaintext Markdown or JSON export is not a backup mechanism and must remain clearly distinguished from encrypted Daymark backup.
 
@@ -145,6 +175,10 @@ Cryptographic erasure is not a replacement for appropriate full-device sanitizat
 
 ## Cryptographic implementation rule
 
-Daymark must not implement custom cryptographic primitives or invent its own encryption format when established, reviewed libraries and formats are available.
+Daymark must not implement custom cryptographic primitives or casually invent its own unauthenticated encryption format when established reviewed libraries and constructions are available.
 
-The final key derivation, key wrapping, unlock, recovery, backup encryption, and platform key-storage design must be documented and threat-modeled before implementation is considered stable.
+Application-level cryptography should use reviewed published implementations such as the selected `cryptography` package and the encrypted database engine.
+
+The final key derivation, key wrapping, unlock, recovery, backup encryption, secure-storage integration, and platform handling design must be documented and threat-modeled before implementation is considered stable.
+
+Security-sensitive code requires negative-path tests, including wrong password, corrupted key envelope, corrupted backup, missing encrypted-database support, unavailable keyring/Keystore assistance, incompatible schema, and interrupted restore behavior.
