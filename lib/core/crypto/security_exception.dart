@@ -8,8 +8,7 @@ sealed class DaymarkSecurityException implements Exception {
 }
 
 final class KeyEnvelopeFormatException extends DaymarkSecurityException {
-  const KeyEnvelopeFormatException([String message = 'Invalid key envelope.'])
-    : super(message);
+  const KeyEnvelopeFormatException([super.message = 'Invalid key envelope.']);
 }
 
 final class JournalUnlockException extends DaymarkSecurityException {
@@ -23,5 +22,5 @@ final class EncryptedDatabaseUnavailableException
 }
 
 final class JournalDatabaseOpenException extends DaymarkSecurityException {
-  const JournalDatabaseOpenException(String message) : super(message);
+  const JournalDatabaseOpenException(super.message);
 }
