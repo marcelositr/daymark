@@ -76,7 +76,7 @@ The initial model revolves around:
 
 Entry type, task state, signifiers, storage location, Collection references, and migration lineage are separate concerns.
 
-The schema must follow domain behavior rather than mirror screens or rendered Bullet symbols.
+The schema must follow domain behavior rather than mirror screens or rendered Bullet symbols. The authoritative relational contract is defined in `docs/DATA_MODEL.md`.
 
 ## UI foundation
 
@@ -128,9 +128,11 @@ Route names and persisted domain values must remain language-neutral.
 
 ## Persistence
 
-Drift 2.34.x is the typed relational persistence layer.
+Drift 2.34.x is the typed relational persistence layer. The schema is declared under `lib/core/database/`, with exported schema snapshots versioned under `drift_schemas/`.
 
 `package:sqlite3` 3.x provides the native SQLite interface and build-hook integration.
+
+One encrypted database file represents one journal. Daymark does not multiplex independent journals inside a shared SQLite database. Future multiple-journal support should normally use separate encrypted files and independent journal keys so backup, deletion, transfer, and cryptographic isolation remain naturally journal-scoped.
 
 Encrypted native storage uses SQLite3MultipleCiphers selected through the `sqlite3` build hook rather than the earlier SQLCipher-first assumption:
 
@@ -149,6 +151,8 @@ SQLite3MultipleCiphers currently uses ChaCha20-Poly1305 as its recommended/defau
 
 The database receives random raw journal key material. The master password must never be passed directly to SQLite3MultipleCiphers as the database passphrase.
 
+Password KDF parameters, salts, wrapped journal-key material, recovery metadata, and device-assisted unlock handles are deliberately outside the encrypted Drift schema. They are required before the database can be opened and therefore belong to the versioned key-envelope design owned by the security layer.
+
 Database migrations must be:
 
 - explicit;
@@ -158,6 +162,8 @@ Database migrations must be:
 - safe against partial failure.
 
 Destructive schema changes require an explicit data migration strategy.
+
+The initial schema starts at version 1. Drift's exported-schema and `make-migrations` tooling are the normal migration path. Unreleased schema v1 may be regenerated while the project remains pre-release; once a prerelease containing user data is published, later supported builds must provide tested upgrade paths for published schemas rather than silently resetting data.
 
 Stable identifiers must be used for persisted entries and relationships. UUID v7 is the current identifier direction because it is globally unique and time-orderable without making database row numbers part of the domain contract.
 
@@ -259,17 +265,20 @@ Use Flutter's standard formatting and analysis tools.
 
 The scaffold enables strict analyzer behavior for casts, inference, and raw types, with `flutter_lints` as the baseline rather than a large third-party lint profile.
 
-The permanent CI workflow in `.github/workflows/ci.yml` currently gates:
+The permanent CI workflow in `.github/workflows/ci.yml` gates:
 
 1. dependency resolution from the committed lockfile with lockfile enforcement;
-2. formatting;
-3. static analysis;
-4. unit/widget tests;
-5. Linux debug build;
-6. Android debug APK build;
-7. dependency/security review for pull requests.
+2. localization generation;
+3. Drift code generation;
+4. Drift schema-snapshot freshness through `make-migrations` plus a clean generated-artifact diff;
+5. formatting;
+6. static analysis;
+7. unit, widget, and schema-invariant tests;
+8. Linux debug build;
+9. Android debug APK build;
+10. dependency/security review for pull requests.
 
-Database migration fixture tests become an additional required gate as soon as a persistent schema exists. CI requirements should grow with real architecture rather than pretending nonexistent migrations can already be tested.
+Future schema versions must add representative migration/data-preservation tests while keeping the existing `quality` check name stable for branch protection.
 
 ## Testing strategy
 
@@ -279,6 +288,8 @@ Use Flutter/Dart's standard test infrastructure first:
 - `integration_test` for end-to-end platform flows;
 - Drift migration/schema tests with real fixtures;
 - in-memory or temporary encrypted databases for repository tests where appropriate.
+
+The initial schema has direct invariant tests against an in-memory SQLite database. Future versions must test both target schema shape and representative data preservation across supported upgrades.
 
 Security-sensitive flows require tests for failure as well as success, including wrong password, corrupted backup, unavailable secure storage, incompatible schema, and missing encrypted-database support.
 
