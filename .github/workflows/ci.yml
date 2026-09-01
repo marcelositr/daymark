@@ -36,6 +36,15 @@ jobs:
       - name: Generate localization sources
         run: flutter gen-l10n
 
+      - name: Generate Drift sources
+        run: dart run build_runner build
+
+      - name: Verify Drift migration snapshot
+        run: dart run drift_dev make-migrations
+
+      - name: Reject stale Drift generated artifacts
+        run: git diff --exit-code -- lib/core/database/daymark_database.g.dart drift_schemas
+
       - name: Check formatting
         run: dart format --output=none --set-exit-if-changed lib test
 
