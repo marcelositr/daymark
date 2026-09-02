@@ -188,7 +188,12 @@ final class EncryptedBackupService {
         integrityKey.destroy();
         integritySalt.fillRange(0, integritySalt.length, 0);
         if (!outputClosed) {
-          await output.close();
+          try {
+            await output.close();
+          } on FileSystemException {
+            // Preserve the primary backup error. The temporary container is
+            // deleted below on a best-effort basis.
+          }
         }
       }
     } on DaymarkSecurityException {
@@ -196,8 +201,8 @@ final class EncryptedBackupService {
     } on FileSystemException {
       throw const BackupWriteException('Could not create the backup file.');
     } finally {
-      _deleteIfExists(snapshotFile);
-      _deleteIfExists(temporaryBackup);
+      _deleteBestEffort(snapshotFile);
+      _deleteBestEffort(temporaryBackup);
     }
   }
 
@@ -256,8 +261,14 @@ final class EncryptedBackupService {
         destinationJournalFile: destinationJournalFile,
         destinationKeyEnvelopeFile: destinationKeyEnvelopeFile,
       );
-      _deleteIfExists(restorePaths.stagedDatabase);
-      _deleteIfExists(restorePaths.stagedEnvelope);
+      try {
+        await _deleteRequired(restorePaths.stagedDatabase);
+        await _deleteRequired(restorePaths.stagedEnvelope);
+      } on FileSystemException {
+        throw const BackupRestoreException(
+          'Could not prepare restore staging files.',
+        );
+      }
 
       await _extractDatabase(
         backupFile: backupFile,
@@ -284,6 +295,10 @@ final class EncryptedBackupService {
       }
 
       await _commitRestore(restorePaths);
+    } on FileSystemException {
+      throw const BackupRestoreException(
+        'The backup could not be restored to the requested destination.',
+      );
     } finally {
       keyMaterial?.destroy();
     }
@@ -304,8 +319,14 @@ final class EncryptedBackupService {
     );
 
     if (!paths.transactionMarker.existsSync()) {
-      _deleteIfExists(paths.stagedDatabase);
-      _deleteIfExists(paths.stagedEnvelope);
+      try {
+        await _deleteRequired(paths.stagedDatabase);
+        await _deleteRequired(paths.stagedEnvelope);
+      } on FileSystemException {
+        throw const BackupRestoreException(
+          'Stale restore staging files could not be removed safely.',
+        );
+      }
 
       final bool destinationPairExists =
           destinationJournalFile.existsSync() &&
@@ -320,8 +341,8 @@ final class EncryptedBackupService {
         );
       }
       if (destinationPairExists) {
-        _deleteIfExists(paths.rollbackDatabase);
-        _deleteIfExists(paths.rollbackEnvelope);
+        _deleteBestEffort(paths.rollbackDatabase);
+        _deleteBestEffort(paths.rollbackEnvelope);
       }
       return;
     }
@@ -348,15 +369,17 @@ final class EncryptedBackupService {
           );
         }
       } else {
-        _deleteIfExists(destinationJournalFile);
-        _deleteIfExists(destinationKeyEnvelopeFile);
+        await _deleteRequired(destinationJournalFile);
+        await _deleteRequired(destinationKeyEnvelopeFile);
       }
 
-      _deleteIfExists(paths.stagedDatabase);
-      _deleteIfExists(paths.stagedEnvelope);
-      _deleteIfExists(paths.rollbackDatabase);
-      _deleteIfExists(paths.rollbackEnvelope);
+      await _deleteRequired(paths.stagedDatabase);
+      await _deleteRequired(paths.stagedEnvelope);
+      await _deleteRequired(paths.rollbackDatabase);
+      await _deleteRequired(paths.rollbackEnvelope);
       await paths.transactionMarker.delete();
+    } on BackupRestoreException {
+      rethrow;
     } on FileSystemException {
       throw const BackupRestoreException(
         'Interrupted restore recovery could not be completed safely.',
@@ -620,8 +643,8 @@ final class EncryptedBackupService {
 
       // Old data is still encrypted. Cleanup is best-effort after commit so a
       // cleanup failure cannot turn a completed restore back into data loss.
-      _deleteIfExists(paths.rollbackDatabase);
-      _deleteIfExists(paths.rollbackEnvelope);
+      _deleteBestEffort(paths.rollbackDatabase);
+      _deleteBestEffort(paths.rollbackEnvelope);
     } on Object {
       try {
         await recoverInterruptedRestore(
@@ -706,9 +729,7 @@ final class EncryptedBackupService {
     if (!rollbackFile.existsSync()) {
       return;
     }
-    if (destinationFile.existsSync()) {
-      await destinationFile.delete();
-    }
+    await _deleteRequired(destinationFile);
     await rollbackFile.rename(destinationFile.path);
   }
 
@@ -802,27 +823,6 @@ final class _BackupManifest {
     required this.integritySalt,
   });
 
-  final int createdAtUtcMicros;
-  final int databaseSchemaVersion;
-  final Uint8List integritySalt;
-
-  Map<String, Object> toJson() {
-    return <String, Object>{
-      'format': EncryptedBackupService.format,
-      'version': EncryptedBackupService.version,
-      'createdAtUtcMicros': createdAtUtcMicros,
-      'databaseSchemaVersion': databaseSchemaVersion,
-      'databaseCipher': EncryptedBackupService._databaseCipher,
-      'keyEnvelopeFormat': KeyEnvelopeService.format,
-      'keyEnvelopeVersion': KeyEnvelopeService.version,
-      'integrity': <String, Object>{
-        'kdf': EncryptedBackupService._integrityKdfName,
-        'mac': EncryptedBackupService._integrityMacName,
-        'salt': base64Url.encode(integritySalt),
-      },
-    };
-  }
-
   factory _BackupManifest.parse(String encoded) {
     final Object? decoded;
     try {
@@ -883,6 +883,27 @@ final class _BackupManifest {
       integritySalt: integritySalt,
     );
   }
+
+  final int createdAtUtcMicros;
+  final int databaseSchemaVersion;
+  final Uint8List integritySalt;
+
+  Map<String, Object> toJson() {
+    return <String, Object>{
+      'format': EncryptedBackupService.format,
+      'version': EncryptedBackupService.version,
+      'createdAtUtcMicros': createdAtUtcMicros,
+      'databaseSchemaVersion': databaseSchemaVersion,
+      'databaseCipher': EncryptedBackupService._databaseCipher,
+      'keyEnvelopeFormat': KeyEnvelopeService.format,
+      'keyEnvelopeVersion': KeyEnvelopeService.version,
+      'integrity': <String, Object>{
+        'kdf': EncryptedBackupService._integrityKdfName,
+        'mac': EncryptedBackupService._integrityMacName,
+        'salt': base64Url.encode(integritySalt),
+      },
+    };
+  }
 }
 
 final class _RestoreTransaction {
@@ -923,6 +944,23 @@ bool _hasExactKeys(Map<String, Object?> map, Set<String> expected) {
       map.keys.toSet().containsAll(expected);
 }
 
+Future<void> _deleteRequired(File file) async {
+  if (file.existsSync()) {
+    await file.delete();
+  }
+}
+
+void _deleteBestEffort(File file) {
+  try {
+    if (file.existsSync()) {
+      file.deleteSync();
+    }
+  } on FileSystemException {
+    // Temporary/rollback files contain only encrypted material. Cleanup after a
+    // committed operation is best-effort and must not destroy a valid journal.
+  }
+}
+
 Uint8List _secureRandomBytes(int length) {
   final Random random = Random.secure();
   return Uint8List.fromList(
@@ -935,15 +973,4 @@ String _randomToken() {
   final String token = base64Url.encode(bytes).replaceAll('=', '');
   bytes.fillRange(0, bytes.length, 0);
   return token;
-}
-
-void _deleteIfExists(File file) {
-  try {
-    if (file.existsSync()) {
-      file.deleteSync();
-    }
-  } on FileSystemException {
-    // Temporary/rollback files contain only encrypted material. Cleanup after a
-    // committed operation is best-effort and must not destroy a valid journal.
-  }
 }
