@@ -6,16 +6,16 @@ Every agent must read it before meaningful work and update it before handing wor
 
 ## Current state
 
-- Phase: pre-alpha, first usable journal vertical slice under review
+- Phase: pre-alpha, first usable journal vertical slice ready for final merge review
 - Public release status: no release yet
 - Intended first public release stage: `v1.0.0-alpha.1`
 - Integration branch: `main`
 - Current working branch: `feat/rebuild-unlock-daily-log`
 - Current pull request: PR #13, `feat(journal): rebuild unlock and Daily Log flow`
-- PR #13 status: Draft until documentation, full CI, manual Linux validation, and user review are complete
-- Superseded work: PR #11 remains unmerged and is retained only as an audit/reference branch until PR #13 is proven
+- PR #13 status: Ready for review; implementation CI, 63-test local suite, Linux debug build, manual Linux lifecycle/persistence validation, and full non-Draft CI #155 have passed; final CI after workflow-documentation commits and explicit user merge approval remain
+- Superseded work: PR #11 remains unmerged and is retained only as an audit/reference branch until PR #13 is merged or deliberately abandoned
 - Merge policy: agents never merge without explicit user approval
-- Current focus: encrypted create/unlock/manual lock -> Today/Daily Log -> Rapid Logging -> persistence across relock/restart
+- Current focus: land the staged AI/human validation workflow documentation, confirm the resulting full CI, then request the explicit merge decision
 - Initial runtime targets: Linux and Android
 - Pinned toolchain: Flutter 3.47.2 / Dart 3.13.2
 - Initial production Argon2id baseline: **19 MiB / 2 iterations / p=1 / 32-byte output**
@@ -30,6 +30,9 @@ Every agent must read it before meaningful work and update it before handing wor
 - The user makes the merge decision. AI agents do not merge implicitly or through auto-merge.
 - Keep `PROJECT.md` current before handing work off.
 - Keep `CHANGELOG.md` release-facing rather than using it as a development scratchpad.
+- Follow the staged engineering/validation ladder in `AGENTS.md` and `docs/WORKFLOW.md`: trustworthy baseline -> audit when needed -> Draft CI -> layer-correct tests -> progressive local validation -> documentation alignment -> full non-Draft CI -> explicit merge approval.
+- When local-only evidence is required, agents provide complete safe command blocks with stop conditions and interpret the returned output rather than asking the user to improvise debugging.
+- When GitHub/API data is delayed, missing, or contradictory, do not guess state; continue independent work or stop at the exact blocked boundary and request the smallest missing reference.
 - Do not weaken security or data-integrity behavior merely to make a build or test pass.
 - Do not add speculative framework layers when a focused concrete boundary is sufficient.
 - Diagnose CI/test failures at their source instead of treating a green check as proof of architecture quality.
@@ -171,11 +174,15 @@ Implemented on `feat/rebuild-unlock-daily-log`:
 - [x] widget test for Today uses an in-memory presentation boundary instead of real filesystem/cryptographic I/O
 - [x] real session test proves Daily Log entries survive lock -> unlock
 - [x] real session test proves manual lock waits for an active journal operation
-- [x] Draft CI generation, migration snapshot, stale-artifact check, formatting, and analyzer passed on the implementation before documentation alignment
-- [ ] final Draft CI after documentation alignment
-- [ ] full non-Draft CI (`quality`, Linux build, Android build, dependency review, `merge-gate`)
-- [ ] manual Linux create/capture/lock/unlock/restart validation
-- [ ] user review / merge decision
+- [x] Draft CI generation, migration snapshot, stale-artifact check, formatting, and analyzer passed
+- [x] local complete suite passed with 63 tests, including the Today widget regression without timeout
+- [x] local Linux debug build passed
+- [x] manual Linux create/capture/lock/wrong-password/unlock/restart persistence flow passed without the false save-failure message
+- [x] full non-Draft CI #155 passed `quality`, Linux build, Android build, dependency review, and `merge-gate`
+- [x] user functional review passed
+- [x] staged AI/human engineering workflow codified in `AGENTS.md` and `docs/WORKFLOW.md`
+- [ ] final full CI after the workflow-documentation commits
+- [ ] explicit user merge approval
 
 Explicitly outside PR #13:
 
@@ -188,21 +195,22 @@ Explicitly outside PR #13:
 
 ## Validation policy for PR #13
 
-Before merge consideration:
+The implementation gates have been satisfied. Final merge eligibility now requires:
 
-1. Draft `dev-check` must be green after final documentation changes.
-2. PR must be marked ready only after the Draft checks are clean.
-3. Full CI must pass tests, Linux build, Android build, dependency review, and `merge-gate`.
-4. The Today widget regression test must complete normally and must not perform real filesystem/Argon2/SQLite work inside `testWidgets`.
-5. Manual Linux validation must use isolated test data and verify:
-   - empty password rejected;
-   - journal creation succeeds with a non-empty password;
-   - Task, Event, and Note capture do not show a false save-failure message;
-   - manual lock succeeds;
-   - wrong password fails generically;
-   - correct password unlocks;
-   - entries remain after relock and application restart.
-6. Merge remains an explicit user decision.
+1. the full non-Draft CI triggered by the final workflow/documentation commits must pass, including `merge-gate`;
+2. no new implementation or documentation inconsistency may be introduced while resolving that CI;
+3. merge remains an explicit user decision.
+
+The validated manual Linux flow covered:
+
+- empty password rejected;
+- journal creation with a non-empty password;
+- Task, Event, and Note capture without a false save-failure message;
+- manual lock;
+- generic wrong-password failure;
+- correct-password unlock;
+- persistence across relock and application restart;
+- disappearance of the previous untranslated Portuguese warning.
 
 ## Alpha milestone
 
@@ -278,3 +286,6 @@ Do not start these until PR #13 is merged or deliberately abandoned.
 - Merged tiered CI validation through PR #12 and verified the live `merge-gate` ruleset requirement.
 - Audited PR #11 after repeated CI/manual-test inconsistencies; isolated its Today widget-test timeout and chose not to merge the branch.
 - Created PR #13 from clean `main` to rebuild encrypted access + Today/Daily Log with stable routing, serialized session operations, explicit password validation, date rollover, and layer-correct tests.
+- Validated PR #13 locally with reproducible generation, formatter/analyzer, 63 passing tests, Linux debug build, and the real create/capture/lock/unlock/restart flow.
+- Passed full non-Draft CI #155, including Linux and Android builds, dependency review, and the required `merge-gate`.
+- Promoted the successful PR #13 development process into the permanent staged engineering workflow for future human and AI contributors.
