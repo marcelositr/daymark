@@ -38,6 +38,8 @@ void main() {
     expect(dataSource.entries, hasLength(1));
     expect(dataSource.entries.single.type, JournalEntryType.task);
     expect(dataSource.entries.single.taskState, JournalTaskState.open);
+
+    await tester.pumpWidget(const SizedBox.shrink());
   });
 }
 
