@@ -6,17 +6,17 @@ Every agent must read it before meaningful work and update it before handing wor
 
 ## Current state
 
-- Phase: pre-alpha, automatic journal-lock lifecycle in development
+- Phase: pre-alpha, automatic journal-lock lifecycle ready for full merge validation
 - Public release status: no release yet
 - Intended first public release stage: `v1.0.0-alpha.1`
 - Integration branch: `main`
 - Current `main` baseline: PR #13 merged as `d9e2a5e334ce13f2efcdf99a43ac677c661eaa6d`
 - Current working branch: `feat/automatic-lock-lifecycle`
 - Current pull request: PR #14, `feat(session): add automatic inactivity lock`
-- PR #14 status: Draft; implementation, focused local widget tests, and Draft CI #171 have passed; documentation alignment, progressive full validation, non-Draft CI, and explicit user merge approval remain
+- PR #14 status: Draft; final implementation, documentation, Draft CI #175, 71-test local suite, Linux debug build, and manual Linux inactivity/lifecycle validation have passed; non-Draft CI and explicit user merge approval remain
 - Superseded work: PR #11 is closed and intentionally unmerged; PR #13 replaced it from a clean audited baseline
 - Merge policy: agents never merge without explicit user approval
-- Current focus: finish and validate the documented five-minute inactivity lock without disturbing the encrypted-session boundaries merged in PR #13
+- Current focus: promote PR #14 to Ready for review, run the full merge-validation CI, then request the explicit merge decision
 - Initial runtime targets: Linux and Android
 - Pinned toolchain: Flutter 3.47.2 / Dart 3.13.2
 - Initial production Argon2id baseline: **19 MiB / 2 iterations / p=1 / 32-byte output**
@@ -187,8 +187,11 @@ Implemented on `feat/automatic-lock-lifecycle`:
 - [x] automatic timeout delegates to the same session-controller lock path used by manual lock
 - [x] existing serialized journal operations remain authoritative, so an operation already in progress completes before encrypted persistence is closed and key material is destroyed
 - [x] timeout tests use controlled durations rather than waiting five real minutes
-- [x] local focused suite passed 8 tests covering the activity guard and Today regression
-- [x] Draft CI #171 passed generation, Drift snapshot/artifact checks, formatting, and analyzer
+- [x] focused automated behavior is covered alongside the existing Today regression
+- [x] full local suite passed with 71 tests on final implementation/documentation candidate HEAD `d0a3f7714af09bf0ff46c541acf60c298120f038`
+- [x] local Linux debug build passed on the same candidate HEAD
+- [x] manual Linux validation confirmed the real five-minute timeout while idle, activity renewal during mouse use and active editing, and lock after remaining inactive in another workspace
+- [x] Draft CI #175 passed generation, Drift snapshot/artifact checks, formatting, and analyzer on the same candidate HEAD
 
 Explicitly outside PR #14:
 
@@ -201,18 +204,22 @@ Explicitly outside PR #14:
 
 ## Validation policy for PR #14
 
-Before merge eligibility:
+Completed before promotion from Draft:
 
-1. documentation must match the implemented five-minute inactivity policy and its platform boundary;
-2. the full local test suite must pass on the exact final branch HEAD;
-3. Linux debug build must pass locally;
-4. manual Linux review must confirm normal create/unlock/use/manual-lock behavior remains intact and the real five-minute idle timeout locks an unlocked journal;
-5. non-Draft CI must pass `quality`, Linux build, Android build, dependency review, and `merge-gate`;
-6. merge remains an explicit user decision.
+1. [x] documentation matches the implemented five-minute inactivity policy and its platform boundary;
+2. [x] the full local test suite passed on the exact final candidate branch HEAD;
+3. [x] Linux debug build passed locally;
+4. [x] manual Linux review confirmed the real five-minute inactivity lock and activity renewal behavior.
 
-The focused automated coverage includes:
+Remaining merge gates:
+
+5. [ ] non-Draft CI must pass `quality`, Linux build, Android build, dependency review, and `merge-gate`;
+6. [ ] merge remains an explicit user decision.
+
+The automated coverage includes:
 
 - timeout after the inactivity deadline;
+- rebuilds not resetting the deadline;
 - pointer/touch reset;
 - physical-keyboard reset;
 - explicit text-edit/IME-style reset;
@@ -230,7 +237,7 @@ Target: `v1.0.0-alpha.1` as an end-to-end but intentionally incomplete product.
 - [x] Create/open a journal with master password
 - [x] Open encrypted persistence only after successful unlock
 - [x] Manual lock
-- [ ] Automatic inactivity lock (PR #14 pending validation/merge)
+- [ ] Automatic inactivity lock (PR #14 pending full CI/merge)
 - [ ] Immediate lock from reliable operating-system protected-state signals
 - [ ] Recovery UX over an alternate protection path for the same random journal key
 - [x] Manual encrypted backup/restore foundation
@@ -300,4 +307,4 @@ Do not start these until PR #14 is merged or deliberately abandoned.
 - Validated PR #13 locally and through full CI, then squash-merged it to `main` after explicit user approval.
 - Opened PR #14 from the merged #13 baseline to implement the documented five-minute automatic inactivity lock.
 - Added interaction-driven timeout handling for pointer/touch, hardware keyboard, and explicit text editing; background/resume elapsed-time enforcement; and fail-closed handling of backward wall-clock jumps.
-- Passed 8 focused local tests and Draft CI #171 on the implementation HEAD before documentation alignment.
+- Passed Draft CI #175, the full 71-test local suite, Linux debug build, and manual Linux validation of idle, active-editing, mouse-interaction, and alternate-workspace timeout behavior.
