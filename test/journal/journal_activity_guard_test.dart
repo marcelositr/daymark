@@ -135,12 +135,8 @@ void main() {
     );
 
     now = now.add(const Duration(minutes: 6));
-    await tester.binding.handleAppLifecycleStateChanged(
-      AppLifecycleState.paused,
-    );
-    await tester.binding.handleAppLifecycleStateChanged(
-      AppLifecycleState.resumed,
-    );
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
     await tester.pump();
 
     expect(lockCount, 1);
@@ -163,12 +159,8 @@ void main() {
     );
 
     now = now.add(const Duration(minutes: 2));
-    await tester.binding.handleAppLifecycleStateChanged(
-      AppLifecycleState.paused,
-    );
-    await tester.binding.handleAppLifecycleStateChanged(
-      AppLifecycleState.resumed,
-    );
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
 
     await tester.pump(const Duration(minutes: 2, seconds: 59));
     expect(lockCount, 0);
@@ -195,12 +187,8 @@ void main() {
     );
 
     now = now.subtract(const Duration(minutes: 1));
-    await tester.binding.handleAppLifecycleStateChanged(
-      AppLifecycleState.paused,
-    );
-    await tester.binding.handleAppLifecycleStateChanged(
-      AppLifecycleState.resumed,
-    );
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
     await tester.pump();
 
     expect(lockCount, 1);
