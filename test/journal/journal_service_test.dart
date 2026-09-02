@@ -134,7 +134,7 @@ void main() {
         .getSingle();
     expect(row.read<String>('task_state'), 'open');
     expect(row.read<String>('log_id'), dailyLog);
-    expect(row.readNullable<String>('collection_id'), isNull);
+    expect(row.readNullable<String>('collection_id'), nullValue);
 
     final reference = await database
         .customSelect(
