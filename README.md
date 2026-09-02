@@ -6,9 +6,11 @@ Daymark is a minimal, local-first Bullet Journal application for Linux and Andro
 
 ## Project status
 
-Daymark is in foundation / pre-alpha development. The product, domain, security, data, workflow, and toolchain constraints are being established before journal features are implemented.
+Daymark is in foundation / pre-alpha development. The product, domain, security, data, workflow, and toolchain constraints are established before journal features become the main development focus.
 
-The Flutter scaffold is integrated on `main`. The current development cycle is defining and validating relational schema v1 in PR #6. The pinned toolchain is Flutter 3.47.2 with Dart 3.13.2, targeting Linux and Android.
+The Flutter scaffold and relational schema v1 are integrated on `main`. The current development cycle is PR #7, which is validating the master-password key hierarchy and encrypted journal persistence. The pinned toolchain is Flutter 3.47.2 with Dart 3.13.2, targeting Linux and Android.
+
+PR #7 has an implemented and tested pre-alpha security baseline using Argon2id + XChaCha20-Poly1305 for portable journal-key protection and SQLite3MultipleCiphers ChaCha20-Poly1305 for encrypted journal storage. Representative Linux and physical Android profile-mode measurements are recorded, and the initial Argon2id production baseline is frozen at 19 MiB memory, 2 iterations, parallelism 1, and 32-byte output. Android OS-managed app-data backup/device transfer is explicitly excluded so portable migration remains an intentional Daymark encrypted-backup boundary.
 
 The canonical live development checkpoint is [`PROJECT.md`](PROJECT.md).
 
@@ -28,7 +30,7 @@ Any human or AI contributor should read [`AGENTS.md`](AGENTS.md) before continui
 
 ## Technology direction
 
-The current reviewed baseline is documented in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md), with the relational persistence contract in [`docs/DATA_MODEL.md`](docs/DATA_MODEL.md).
+The current reviewed baseline is documented in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md), with the relational persistence contract in [`docs/DATA_MODEL.md`](docs/DATA_MODEL.md) and the active security validation contract in [`docs/SECURITY_FOUNDATION.md`](docs/SECURITY_FOUNDATION.md).
 
 At a glance:
 
@@ -38,7 +40,7 @@ At a glance:
 - go_router for application routing;
 - Drift for typed relational persistence and tested schema evolution;
 - sqlite3 with SQLite3MultipleCiphers for encrypted native storage;
-- Argon2id and reviewed authenticated cryptography for the application key hierarchy;
+- `cryptography` 2.9.0 with Argon2id + XChaCha20-Poly1305 for the portable application key hierarchy;
 - Flutter ARB / `gen_l10n` localization.
 
 English is the canonical and fallback UI locale. An exact Brazilian Portuguese system locale selects Portuguese (Brazil); unsupported locales fall back to English.
@@ -91,6 +93,8 @@ Release candidates are not promoted automatically. Stable `1.0.0` happens only a
 - [`docs/DATA_MODEL.md`](docs/DATA_MODEL.md): relational schema, persistence invariants, and migration policy
 - [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md): technical architecture and technology baseline
 - [`SECURITY.md`](SECURITY.md): threat model and security constraints
+- [`docs/SECURITY_FOUNDATION.md`](docs/SECURITY_FOUNDATION.md): current security implementation/validation contract
+- [`docs/ARGON2_BENCHMARK.md`](docs/ARGON2_BENCHMARK.md): Linux/Android KDF benchmark procedure, evidence, and initial parameter decision
 - [`docs/WORKFLOW.md`](docs/WORKFLOW.md): branches, PRs, versioning, and releases
 - [`CONTRIBUTING.md`](CONTRIBUTING.md): contribution expectations
 - [`CHANGELOG.md`](CHANGELOG.md): release-facing history

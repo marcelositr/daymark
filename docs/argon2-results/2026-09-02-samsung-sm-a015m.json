@@ -1,0 +1,91 @@
+{
+  "benchmark": "daymark-argon2id-profile-matrix",
+  "platform": "android",
+  "platformVersion": "SP1A.210812.016.A015MUBS5CWI3",
+  "dartVersion": "3.13.2 (stable) (Tue Aug 25 01:01:12 2026 -0700) on \"android_arm\"",
+  "processors": 8,
+  "warmupRunsPerProfile": 1,
+  "sampleRunsPerProfile": 5,
+  "profiles": [
+    {
+      "name": "owasp-19m-2t",
+      "parameters": {
+        "memoryKiB": 19456,
+        "iterations": 2,
+        "parallelism": 1,
+        "hashLength": 32
+      },
+      "samplesMicros": [
+        1522524,
+        1536730,
+        1538213,
+        1539365,
+        1541076
+      ],
+      "minimumMicros": 1522524,
+      "medianMicros": 1538213,
+      "averageMicros": 1535581,
+      "maximumMicros": 1541076
+    },
+    {
+      "name": "owasp-12m-3t",
+      "parameters": {
+        "memoryKiB": 12288,
+        "iterations": 3,
+        "parallelism": 1,
+        "hashLength": 32
+      },
+      "samplesMicros": [
+        1458321,
+        1464852,
+        1465836,
+        1469140,
+        1476571
+      ],
+      "minimumMicros": 1458321,
+      "medianMicros": 1465836,
+      "averageMicros": 1466944,
+      "maximumMicros": 1476571
+    },
+    {
+      "name": "owasp-9m-4t",
+      "parameters": {
+        "memoryKiB": 9216,
+        "iterations": 4,
+        "parallelism": 1,
+        "hashLength": 32
+      },
+      "samplesMicros": [
+        1470882,
+        1471934,
+        1474708,
+        1475167,
+        1479004
+      ],
+      "minimumMicros": 1470882,
+      "medianMicros": 1474708,
+      "averageMicros": 1474339,
+      "maximumMicros": 1479004
+    },
+    {
+      "name": "owasp-7m-5t",
+      "parameters": {
+        "memoryKiB": 7168,
+        "iterations": 5,
+        "parallelism": 1,
+        "hashLength": 32
+      },
+      "samplesMicros": [
+        1428761,
+        1429148,
+        1431396,
+        1440556,
+        1447616
+      ],
+      "minimumMicros": 1428761,
+      "medianMicros": 1431396,
+      "averageMicros": 1435495,
+      "maximumMicros": 1447616
+    }
+  ]
+}
