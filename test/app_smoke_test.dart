@@ -30,7 +30,7 @@ void main() {
         child: const DaymarkApp(),
       ),
     );
-    await tester.pumpAndSettle();
+    await _pumpUntilFound(tester, find.text('Create your journal'));
 
     expect(find.text('Create your journal'), findsOneWidget);
     expect(find.text('Master password'), findsOneWidget);
@@ -59,4 +59,21 @@ void main() {
       );
     });
   });
+}
+
+Future<void> _pumpUntilFound(
+  WidgetTester tester,
+  Finder finder, {
+  Duration timeout = const Duration(seconds: 5),
+  Duration interval = const Duration(milliseconds: 50),
+}) async {
+  final int attempts = timeout.inMilliseconds ~/ interval.inMilliseconds;
+  for (int attempt = 0; attempt < attempts; attempt++) {
+    await tester.pump(interval);
+    if (finder.evaluate().isNotEmpty) {
+      return;
+    }
+  }
+
+  fail('Timed out waiting for ${finder.description}.');
 }
