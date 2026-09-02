@@ -5,6 +5,8 @@ import 'package:daymark/core/crypto/key_envelope.dart';
 import 'package:daymark/core/crypto/security_exception.dart';
 import 'package:daymark/core/session/journal_files.dart';
 import 'package:daymark/core/session/journal_session.dart';
+import 'package:daymark/features/journal/data/daily_log_repository.dart';
+import 'package:daymark/features/journal/domain/journal_domain.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -54,6 +56,37 @@ void main() {
       expect(await manager.inspect(), isA<JournalUnlocked>());
     },
   );
+
+  test('Daily Log entries persist across lock and unlock', () async {
+    final JournalSession created = await manager.create(
+      masterPassword: 'persistent journal password',
+    );
+    final DailyLogSnapshot initial = await created.loadDailyLog('2026-09-02');
+
+    await created.captureDailyLogEntry(
+      logId: initial.logId,
+      type: JournalEntryType.task,
+      content: 'Persist this task',
+    );
+    await created.captureDailyLogEntry(
+      logId: initial.logId,
+      type: JournalEntryType.note,
+      content: 'Persist this note',
+    );
+
+    await manager.lock();
+    final JournalSession reopened = await manager.unlock(
+      masterPassword: 'persistent journal password',
+    );
+    final DailyLogSnapshot loaded = await reopened.loadDailyLog('2026-09-02');
+
+    expect(
+      loaded.entries.map((entry) => entry.content),
+      <String>['Persist this task', 'Persist this note'],
+    );
+    expect(loaded.entries.first.taskState, JournalTaskState.open);
+    expect(loaded.entries.last.taskState, isNull);
+  });
 
   test('empty master passwords are rejected before journal creation', () async {
     expect(
