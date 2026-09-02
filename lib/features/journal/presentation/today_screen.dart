@@ -224,10 +224,13 @@ class _TodayScreenState extends ConsumerState<TodayScreen>
       );
     }
 
+    final TextStyle? markerStyle = Theme.of(context).textTheme.titleMedium;
     final Text marker = Text(
       _entrySymbol(entry),
       textAlign: TextAlign.center,
-      style: Theme.of(context).textTheme.titleMedium,
+      style: entry.taskState == JournalTaskState.discarded
+          ? markerStyle?.copyWith(decoration: TextDecoration.lineThrough)
+          : markerStyle,
     );
 
     if (entry.type != JournalEntryType.task ||
@@ -448,7 +451,7 @@ String _entrySymbol(DailyLogEntry entry) => switch (entry.type) {
     JournalTaskState.completed => '×',
     JournalTaskState.migrated => '>',
     JournalTaskState.scheduled => '<',
-    JournalTaskState.discarded => '—',
+    JournalTaskState.discarded => '•',
     JournalTaskState.open => '•',
     null => '•',
   },
