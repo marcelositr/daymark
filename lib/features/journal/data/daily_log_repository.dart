@@ -1,6 +1,5 @@
 import 'package:daymark/core/database/daymark_database.dart';
 import 'package:daymark/features/journal/application/journal_service.dart';
-import 'package:daymark/features/journal/data/journal_repository.dart';
 import 'package:daymark/features/journal/domain/journal_domain.dart';
 import 'package:drift/drift.dart';
 
