@@ -80,19 +80,16 @@ void main() {
     );
     final DailyLogSnapshot loaded = await reopened.loadDailyLog('2026-09-02');
 
-    expect(
-      loaded.entries.map((entry) => entry.content),
-      <String>['Persist this task', 'Persist this note'],
-    );
+    expect(loaded.entries.map((entry) => entry.content), <String>[
+      'Persist this task',
+      'Persist this note',
+    ]);
     expect(loaded.entries.first.taskState, JournalTaskState.open);
     expect(loaded.entries.last.taskState, isNull);
   });
 
   test('empty master passwords are rejected before journal creation', () async {
-    expect(
-      manager.create(masterPassword: ''),
-      throwsA(isA<ArgumentError>()),
-    );
+    expect(manager.create(masterPassword: ''), throwsA(isA<ArgumentError>()));
     expect(await manager.inspect(), isA<JournalNeedsCreation>());
   });
 
