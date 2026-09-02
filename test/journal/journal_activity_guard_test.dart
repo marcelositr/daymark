@@ -83,6 +83,41 @@ void main() {
     expect(lockCount, 1);
   });
 
+  testWidgets('explicit text editing restarts the inactivity deadline', (
+    tester,
+  ) async {
+    int lockCount = 0;
+
+    await tester.pumpWidget(
+      _testApp(
+        timeout: const Duration(seconds: 5),
+        onTimeout: () async {
+          lockCount += 1;
+        },
+        child: Scaffold(
+          body: Builder(
+            builder: (context) {
+              return TextField(
+                onChanged: (_) => JournalActivityGuard.recordActivity(context),
+              );
+            },
+          ),
+        ),
+      ),
+    );
+
+    await tester.pump(const Duration(seconds: 4));
+    await tester.enterText(find.byType(TextField), 'mobile input');
+    await tester.pump();
+
+    await tester.pump(const Duration(seconds: 4));
+    expect(lockCount, 0);
+
+    await tester.pump(const Duration(seconds: 1));
+    await tester.pump();
+    expect(lockCount, 1);
+  });
+
   testWidgets('resume locks immediately after a long background gap', (
     tester,
   ) async {
