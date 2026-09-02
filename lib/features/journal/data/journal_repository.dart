@@ -22,17 +22,19 @@ final class JournalRepository {
     return _database.transaction(() async {
       _validateLogPeriod(kind, periodStart);
 
-      final existing = await _database.customSelect(
-        '''
+      final existing = await _database
+          .customSelect(
+            '''
         SELECT id
         FROM logs
         WHERE kind = ? AND period_start = ?
         ''',
-        variables: <Variable<Object>>[
-          Variable.withString(kind.code),
-          Variable.withString(periodStart),
-        ],
-      ).getSingleOrNull();
+            variables: <Variable<Object>>[
+              Variable.withString(kind.code),
+              Variable.withString(periodStart),
+            ],
+          )
+          .getSingleOrNull();
       if (existing != null) {
         throw JournalInvariantException(
           'A ${kind.code} log already exists for $periodStart.',
@@ -92,9 +94,7 @@ final class JournalRepository {
       await _insertEntry(
         id: id,
         type: type,
-        taskState: type == JournalEntryType.task
-            ? JournalTaskState.open
-            : null,
+        taskState: type == JournalEntryType.task ? JournalTaskState.open : null,
         content: content,
         now: now,
       );
@@ -122,31 +122,35 @@ final class JournalRepository {
         );
       }
 
-      final duplicate = await _database.customSelect(
-        '''
+      final duplicate = await _database
+          .customSelect(
+            '''
         SELECT 1
         FROM collection_references
         WHERE collection_id = ? AND entry_id = ?
         ''',
-        variables: <Variable<Object>>[
-          Variable.withString(collectionId),
-          Variable.withString(entry.id),
-        ],
-      ).getSingleOrNull();
+            variables: <Variable<Object>>[
+              Variable.withString(collectionId),
+              Variable.withString(entry.id),
+            ],
+          )
+          .getSingleOrNull();
       if (duplicate != null) {
         throw const JournalInvariantException(
           'This Collection already references the entry.',
         );
       }
 
-      final row = await _database.customSelect(
-        '''
+      final row = await _database
+          .customSelect(
+            '''
         SELECT COALESCE(MAX(ordinal), -1) + 1 AS next_ordinal
         FROM collection_references
         WHERE collection_id = ?
         ''',
-        variables: <Variable<Object>>[Variable.withString(collectionId)],
-      ).getSingle();
+            variables: <Variable<Object>>[Variable.withString(collectionId)],
+          )
+          .getSingle();
 
       await _database.customStatement(
         '''
@@ -154,12 +158,7 @@ final class JournalRepository {
           collection_id, entry_id, ordinal, created_at
         ) VALUES (?, ?, ?, ?)
         ''',
-        <Object>[
-          collectionId,
-          entry.id,
-          row.read<int>('next_ordinal'),
-          _now(),
-        ],
+        <Object>[collectionId, entry.id, row.read<int>('next_ordinal'), _now()],
       );
     });
   }
@@ -175,12 +174,12 @@ final class JournalRepository {
         sourceEntryId,
       );
 
-      final outgoing = await _database.customSelect(
-        'SELECT 1 FROM migrations WHERE source_entry_id = ?',
-        variables: <Variable<Object>>[
-          Variable.withString(sourceEntryId),
-        ],
-      ).getSingleOrNull();
+      final outgoing = await _database
+          .customSelect(
+            'SELECT 1 FROM migrations WHERE source_entry_id = ?',
+            variables: <Variable<Object>>[Variable.withString(sourceEntryId)],
+          )
+          .getSingleOrNull();
       if (outgoing != null) {
         throw const JournalInvariantException(
           'An entry may have only one direct outgoing migration.',
@@ -330,14 +329,16 @@ final class JournalRepository {
       id = owner.collectionId!;
     }
 
-    final row = await _database.customSelect(
-      '''
+    final row = await _database
+        .customSelect(
+          '''
       SELECT COALESCE(MAX(ordinal), -1) + 1 AS next_ordinal
       FROM entry_placements
       WHERE $clause
       ''',
-      variables: <Variable<Object>>[Variable.withString(id)],
-    ).getSingle();
+          variables: <Variable<Object>>[Variable.withString(id)],
+        )
+        .getSingle();
     return row.read<int>('next_ordinal');
   }
 
@@ -386,14 +387,16 @@ final class JournalRepository {
   }
 
   Future<_EntryRecord> _requireEntry(String id) async {
-    final row = await _database.customSelect(
-      '''
+    final row = await _database
+        .customSelect(
+          '''
       SELECT id, entry_type, task_state, content
       FROM entries
       WHERE id = ?
       ''',
-      variables: <Variable<Object>>[Variable.withString(id)],
-    ).getSingleOrNull();
+          variables: <Variable<Object>>[Variable.withString(id)],
+        )
+        .getSingleOrNull();
     if (row == null) {
       throw JournalNotFoundException('Entry', id);
     }
@@ -407,14 +410,16 @@ final class JournalRepository {
   }
 
   Future<_PlacementRecord> _requirePlacement(String entryId) async {
-    final row = await _database.customSelect(
-      '''
+    final row = await _database
+        .customSelect(
+          '''
       SELECT log_id, collection_id
       FROM entry_placements
       WHERE entry_id = ?
       ''',
-      variables: <Variable<Object>>[Variable.withString(entryId)],
-    ).getSingleOrNull();
+          variables: <Variable<Object>>[Variable.withString(entryId)],
+        )
+        .getSingleOrNull();
     if (row == null) {
       throw JournalInvariantException(
         'Entry $entryId does not have an owning placement.',
@@ -427,10 +432,12 @@ final class JournalRepository {
   }
 
   Future<_LogRecord> _requireLog(String id) async {
-    final row = await _database.customSelect(
-      'SELECT kind, period_start FROM logs WHERE id = ?',
-      variables: <Variable<Object>>[Variable.withString(id)],
-    ).getSingleOrNull();
+    final row = await _database
+        .customSelect(
+          'SELECT kind, period_start FROM logs WHERE id = ?',
+          variables: <Variable<Object>>[Variable.withString(id)],
+        )
+        .getSingleOrNull();
     if (row == null) {
       throw JournalNotFoundException('Log', id);
     }
@@ -441,10 +448,12 @@ final class JournalRepository {
   }
 
   Future<void> _requireCollection(String id) async {
-    final row = await _database.customSelect(
-      'SELECT 1 FROM collections WHERE id = ?',
-      variables: <Variable<Object>>[Variable.withString(id)],
-    ).getSingleOrNull();
+    final row = await _database
+        .customSelect(
+          'SELECT 1 FROM collections WHERE id = ?',
+          variables: <Variable<Object>>[Variable.withString(id)],
+        )
+        .getSingleOrNull();
     if (row == null) {
       throw JournalNotFoundException('Collection', id);
     }

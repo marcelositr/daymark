@@ -48,14 +48,16 @@ void main() {
       ),
     );
 
-    final placement = await database.customSelect(
-      '''
+    final placement = await database
+        .customSelect(
+          '''
       SELECT monthly_section, monthly_calendar_date
       FROM entry_placements
       WHERE entry_id = ?
       ''',
-      variables: <Variable<Object>>[Variable.withString(entry)],
-    ).getSingle();
+          variables: <Variable<Object>>[Variable.withString(entry)],
+        )
+        .getSingle();
     expect(placement.read<String>('monthly_section'), 'calendar');
     expect(placement.read<String>('monthly_calendar_date'), '2026-09-15');
 
@@ -72,9 +74,9 @@ void main() {
       throwsA(isA<JournalInvariantException>()),
     );
 
-    final count = await database.customSelect(
-      'SELECT COUNT(*) AS count FROM entries',
-    ).getSingle();
+    final count = await database
+        .customSelect('SELECT COUNT(*) AS count FROM entries')
+        .getSingle();
     expect(count.read<int>('count'), 1);
   });
 
@@ -96,9 +98,9 @@ void main() {
       throwsA(isA<JournalInvariantException>()),
     );
 
-    final count = await database.customSelect(
-      'SELECT COUNT(*) AS count FROM entries',
-    ).getSingle();
+    final count = await database
+        .customSelect('SELECT COUNT(*) AS count FROM entries')
+        .getSingle();
     expect(count.read<int>('count'), 0);
   });
 
@@ -119,30 +121,34 @@ void main() {
       entryId: entry,
     );
 
-    final row = await database.customSelect(
-      '''
+    final row = await database
+        .customSelect(
+          '''
       SELECT e.task_state, p.log_id, p.collection_id
       FROM entries e
       JOIN entry_placements p ON p.entry_id = e.id
       WHERE e.id = ?
       ''',
-      variables: <Variable<Object>>[Variable.withString(entry)],
-    ).getSingle();
+          variables: <Variable<Object>>[Variable.withString(entry)],
+        )
+        .getSingle();
     expect(row.read<String>('task_state'), 'open');
     expect(row.read<String>('log_id'), dailyLog);
     expect(row.readNullable<String>('collection_id'), isNull);
 
-    final reference = await database.customSelect(
-      '''
+    final reference = await database
+        .customSelect(
+          '''
       SELECT ordinal
       FROM collection_references
       WHERE collection_id = ? AND entry_id = ?
       ''',
-      variables: <Variable<Object>>[
-        Variable.withString(collection),
-        Variable.withString(entry),
-      ],
-    ).getSingle();
+          variables: <Variable<Object>>[
+            Variable.withString(collection),
+            Variable.withString(entry),
+          ],
+        )
+        .getSingle();
     expect(reference.read<int>('ordinal'), 0);
 
     expect(
@@ -154,79 +160,92 @@ void main() {
     );
   });
 
-  test('migration preserves source and creates one lineage destination', () async {
-    final String dailyLog = await service.createLog(
-      kind: JournalLogKind.daily,
-      periodStart: '2026-09-02',
-    );
-    final String monthlyLog = await service.createLog(
-      kind: JournalLogKind.monthly,
-      periodStart: '2026-10-01',
-    );
-    final String source = await service.capture(
-      type: JournalEntryType.task,
-      content: 'Renew insurance',
-      owner: JournalLogOwner(logId: dailyLog),
-    );
+  test(
+    'migration preserves source and creates one lineage destination',
+    () async {
+      final String dailyLog = await service.createLog(
+        kind: JournalLogKind.daily,
+        periodStart: '2026-09-02',
+      );
+      final String monthlyLog = await service.createLog(
+        kind: JournalLogKind.monthly,
+        periodStart: '2026-10-01',
+      );
+      final String source = await service.capture(
+        type: JournalEntryType.task,
+        content: 'Renew insurance',
+        owner: JournalLogOwner(logId: dailyLog),
+      );
 
-    final String destination = await service.migrate(
-      sourceEntryId: source,
-      destinationOwner: JournalLogOwner(
-        logId: monthlyLog,
-        monthlySection: JournalMonthlySection.tasks,
-      ),
-    );
-
-    final sourceRow = await database.customSelect(
-      'SELECT task_state, content FROM entries WHERE id = ?',
-      variables: <Variable<Object>>[Variable.withString(source)],
-    ).getSingle();
-    final destinationRow = await database.customSelect(
-      'SELECT task_state, content FROM entries WHERE id = ?',
-      variables: <Variable<Object>>[Variable.withString(destination)],
-    ).getSingle();
-    expect(sourceRow.read<String>('task_state'), 'migrated');
-    expect(destinationRow.read<String>('task_state'), 'open');
-    expect(destinationRow.read<String>('content'), 'Renew insurance');
-
-    final sourcePlacement = await database.customSelect(
-      'SELECT log_id FROM entry_placements WHERE entry_id = ?',
-      variables: <Variable<Object>>[Variable.withString(source)],
-    ).getSingle();
-    final destinationPlacement = await database.customSelect(
-      '''
-      SELECT log_id, monthly_section
-      FROM entry_placements
-      WHERE entry_id = ?
-      ''',
-      variables: <Variable<Object>>[Variable.withString(destination)],
-    ).getSingle();
-    expect(sourcePlacement.read<String>('log_id'), dailyLog);
-    expect(destinationPlacement.read<String>('log_id'), monthlyLog);
-    expect(destinationPlacement.read<String>('monthly_section'), 'tasks');
-
-    final lineage = await database.customSelect(
-      '''
-      SELECT source_entry_id, destination_entry_id, kind
-      FROM migrations
-      WHERE source_entry_id = ?
-      ''',
-      variables: <Variable<Object>>[Variable.withString(source)],
-    ).getSingle();
-    expect(lineage.read<String>('destination_entry_id'), destination);
-    expect(lineage.read<String>('kind'), 'migrated');
-
-    expect(
-      () => service.migrate(
+      final String destination = await service.migrate(
         sourceEntryId: source,
         destinationOwner: JournalLogOwner(
           logId: monthlyLog,
           monthlySection: JournalMonthlySection.tasks,
         ),
-      ),
-      throwsA(isA<JournalInvariantException>()),
-    );
-  });
+      );
+
+      final sourceRow = await database
+          .customSelect(
+            'SELECT task_state, content FROM entries WHERE id = ?',
+            variables: <Variable<Object>>[Variable.withString(source)],
+          )
+          .getSingle();
+      final destinationRow = await database
+          .customSelect(
+            'SELECT task_state, content FROM entries WHERE id = ?',
+            variables: <Variable<Object>>[Variable.withString(destination)],
+          )
+          .getSingle();
+      expect(sourceRow.read<String>('task_state'), 'migrated');
+      expect(destinationRow.read<String>('task_state'), 'open');
+      expect(destinationRow.read<String>('content'), 'Renew insurance');
+
+      final sourcePlacement = await database
+          .customSelect(
+            'SELECT log_id FROM entry_placements WHERE entry_id = ?',
+            variables: <Variable<Object>>[Variable.withString(source)],
+          )
+          .getSingle();
+      final destinationPlacement = await database
+          .customSelect(
+            '''
+      SELECT log_id, monthly_section
+      FROM entry_placements
+      WHERE entry_id = ?
+      ''',
+            variables: <Variable<Object>>[Variable.withString(destination)],
+          )
+          .getSingle();
+      expect(sourcePlacement.read<String>('log_id'), dailyLog);
+      expect(destinationPlacement.read<String>('log_id'), monthlyLog);
+      expect(destinationPlacement.read<String>('monthly_section'), 'tasks');
+
+      final lineage = await database
+          .customSelect(
+            '''
+      SELECT source_entry_id, destination_entry_id, kind
+      FROM migrations
+      WHERE source_entry_id = ?
+      ''',
+            variables: <Variable<Object>>[Variable.withString(source)],
+          )
+          .getSingle();
+      expect(lineage.read<String>('destination_entry_id'), destination);
+      expect(lineage.read<String>('kind'), 'migrated');
+
+      expect(
+        () => service.migrate(
+          sourceEntryId: source,
+          destinationOwner: JournalLogOwner(
+            logId: monthlyLog,
+            monthlySection: JournalMonthlySection.tasks,
+          ),
+        ),
+        throwsA(isA<JournalInvariantException>()),
+      );
+    },
+  );
 
   test('scheduled movement requires a Future Log', () async {
     final String dailyLog = await service.createLog(
@@ -254,15 +273,17 @@ void main() {
       throwsA(isA<JournalInvariantException>()),
     );
 
-    final sourceRow = await database.customSelect(
-      'SELECT task_state FROM entries WHERE id = ?',
-      variables: <Variable<Object>>[Variable.withString(source)],
-    ).getSingle();
+    final sourceRow = await database
+        .customSelect(
+          'SELECT task_state FROM entries WHERE id = ?',
+          variables: <Variable<Object>>[Variable.withString(source)],
+        )
+        .getSingle();
     expect(sourceRow.read<String>('task_state'), 'open');
 
-    final entryCount = await database.customSelect(
-      'SELECT COUNT(*) AS count FROM entries',
-    ).getSingle();
+    final entryCount = await database
+        .customSelect('SELECT COUNT(*) AS count FROM entries')
+        .getSingle();
     expect(entryCount.read<int>('count'), 1);
   });
 
@@ -286,28 +307,32 @@ void main() {
       futureLogOwner: JournalLogOwner(logId: futureLog),
     );
 
-    final rows = await database.customSelect(
-      '''
+    final rows = await database
+        .customSelect(
+          '''
       SELECT id, task_state
       FROM entries
       WHERE id IN (?, ?)
       ORDER BY id
       ''',
-      variables: <Variable<Object>>[
-        Variable.withString(source),
-        Variable.withString(destination),
-      ],
-    ).get();
+          variables: <Variable<Object>>[
+            Variable.withString(source),
+            Variable.withString(destination),
+          ],
+        )
+        .get();
     expect(rows, hasLength(2));
     expect(
       rows.every((row) => row.readNullable<String>('task_state') == null),
       isTrue,
     );
 
-    final lineage = await database.customSelect(
-      'SELECT kind FROM migrations WHERE source_entry_id = ?',
-      variables: <Variable<Object>>[Variable.withString(source)],
-    ).getSingle();
+    final lineage = await database
+        .customSelect(
+          'SELECT kind FROM migrations WHERE source_entry_id = ?',
+          variables: <Variable<Object>>[Variable.withString(source)],
+        )
+        .getSingle();
     expect(lineage.read<String>('kind'), 'scheduled');
   });
 
@@ -332,15 +357,17 @@ void main() {
         throwsA(isA<JournalInvariantException>()),
       );
 
-      final sourceRow = await database.customSelect(
-        'SELECT task_state FROM entries WHERE id = ?',
-        variables: <Variable<Object>>[Variable.withString(source)],
-      ).getSingle();
+      final sourceRow = await database
+          .customSelect(
+            'SELECT task_state FROM entries WHERE id = ?',
+            variables: <Variable<Object>>[Variable.withString(source)],
+          )
+          .getSingle();
       expect(sourceRow.read<String>('task_state'), 'open');
 
-      final migrationCount = await database.customSelect(
-        'SELECT COUNT(*) AS count FROM migrations',
-      ).getSingle();
+      final migrationCount = await database
+          .customSelect('SELECT COUNT(*) AS count FROM migrations')
+          .getSingle();
       expect(migrationCount.read<int>('count'), 0);
     },
   );
