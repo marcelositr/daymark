@@ -88,6 +88,37 @@ void main() {
     expect(loaded.entries.last.taskState, isNull);
   });
 
+  test('Task terminal states persist across lock and unlock', () async {
+    final JournalSession created = await manager.create(
+      masterPassword: 'persistent task states',
+    );
+    final DailyLogSnapshot initial = await created.loadDailyLog('2026-09-02');
+
+    await created.captureDailyLogEntry(
+      logId: initial.logId,
+      type: JournalEntryType.task,
+      content: 'Complete me',
+    );
+    await created.captureDailyLogEntry(
+      logId: initial.logId,
+      type: JournalEntryType.task,
+      content: 'Discard me',
+    );
+
+    final DailyLogSnapshot captured = await created.loadDailyLog('2026-09-02');
+    await created.completeTask(entryId: captured.entries[0].id);
+    await created.discardTask(entryId: captured.entries[1].id);
+
+    await manager.lock();
+    final JournalSession reopened = await manager.unlock(
+      masterPassword: 'persistent task states',
+    );
+    final DailyLogSnapshot loaded = await reopened.loadDailyLog('2026-09-02');
+
+    expect(loaded.entries[0].taskState, JournalTaskState.completed);
+    expect(loaded.entries[1].taskState, JournalTaskState.discarded);
+  });
+
   test('empty master passwords are rejected before journal creation', () async {
     expect(manager.create(masterPassword: ''), throwsA(isA<ArgumentError>()));
     expect(await manager.inspect(), isA<JournalNeedsCreation>());
