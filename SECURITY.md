@@ -175,6 +175,16 @@ An operating-system session lock, device lock, or equivalent protected state sho
 
 Moving the app to the background starts or continues the lock timeout rather than implicitly exposing decrypted content indefinitely.
 
+The current pre-alpha inactivity-lock implementation keeps timeout/lifecycle policy outside the cryptographic session manager. While the journal is unlocked, a presentation/lifecycle guard records real journal interaction and delegates expiration to the same session-controller lock path used by manual lock.
+
+The five-minute deadline is renewed by pointer/touch interaction and hardware-keyboard interaction. Text controls that may receive input through a mobile IME without emitting Flutter `KeyEvent`s explicitly report edit activity to the guard so active typing is not misclassified as inactivity. Widget rebuilds do not count as user activity.
+
+Background time does not reset the deadline. On resume, Daymark evaluates elapsed wall-clock time immediately so a suspended platform timer cannot leave an inactive journal open indefinitely. If the wall clock moved backwards relative to the last recorded interaction, the inactivity guard fails closed and requests a lock rather than extending the unlocked period.
+
+Automatic timeout does not bypass session safety rules. The existing serialized journal-session boundary remains authoritative: an operation that already entered the session completes before persistence is closed, then the database is closed before journal-key material is destroyed.
+
+Immediate locking from Linux desktop-session lock, Android device-lock, or other operating-system protected-state signals remains a separate platform-integration task. A five-minute inactivity lock is not a substitute for those hooks when a reliable signal is available.
+
 When the journal is locked, application components must release or invalidate decrypted journal-key material as far as the platform/runtime design reasonably permits and must not keep decrypted entry caches merely for convenience.
 
 Platform-specific presentation layers should prevent sensitive journal contents from being unnecessarily exposed through operating-system surfaces such as recent-app previews or notification text when the platform allows this protection.
