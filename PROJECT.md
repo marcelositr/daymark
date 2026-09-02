@@ -10,10 +10,10 @@ Every agent must read it before meaningful work and update it before handing wor
 - Public release status: no release yet
 - Intended first public release stage: `v1.0.0-alpha.1`
 - Integration branch: `main`
-- Current working branch: `feat/security-foundation`
-- Current pull request: `#7`
-- Merge status: **DO NOT MERGE until explicitly requested by the user**
-- Current focus: final PR #7 audit and user review
+- Current working branch: `main` (no active feature branch)
+- Current pull request: none; security foundation PR #7 is merged
+- Merge status: PR #7 was merged after explicit user approval; future PRs remain gated by explicit user review/merge decisions
+- Current focus: close the live `main` ruleset required-check gap, then begin the encrypted portable backup/restore foundation
 - Initial runtime targets: Linux and Android
 - Pinned toolchain: Flutter 3.47.2 / Dart 3.13.2
 - Initial production Argon2id baseline: **frozen at 19 MiB / 2 iterations / p=1 / 32-byte output**
@@ -56,15 +56,15 @@ The repository, not a chat session, is the development memory.
 - [x] Relational data contract and Drift schema v1 merged through PR #6
 - [x] Drift exported schema and generated-artifact freshness validation integrated into CI
 - [x] Database schema-evolution policy established before the first prerelease
+- [x] Security foundation completed and merged through PR #7
 
 ### Still required before product feature work becomes the main focus
 
 - [ ] Apply and verify required CI check names in the live `main` ruleset
-- [ ] Complete security foundation PR #7
 - [ ] Specify and implement the encrypted portable backup container / restore transaction
 - [ ] Establish repository/application services that enforce semantic invariants spanning multiple tables
 
-## Current PR #7: security foundation
+## Security foundation baseline (merged PR #7)
 
 Authoritative validation plan: `docs/SECURITY_FOUNDATION.md`.
 
@@ -155,7 +155,7 @@ The hardening was prompted by physical-device investigation: an Android full-bac
 - [x] Document the immutable hexadecimal `String` limitation imposed by SQLite3MultipleCiphers' SQL `PRAGMA key` interface
 - [x] Preserve an explicit destroy lifecycle that later manual/automatic lock can own through an unlocked-session abstraction
 
-Actual lock timers, lifecycle UI, Android device-lock integration, and Linux session-lock integration remain later product tasks and are outside PR #7.
+Actual lock timers, lifecycle UI, Android device-lock integration, and Linux session-lock integration remain later product tasks and were outside PR #7.
 
 ### Documentation / review
 
@@ -169,7 +169,8 @@ Actual lock timers, lifecycle UI, Android device-lock integration, and Linux ses
 - [x] CI #75 green on pre-benchmark baseline (`40312d01b9746874c8fb1f480984705c6f90f5cc`)
 - [x] CI #88 green after physical benchmark evidence commit (`e3cdd95edc7c5006419a093bd536b193fb31bbdb`)
 - [x] CI #99 green on the fully aligned reviewed implementation head (`5c790cc75cb6db7b421ae2b0ac82e1c81008ac1f`)
-- [ ] User review / merge decision
+- [x] CI #100 green on the checkpoint-sync head (`82424f39836be103ed6db08f6b22a00b23517c65`)
+- [x] User review / merge decision completed; PR #7 merged into `main` as `e29e3fa26521e9a67c58e36ef73b45ea16b48d8e`
 
 ## Relational baseline
 
@@ -333,23 +334,26 @@ Resolved during PR #7:
 - Aligned the core security and architecture documents with the KDF freeze and Android backup boundary.
 - CI #99 completed successfully on the fully aligned reviewed implementation head `5c790cc75cb6db7b421ae2b0ac82e1c81008ac1f`; all four permanent jobs were green.
 - Re-audited PR #7 after the previous agent session ended before recording CI #99, and synchronized this checkpoint without expanding PR scope.
+- CI #100 completed successfully on checkpoint-sync head `82424f39836be103ed6db08f6b22a00b23517c65`.
+- User reviewed and merged security foundation PR #7 into `main` as `e29e3fa26521e9a67c58e36ef73b45ea16b48d8e`.
 
 ## Next concrete action
 
-Perform user review of PR #7 after the checkpoint-sync head remains CI-green.
+Apply and verify the repository-defined permanent CI checks in the live `main` ruleset: `quality`, `linux-build`, `android-build`, and `dependency-review`.
 
-Do not add biometric/keyring convenience, lock UI, journal product screens, sync, or the final backup-container implementation to PR #7.
+After that governance gap is closed, start a focused branch/PR to specify and implement the encrypted portable backup container and atomic/rollback-safe restore transaction.
 
-Do not merge PR #7 unless the user explicitly requests the merge.
+Do not mix biometric/keyring convenience, lock UI, journal product screens, sync, or unrelated feature work into the backup-foundation task.
 
 ## Handoff
 
 If work stops unexpectedly, the next agent should:
 
 1. read `AGENTS.md` and this file;
-2. inspect the current branch and PR rather than trusting stale chat context;
-3. read `SECURITY.md`, `docs/SECURITY_FOUNDATION.md`, `docs/ARGON2_BENCHMARK.md`, and `docs/ARCHITECTURE.md` before changing security code;
-4. treat 19 MiB / 2 / p=1 / 32-byte output as the frozen initial production KDF baseline unless a new reviewed retuning cycle explicitly changes it;
-5. preserve the Android OS-backup exclusion boundary;
-6. continue from the first genuinely actionable unchecked item unless the user sets another priority;
-7. update this file again before stopping.
+2. inspect `main`, the live ruleset, and any active PR rather than trusting stale chat context;
+3. treat security foundation PR #7 as merged baseline, not active work;
+4. read `SECURITY.md`, `docs/SECURITY_FOUNDATION.md`, `docs/ARGON2_BENCHMARK.md`, and `docs/ARCHITECTURE.md` before changing security code;
+5. treat 19 MiB / 2 / p=1 / 32-byte output as the frozen initial production KDF baseline unless a new reviewed retuning cycle explicitly changes it;
+6. preserve the Android OS-backup exclusion boundary;
+7. close the live required-check ruleset gap before starting the next feature branch unless the user explicitly reprioritizes;
+8. update this file again before stopping.
