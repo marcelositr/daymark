@@ -5,7 +5,7 @@ import 'package:cryptography/cryptography.dart';
 
 final class JournalKeyMaterial {
   JournalKeyMaterial._(this._journalKey, Uint8List cipherSalt)
-    : cipherSalt = Uint8List.fromList(cipherSalt) {
+    : _cipherSalt = Uint8List.fromList(cipherSalt) {
     if (_journalKey.bytes.length != journalKeyLength) {
       throw ArgumentError.value(
         _journalKey.bytes.length,
@@ -13,9 +13,9 @@ final class JournalKeyMaterial {
         'Journal keys must be $journalKeyLength bytes.',
       );
     }
-    if (this.cipherSalt.length != cipherSaltLength) {
+    if (_cipherSalt.length != cipherSaltLength) {
       throw ArgumentError.value(
-        this.cipherSalt.length,
+        _cipherSalt.length,
         'cipherSalt',
         'Cipher salts must be $cipherSaltLength bytes.',
       );
@@ -45,10 +45,11 @@ final class JournalKeyMaterial {
       );
     }
 
-    final Uint8List keyBytes = Uint8List.fromList(
-      bytes.sublist(0, journalKeyLength),
-    );
-    final Uint8List salt = Uint8List.fromList(bytes.sublist(journalKeyLength));
+    final Uint8List keyBytes = Uint8List(journalKeyLength);
+    keyBytes.setRange(0, journalKeyLength, bytes);
+
+    final Uint8List salt = Uint8List(cipherSaltLength);
+    salt.setRange(0, cipherSaltLength, bytes, journalKeyLength);
 
     return JournalKeyMaterial._(
       SecretKeyData(
@@ -65,7 +66,7 @@ final class JournalKeyMaterial {
   static const int serializedLength = journalKeyLength + cipherSaltLength;
 
   final SecretKeyData _journalKey;
-  final Uint8List cipherSalt;
+  final Uint8List _cipherSalt;
 
   SecretKey get journalKey => _journalKey;
 
@@ -78,13 +79,14 @@ final class JournalKeyMaterial {
 
     final Uint8List result = Uint8List(serializedLength);
     result.setRange(0, journalKeyLength, _journalKey.bytes);
-    result.setRange(journalKeyLength, serializedLength, cipherSalt);
+    result.setRange(journalKeyLength, serializedLength, _cipherSalt);
     return result;
   }
 
   void destroy() {
     if (!isDestroyed) {
       _journalKey.destroy();
+      _cipherSalt.fillRange(0, _cipherSalt.length, 0);
     }
   }
 }
