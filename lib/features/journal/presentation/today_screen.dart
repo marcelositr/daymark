@@ -191,8 +191,9 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
     );
   }
 
-  Future<DailyLogSnapshot> _loadSnapshot() {
-    return _session().dailyLog.loadOrCreate(formatJournalMethodDate(_today));
+  Future<DailyLogSnapshot> _loadSnapshot() async {
+    final JournalSession session = _session();
+    return session.dailyLog.loadOrCreate(formatJournalMethodDate(_today));
   }
 
   JournalSession _session() {
@@ -221,20 +222,24 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
         type: _entryType,
         content: content,
       );
-      _entryController.clear();
-      if (mounted) {
-        setState(() => _snapshotFuture = _loadSnapshot());
-      }
     } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context)
             .showSnackBar(SnackBar(content: Text(l10n.saveEntryFailed)));
-      }
-    } finally {
-      if (mounted) {
         setState(() => _saving = false);
       }
+      return;
     }
+
+    if (!mounted) {
+      return;
+    }
+
+    _entryController.clear();
+    setState(() {
+      _snapshotFuture = _loadSnapshot();
+      _saving = false;
+    });
   }
 
   Future<void> _lock() {
