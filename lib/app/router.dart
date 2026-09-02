@@ -1,5 +1,6 @@
 import 'package:go_router/go_router.dart';
 
+import '../features/journal/presentation/today_screen.dart';
 import '../presentation/app_shell.dart';
 import '../presentation/placeholder_screen.dart';
 
@@ -15,10 +16,7 @@ final GoRouter daymarkRouter = GoRouter(
           routes: [
             GoRoute(
               path: '/',
-              builder: (context, state) => const PlaceholderScreen(
-                section: DaymarkSection.today,
-                isFoundationHome: true,
-              ),
+              builder: (context, state) => const TodayScreen(),
             ),
           ],
         ),
