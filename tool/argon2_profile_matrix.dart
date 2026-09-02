@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 const int _warmupRuns = 1;
 const int _sampleRuns = 5;
 const String _benchmarkPassword = 'daymark-argon2id-benchmark-password';
+const String _progressPrefix = 'DAYMARK_ARGON2_MATRIX';
 
 const List<_Argon2Profile> _profiles = <_Argon2Profile>[
   _Argon2Profile(
@@ -43,11 +44,13 @@ const List<_Argon2Profile> _profiles = <_Argon2Profile>[
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  debugPrint('$_progressPrefix benchmark-start');
   final Map<String, Object> report = await _runMatrix();
   final String formattedReport = const JsonEncoder.withIndent('  ').convert(
     report,
   );
 
+  debugPrint('$_progressPrefix benchmark-complete');
   stdout.writeln(formattedReport);
   runApp(_BenchmarkResultApp(report: formattedReport));
 }
@@ -61,7 +64,16 @@ Future<Map<String, Object>> _runMatrix() async {
 
   final List<Map<String, Object>> results = <Map<String, Object>>[];
   for (final _Argon2Profile profile in _profiles) {
-    results.add(await _runProfile(profile: profile, salt: salt));
+    debugPrint('$_progressPrefix profile-start ${profile.name}');
+    final Map<String, Object> result = await _runProfile(
+      profile: profile,
+      salt: salt,
+    );
+    results.add(result);
+    debugPrint(
+      '$_progressPrefix profile-complete ${profile.name} '
+      'medianMicros=${result['medianMicros']}',
+    );
   }
 
   return <String, Object>{
@@ -88,13 +100,28 @@ Future<Map<String, Object>> _runProfile({
   );
 
   for (int index = 0; index < _warmupRuns; index++) {
-    await _runSample(algorithm: algorithm, profile: profile, salt: salt);
+    final int elapsedMicros = await _runSample(
+      algorithm: algorithm,
+      profile: profile,
+      salt: salt,
+    );
+    debugPrint(
+      '$_progressPrefix ${profile.name} warmup=${index + 1}/$_warmupRuns '
+      'micros=$elapsedMicros',
+    );
   }
 
   final List<int> samplesMicros = <int>[];
   for (int index = 0; index < _sampleRuns; index++) {
-    samplesMicros.add(
-      await _runSample(algorithm: algorithm, profile: profile, salt: salt),
+    final int elapsedMicros = await _runSample(
+      algorithm: algorithm,
+      profile: profile,
+      salt: salt,
+    );
+    samplesMicros.add(elapsedMicros);
+    debugPrint(
+      '$_progressPrefix ${profile.name} sample=${index + 1}/$_sampleRuns '
+      'micros=$elapsedMicros',
     );
   }
   samplesMicros.sort();
