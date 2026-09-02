@@ -15,11 +15,12 @@ final class Argon2Parameters {
     this.hashLength = 32,
   });
 
-  /// Starting candidate based on the current OWASP minimum recommendation.
+  /// Frozen initial production baseline selected from representative Linux and
+  /// physical-Android profile-mode measurements recorded on 2026-09-02.
   ///
-  /// This is intentionally not called "final". PR #7 must benchmark the
-  /// parameters on representative Linux and Android hardware before release.
-  static const Argon2Parameters productionCandidate = Argon2Parameters(
+  /// The key envelope stores these parameters explicitly, so future versions
+  /// may strengthen defaults without reinterpreting existing envelopes.
+  static const Argon2Parameters production = Argon2Parameters(
     memoryKiB: 19 * 1024,
     iterations: 2,
     parallelism: 1,
@@ -65,7 +66,7 @@ final class Argon2Parameters {
 
 final class KeyEnvelopeService {
   KeyEnvelopeService({
-    this.parameters = Argon2Parameters.productionCandidate,
+    this.parameters = Argon2Parameters.production,
     Xchacha20? cipher,
   }) : _cipher = cipher ?? Xchacha20.poly1305Aead() {
     parameters.validate();
