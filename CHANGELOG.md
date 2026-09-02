@@ -27,6 +27,7 @@ This file is for user-visible behavior, data compatibility, security, packaging,
 - Journal operations and session closing are serialized so manual lock does not close encrypted persistence underneath an in-flight journal operation.
 - Master-password creation and unlock reject an empty password before cryptographic work begins.
 - Portuguese parent localization resources include the journal-access and Daily Log strings used by the Brazilian Portuguese locale.
+- Human and AI contributors now follow a staged validation workflow: baseline/audit, Draft CI, layer-correct tests, progressive local/manual validation, documentation alignment, full merge CI, and explicit user merge approval.
 
 ### Fixed
 
