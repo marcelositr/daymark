@@ -12,19 +12,7 @@ void main() {
   ) async {
     final _MemoryTodayJournal dataSource = _MemoryTodayJournal();
 
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          todayJournalDataSourceProvider.overrideWithValue(dataSource),
-        ],
-        child: MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: const Scaffold(body: TodayScreen()),
-        ),
-      ),
-    );
-    await tester.pump();
+    await _pumpToday(tester, dataSource);
 
     expect(find.byType(TextField), findsOneWidget);
 
@@ -41,10 +29,142 @@ void main() {
 
     await tester.pumpWidget(const SizedBox.shrink());
   });
+
+  testWidgets('Today completes an open Task through the task marker', (
+    tester,
+  ) async {
+    final _MemoryTodayJournal dataSource = _MemoryTodayJournal(
+      entries: [
+        const DailyLogEntry(
+          id: 'task-1',
+          type: JournalEntryType.task,
+          taskState: JournalTaskState.open,
+          content: 'Finish report',
+          ordinal: 0,
+        ),
+      ],
+    );
+
+    await _pumpToday(tester, dataSource);
+
+    expect(find.text('•'), findsOneWidget);
+    await tester.tap(find.text('•'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Complete'));
+    await tester.pump();
+    await tester.pump();
+
+    expect(dataSource.entries.single.taskState, JournalTaskState.completed);
+    expect(find.text('×'), findsOneWidget);
+    expect(find.byType(SnackBar), findsNothing);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
+  testWidgets('Today discards an open Task without removing its history', (
+    tester,
+  ) async {
+    final _MemoryTodayJournal dataSource = _MemoryTodayJournal(
+      entries: [
+        const DailyLogEntry(
+          id: 'task-1',
+          type: JournalEntryType.task,
+          taskState: JournalTaskState.open,
+          content: 'Old reminder',
+          ordinal: 0,
+        ),
+      ],
+    );
+
+    await _pumpToday(tester, dataSource);
+
+    await tester.tap(find.text('•'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Discard'));
+    await tester.pump();
+    await tester.pump();
+
+    expect(dataSource.entries, hasLength(1));
+    expect(dataSource.entries.single.taskState, JournalTaskState.discarded);
+
+    final Text discardedMarker = tester.widget<Text>(find.text('•'));
+    final Text discardedContent = tester.widget<Text>(
+      find.text('Old reminder'),
+    );
+    expect(discardedMarker.style?.decoration, TextDecoration.lineThrough);
+    expect(discardedContent.style?.decoration, TextDecoration.lineThrough);
+    expect(find.byType(SnackBar), findsNothing);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
+  testWidgets('failed Task action leaves the Task open and reports failure', (
+    tester,
+  ) async {
+    final previousErrorHandler = FlutterError.onError;
+    final List<FlutterErrorDetails> reportedErrors = <FlutterErrorDetails>[];
+    FlutterError.onError = reportedErrors.add;
+    addTearDown(() => FlutterError.onError = previousErrorHandler);
+
+    final _MemoryTodayJournal dataSource = _MemoryTodayJournal(
+      failTaskActions: true,
+      entries: [
+        const DailyLogEntry(
+          id: 'task-1',
+          type: JournalEntryType.task,
+          taskState: JournalTaskState.open,
+          content: 'Keep me open',
+          ordinal: 0,
+        ),
+      ],
+    );
+
+    await _pumpToday(tester, dataSource);
+
+    await tester.tap(find.text('•'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Complete'));
+    await tester.pump();
+    await tester.pump();
+
+    expect(dataSource.entries.single.taskState, JournalTaskState.open);
+    expect(find.text('•'), findsOneWidget);
+    expect(find.text('Could not update this task.'), findsOneWidget);
+    expect(reportedErrors, hasLength(1));
+    expect(
+      reportedErrors.single.exceptionAsString(),
+      contains('Journal task action failed (StateError).'),
+    );
+
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+}
+
+Future<void> _pumpToday(
+  WidgetTester tester,
+  _MemoryTodayJournal dataSource,
+) async {
+  await tester.pumpWidget(
+    ProviderScope(
+      overrides: [todayJournalDataSourceProvider.overrideWithValue(dataSource)],
+      child: MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: const Scaffold(body: TodayScreen()),
+      ),
+    ),
+  );
+  await tester.pump();
 }
 
 final class _MemoryTodayJournal implements TodayJournalDataSource {
-  final List<DailyLogEntry> entries = <DailyLogEntry>[];
+  _MemoryTodayJournal({
+    List<DailyLogEntry>? entries,
+    this.failTaskActions = false,
+  }) : entries = entries ?? <DailyLogEntry>[];
+
+  final List<DailyLogEntry> entries;
+  final bool failTaskActions;
 
   @override
   Future<DailyLogSnapshot> load(String methodDate) async {
@@ -69,6 +189,43 @@ final class _MemoryTodayJournal implements TodayJournalDataSource {
         content: content,
         ordinal: entries.length,
       ),
+    );
+  }
+
+  @override
+  Future<void> completeTask({required String entryId}) async {
+    if (failTaskActions) {
+      throw StateError('Injected Task action failure.');
+    }
+    _transitionTask(entryId, JournalTaskState.completed);
+  }
+
+  @override
+  Future<void> discardTask({required String entryId}) async {
+    if (failTaskActions) {
+      throw StateError('Injected Task action failure.');
+    }
+    _transitionTask(entryId, JournalTaskState.discarded);
+  }
+
+  void _transitionTask(String entryId, JournalTaskState destinationState) {
+    final int index = entries.indexWhere((entry) => entry.id == entryId);
+    if (index < 0) {
+      throw StateError('Missing entry.');
+    }
+
+    final DailyLogEntry source = entries[index];
+    if (source.type != JournalEntryType.task ||
+        source.taskState != JournalTaskState.open) {
+      throw StateError('Only open Tasks can transition.');
+    }
+
+    entries[index] = DailyLogEntry(
+      id: source.id,
+      type: source.type,
+      taskState: destinationState,
+      content: source.content,
+      ordinal: source.ordinal,
     );
   }
 }

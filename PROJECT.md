@@ -6,17 +6,16 @@ Every agent must read it before meaningful work and update it before handing wor
 
 ## Current state
 
-- Phase: pre-alpha, automatic journal-lock lifecycle ready for full merge validation
+- Phase: pre-alpha, deliberate Task actions in development
 - Public release status: no release yet
 - Intended first public release stage: `v1.0.0-alpha.1`
 - Integration branch: `main`
-- Current `main` baseline: PR #13 merged as `d9e2a5e334ce13f2efcdf99a43ac677c661eaa6d`
-- Current working branch: `feat/automatic-lock-lifecycle`
-- Current pull request: PR #14, `feat(session): add automatic inactivity lock`
-- PR #14 status: Draft; final implementation, documentation, Draft CI #175, 71-test local suite, Linux debug build, and manual Linux inactivity/lifecycle validation have passed; non-Draft CI and explicit user merge approval remain
-- Superseded work: PR #11 is closed and intentionally unmerged; PR #13 replaced it from a clean audited baseline
+- Current `main` baseline: PR #14 merged as `d93563184c01ef406398619212410c540d00712a`
+- Current working branch: `feat/deliberate-task-actions`
+- Current pull request: Draft PR #15, `feat(journal): add deliberate task completion and discard`
+- PR #15 scope: complete/discard open Tasks in Today while preserving history; migration/scheduling UI remains deferred until real Monthly/Future destinations exist
 - Merge policy: agents never merge without explicit user approval
-- Current focus: promote PR #14 to Ready for review, run the full merge-validation CI, then request the explicit merge decision
+- Current focus: run the complete local suite and Linux debug build on the final documented head, then promote PR #15 for full non-Draft CI
 - Initial runtime targets: Linux and Android
 - Pinned toolchain: Flutter 3.47.2 / Dart 3.13.2
 - Initial production Argon2id baseline: **19 MiB / 2 iterations / p=1 / 32-byte output**
@@ -135,98 +134,94 @@ Merged in PR #13 after the full audit/rebuild cycle.
 - [x] unlock existing encrypted journal with generic wrong-password failure
 - [x] one stable `MaterialApp.router`; journal access is gated inside the route tree
 - [x] manual lock closes DB before key destruction
-- [x] journal operations are serialized; lock waits for an active operation before closing persistence
+- [x] journal operations are serialized; lock waits for active work before closing persistence
 - [x] controller restores a known state after create/unlock/lock failures
 - [x] Today route backed by one real Daily Log per method date
 - [x] Rapid Logging for Task, Event, and Note
-- [x] Daily Log writes continue through `JournalService`
+- [x] Daily Log writes continue through semantic application services
 - [x] Today refreshes after midnight and when the application resumes
 - [x] widget tests keep filesystem/Argon2/SQLite outside `testWidgets`
-- [x] real session tests prove persistence across lock -> unlock and lock waiting for active work
-- [x] local 63-test suite, Linux debug build, manual Linux lifecycle/persistence flow, and full CI passed
+- [x] real session tests prove persistence across lock/unlock and lock waiting for active work
 
-## Historical audit: PR #11
+### Automatic inactivity lock
 
-PR #11 (`feat/unlock-daily-log`) was fully audited, closed, and intentionally not merged.
+Merged in PR #14 as `d93563184c01ef406398619212410c540d00712a`.
 
-Healthy findings that were preserved conceptually:
+- [x] default automatic lock after five minutes without journal interaction
+- [x] pointer/touch, hardware keyboard, and text editing renew the deadline
+- [x] widget rebuilds do not count as activity
+- [x] background time continues to count
+- [x] resume immediately re-evaluates elapsed inactivity
+- [x] backwards wall-clock movement fails closed on resume
+- [x] automatic timeout uses the same serialized session-controller lock path as manual lock
+- [x] local 71-test suite, Linux build, manual Linux behavior review, and full CI #177 passed before merge
 
-- encrypted session ownership and fail-closed storage inspection;
-- Daily Log repository boundary;
-- writes through the existing semantic `JournalService`;
-- persistence and security foundation remained healthy;
-- 57 existing tests outside the invalid Today widget regression test passed serially.
+Platform-specific immediate lock from Linux desktop-session lock or Android device-lock remains a separate future integration.
 
-Problems that blocked merging PR #11:
+## Historical decisions
 
-- the Today regression test performed real filesystem/Argon2/SQLite work inside `testWidgets` and timed out before reaching `TodayScreen`;
-- the test bypassed the real application/router access transition;
-- locked and unlocked states used different root `MaterialApp` configurations;
-- presentation discarded diagnostic context through generic catches;
-- empty master passwords were accepted;
-- lock could compete conceptually with an in-flight journal operation;
-- Today could remain on yesterday after midnight.
+- PR #11 (`feat/unlock-daily-log`) was audited, closed, and intentionally not merged after structural UI/session-test problems were found.
+- PR #13 rebuilt that vertical slice from clean audited `main` and established the current staged AI/human workflow.
+- Do not revive PR #11 implementation history as a base for new work.
 
-Decision: PR #13 rebuilt the vertical slice from audited `main`; #11 remains only as closed historical evidence of why the rebuild was necessary.
+## Current work: PR #15 deliberate Task completion/discard
 
-## Current work: PR #14 automatic inactivity lock
+Goal: add the first visible Task lifecycle actions without creating a temporary migration/scheduling UX before destination screens exist.
 
-Goal: enforce the locking policy already defined by `SECURITY.md` without moving timeout/lifecycle concerns into cryptographic persistence code.
+### Scope decision
 
-Implemented on `feat/automatic-lock-lifecycle`:
+PR #15 handles only terminal in-place Task actions:
 
-- [x] default automatic lock deadline is five minutes after the last journal interaction
-- [x] inactivity timing lives in a presentation/lifecycle guard around unlocked journal UI; `JournalSessionManager` remains responsible for how a lock safely closes persistence
-- [x] pointer/touch interaction renews the deadline
-- [x] hardware keyboard interaction renews the deadline
-- [x] text editing can explicitly renew the deadline so mobile IME input does not look inactive merely because it emits no Flutter `KeyEvent`
-- [x] rebuilds do not count as user activity
-- [x] background time does not reset the deadline
-- [x] returning to foreground immediately re-evaluates elapsed wall-clock time, so a suspended platform timer cannot keep the journal open indefinitely
-- [x] a backward wall-clock jump on resume fails closed instead of extending the unlocked period
-- [x] automatic timeout delegates to the same session-controller lock path used by manual lock
-- [x] existing serialized journal operations remain authoritative, so an operation already in progress completes before encrypted persistence is closed and key material is destroyed
-- [x] timeout tests use controlled durations rather than waiting five real minutes
-- [x] focused automated behavior is covered alongside the existing Today regression
-- [x] full local suite passed with 71 tests on final implementation/documentation candidate HEAD `d0a3f7714af09bf0ff46c541acf60c298120f038`
-- [x] local Linux debug build passed on the same candidate HEAD
-- [x] manual Linux validation confirmed the real five-minute timeout while idle, activity renewal during mouse use and active editing, and lock after remaining inactive in another workspace
-- [x] Draft CI #175 passed generation, Drift snapshot/artifact checks, formatting, and analyzer on the same candidate HEAD
+- complete: `open -> completed`;
+- discard: `open -> discarded`.
 
-Explicitly outside PR #14:
+Migration/scheduling remain semantically implemented in `JournalService`/`JournalRepository`, but their UI is deferred until real Monthly/Future destinations are available. Do not invent a temporary destination picker just to expose those operations early.
 
-- platform-specific immediate lock from Linux desktop-session lock or Android device-lock signals;
-- configurable timeout UI or persistence of timeout preferences;
-- device-assisted unlock / platform secure storage;
-- operating-system recent-app/screenshot privacy hardening;
-- task completion/discard/migration controls;
-- Monthly, Future, Collections, Index, Search, or backup/restore product UI.
+### Implemented on `feat/deliberate-task-actions`
 
-## Validation policy for PR #14
+- [x] focused `TaskActionRepository` validates persisted entry type/state before mutation
+- [x] focused `TaskActionService` exposes completion/discard application operations
+- [x] Event/Note entries reject Task-only terminal actions
+- [x] terminal Tasks reject repeated or contradictory terminal transitions
+- [x] original entry placement/content remain intact when a Task is completed/discarded
+- [x] `JournalSession` serializes Task actions with capture and lock operations
+- [x] real encrypted session test covers completion/discard persistence across lock -> unlock
+- [x] Today data-source boundary exposes completion/discard without filesystem/crypto work in widget tests
+- [x] open Task marker exposes a minimal action menu
+- [x] completed Task uses `×`
+- [x] discarded Task remains in journal history with the original `•` marker and content struck through
+- [x] Task-action failure leaves the Task open and reports a generic UI error
+- [x] English, pt, and pt_BR strings added for Task actions/failure
+- [x] final Draft CI #203 passed generation, Drift snapshot/artifact checks, formatting, and analyzer on implementation head `9a296c8047fe48457f5776bfe2afb19d3637c155`
+- [x] focused local validation passed on that head: formatter clean, analyzer clean, and 17 focused tests passed across Task actions, Today, and encrypted session lifecycle
+- [ ] complete local suite and Linux debug build
+- [x] manual Linux behavior validation: complete/discard menus behaved correctly, completed Tasks persisted as `×`, discarded Tasks remained struck through in history, Event/Note exposed no Task actions, and states survived lock -> unlock
+- [ ] full non-Draft CI and `merge-gate`
+- [ ] explicit user merge approval
 
-Completed before promotion from Draft:
+### Validation policy for PR #15
 
-1. [x] documentation matches the implemented five-minute inactivity policy and its platform boundary;
-2. [x] the full local test suite passed on the exact final candidate branch HEAD;
-3. [x] Linux debug build passed locally;
-4. [x] manual Linux review confirmed the real five-minute inactivity lock and activity renewal behavior.
+Before merge eligibility:
 
-Remaining merge gates:
+1. repository/application tests must prove only open Tasks can complete/discard and historical placement remains intact;
+2. real session tests must prove terminal state persists across encrypted lock/unlock;
+3. pure Today widget tests must prove success and fail-closed UI behavior without real filesystem/Argon2/SQLite work;
+4. final Draft CI must pass generation, Drift snapshot/artifact checks, formatting, and analyzer;
+5. focused local tests must pass on the exact final implementation HEAD;
+6. full local suite and Linux debug build must pass before promotion from Draft;
+7. manual Linux review must confirm completion/discard behavior and persistence without breaking auto-lock or capture;
+8. non-Draft CI must pass `quality`, Linux build, Android build, dependency review, and `merge-gate`;
+9. merge remains an explicit user decision.
 
-5. [ ] non-Draft CI must pass `quality`, Linux build, Android build, dependency review, and `merge-gate`;
-6. [ ] merge remains an explicit user decision.
+### Explicitly outside PR #15
 
-The automated coverage includes:
-
-- timeout after the inactivity deadline;
-- rebuilds not resetting the deadline;
-- pointer/touch reset;
-- physical-keyboard reset;
-- explicit text-edit/IME-style reset;
-- immediate lock after a background gap beyond the deadline;
-- preservation of only the remaining deadline after a shorter background gap;
-- fail-closed handling of a backward wall-clock jump;
-- existing Today capture regression behavior.
+- migration/scheduling destination UI;
+- Monthly Log and Future Log product screens;
+- Collections/Index/Search product UI;
+- configurable automatic-lock timeout;
+- platform-specific immediate OS lock hooks;
+- recovery/device-assisted unlock;
+- backup/restore product UI or export UI.
 
 ## Alpha milestone
 
@@ -237,7 +232,7 @@ Target: `v1.0.0-alpha.1` as an end-to-end but intentionally incomplete product.
 - [x] Create/open a journal with master password
 - [x] Open encrypted persistence only after successful unlock
 - [x] Manual lock
-- [ ] Automatic inactivity lock (PR #14 pending full CI/merge)
+- [x] Automatic inactivity lock
 - [ ] Immediate lock from reliable operating-system protected-state signals
 - [ ] Recovery UX over an alternate protection path for the same random journal key
 - [x] Manual encrypted backup/restore foundation
@@ -247,7 +242,7 @@ Target: `v1.0.0-alpha.1` as an end-to-end but intentionally incomplete product.
 
 - [x] Daily Log and Rapid Logging
 - [x] Task/Event/Note capture UI
-- [ ] Task completion and discard UI
+- [ ] Task completion and discard UI (PR #15)
 - [x] Migration/scheduling semantic persistence and lineage
 - [ ] Migration/scheduling UI
 - [ ] Monthly Log
@@ -271,12 +266,12 @@ Target: `v1.0.0-alpha.1` as an end-to-end but intentionally incomplete product.
 - [ ] no known unresolved data-loss bug
 - [ ] no known unresolved high-severity security issue
 
-## Next work after PR #14
+## Next work after PR #15
 
-Do not start these until PR #14 is merged or deliberately abandoned.
+Do not start these until PR #15 is merged or deliberately abandoned.
 
-1. Add deliberate task actions: complete, discard, migrate, schedule.
-2. Build Monthly Log and Future Log flows using the already-enforced semantic services.
+1. Build Monthly Log and Future Log product flows from the existing semantic model.
+2. Expose deliberate migrate/schedule Task actions using real Monthly/Future destinations.
 3. Build Collections and deliberate Index behavior.
 4. Add encrypted Search over journal storage with no plaintext side index.
 5. Expose portable backup/restore in the product UI.
@@ -290,9 +285,10 @@ Do not start these until PR #14 is merged or deliberately abandoned.
 2. Exact optional secure-storage integration for Android/Linux assisted unlock.
 3. Reliable platform hooks for immediate lock on Android device lock and Linux desktop-session lock.
 4. Whether timeout configurability belongs before or after the first alpha; five minutes remains the security default.
-5. Packaging/distribution formats for Linux and Android.
-6. Filesystem permission hardening for Linux journal files beyond the encrypted-at-rest guarantee.
-7. Physical-device Android validation of the normal journal-access flow.
+5. Exact Monthly/Future interaction design for deliberate migration and scheduling.
+6. Packaging/distribution formats for Linux and Android.
+7. Filesystem permission hardening for Linux journal files beyond the encrypted-at-rest guarantee.
+8. Physical-device Android validation of the normal journal-access flow.
 
 ## Recent work
 
@@ -302,9 +298,8 @@ Do not start these until PR #14 is merged or deliberately abandoned.
 - Merged portable encrypted backup/restore foundation through PR #9.
 - Merged semantic journal application services through PR #10.
 - Merged tiered CI validation through PR #12 and verified the live `merge-gate` ruleset requirement.
-- Audited PR #11 after repeated CI/manual-test inconsistencies; isolated its invalid Today widget-test design and closed the PR without merge.
-- Rebuilt encrypted access + Today/Daily Log cleanly in PR #13 with stable routing, serialized session operations, password validation, date rollover, layer-correct tests, and the staged AI/human engineering workflow.
-- Validated PR #13 locally and through full CI, then squash-merged it to `main` after explicit user approval.
-- Opened PR #14 from the merged #13 baseline to implement the documented five-minute automatic inactivity lock.
-- Added interaction-driven timeout handling for pointer/touch, hardware keyboard, and explicit text editing; background/resume elapsed-time enforcement; and fail-closed handling of backward wall-clock jumps.
-- Passed Draft CI #175, the full 71-test local suite, Linux debug build, and manual Linux validation of idle, active-editing, mouse-interaction, and alternate-workspace timeout behavior.
+- Audited and abandoned PR #11 rather than weakening tests or patching around structural problems.
+- Rebuilt encrypted access + Today/Daily Log cleanly in PR #13 and merged after staged local/manual/full-CI validation.
+- Implemented and validated automatic five-minute inactivity locking in PR #14; full CI #177 passed and the PR was squash-merged as `d93563184c01ef406398619212410c540d00712a` after explicit user approval.
+- Opened Draft PR #15 from merged `main` for deliberate Task completion/discard, keeping migration/scheduling UI deferred until Monthly/Future destinations exist.
+- PR #15 Draft CI #203 passed on implementation head `9a296c8047fe48457f5776bfe2afb19d3637c155`; focused local validation and manual Linux behavior validation also passed before the final documentation checkpoint.

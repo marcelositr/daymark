@@ -30,5 +30,9 @@
   "emptyDailyLog": "Nothing logged yet.",
   "dailyLogLoadFailed": "Could not load today's log.",
   "saveEntryFailed": "Could not save this entry.",
-  "addEntry": "Add entry"
+  "addEntry": "Add entry",
+  "taskActions": "Task actions",
+  "completeTask": "Complete",
+  "discardTask": "Discard",
+  "taskActionFailed": "Could not update this task."
 }

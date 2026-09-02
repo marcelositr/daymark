@@ -30,5 +30,9 @@
   "emptyDailyLog": "Nada registrado ainda.",
   "dailyLogLoadFailed": "Não foi possível carregar o registro de hoje.",
   "saveEntryFailed": "Não foi possível salvar esta entrada.",
-  "addEntry": "Adicionar entrada"
+  "addEntry": "Adicionar entrada",
+  "taskActions": "Ações da tarefa",
+  "completeTask": "Concluir",
+  "discardTask": "Descartar",
+  "taskActionFailed": "Não foi possível atualizar esta tarefa."
 }
