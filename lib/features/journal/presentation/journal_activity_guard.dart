@@ -4,6 +4,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
+const Duration defaultJournalAutoLockTimeout = Duration(minutes: 5);
+
 typedef JournalLockCallback = Future<void> Function();
 
 /// Enforces the documented inactivity lock policy around unlocked journal UI.
@@ -15,7 +17,7 @@ final class JournalActivityGuard extends StatefulWidget {
   JournalActivityGuard({
     required this.child,
     required this.onTimeout,
-    this.timeout = const Duration(minutes: 5),
+    this.timeout = defaultJournalAutoLockTimeout,
     DateTime Function()? now,
     super.key,
   }) : assert(timeout > Duration.zero),
@@ -43,14 +45,6 @@ final class _JournalActivityGuardState extends State<JournalActivityGuard>
     WidgetsBinding.instance.addObserver(this);
     _lastActivityAt = widget._now();
     _armTimer(widget.timeout);
-  }
-
-  @override
-  void didUpdateWidget(covariant JournalActivityGuard oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.timeout != widget.timeout || oldWidget._now != widget._now) {
-      _recordActivity();
-    }
   }
 
   @override
