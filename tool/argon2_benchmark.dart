@@ -22,7 +22,7 @@ Future<void> main() async {
 }
 
 Future<Map<String, Object>> _runBenchmark() async {
-  final Argon2Parameters parameters = Argon2Parameters.productionCandidate;
+  final Argon2Parameters parameters = Argon2Parameters.production;
   final Argon2id algorithm = Argon2id(
     memory: parameters.memoryKiB,
     iterations: parameters.iterations,
