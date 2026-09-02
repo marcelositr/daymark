@@ -13,7 +13,7 @@ Every agent must read it before meaningful work and update it before handing wor
 - Current working branch: `feat/security-foundation`
 - Current pull request: `#7`
 - Merge status: **DO NOT MERGE until explicitly requested by the user**
-- Current focus: finish security-foundation evidence, representative Argon2id benchmarking, and review readiness
+- Current focus: representative Argon2id benchmarking and security-foundation review readiness
 - Initial runtime targets: Linux and Android
 - Pinned toolchain: Flutter 3.47.2 / Dart 3.13.2
 - Last updated: 2026-09-01
@@ -145,7 +145,8 @@ Actual lock timers, lifecycle UI, Android device-lock integration, and Linux ses
 - [x] Update PR #7 checklist to match implementation and remaining gates
 - [x] Update `CHANGELOG.md` with the pre-alpha security foundation
 - [x] Update this checkpoint with decisions and remaining limitations
-- [ ] Permanent CI green on the final reviewed PR head
+- [x] CI #75 green on the pre-benchmark implementation/documentation baseline (`40312d01b9746874c8fb1f480984705c6f90f5cc`)
+- [ ] Permanent CI green on the final reviewed PR head after any benchmark-driven parameter decision
 - [ ] User review / merge decision
 
 ## Relational baseline
@@ -301,10 +302,13 @@ Resolved during PR #7:
 - Hardened journal-key ownership to avoid redundant salt copies, hide direct secret-key access, and make destruction idempotent.
 - Documented the Dart immutable-string limitation around SQLite3MultipleCiphers raw-key PRAGMA handling instead of claiming guaranteed zeroization.
 - Aligned `SECURITY.md`, `docs/SECURITY_FOUNDATION.md`, `docs/ARCHITECTURE.md`, README, PR #7 metadata, and `CHANGELOG.md` with the implemented pre-alpha security baseline.
+- CI #75 completed successfully on baseline head `40312d01b9746874c8fb1f480984705c6f90f5cc` with quality/tests, Linux build, Android build, and dependency review green.
 
 ## Next concrete action
 
-Obtain green CI on this frozen documentation/security-hardening head, then run and record the Argon2id benchmark on representative Linux and physical Android hardware. Do not freeze the production KDF parameters until both platform measurements are reviewed.
+Run and record the Argon2id benchmark on representative Linux and physical Android hardware, then review the measurements before freezing or changing the production KDF parameters.
+
+After any benchmark-driven parameter/documentation change, obtain final green CI again before user review.
 
 Do not add biometric/keyring convenience, lock UI, journal product screens, sync, or the final backup-container implementation to PR #7.
 
