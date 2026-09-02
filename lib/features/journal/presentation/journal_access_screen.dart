@@ -43,7 +43,10 @@ class _JournalAccessScreenState extends ConsumerState<JournalAccessScreen> {
                 data: (state) => switch (state) {
                   JournalNeedsCreation() => _buildCreate(context, l10n),
                   JournalLocked() => _buildUnlock(context, l10n),
-                  JournalStorageProblem() => _buildStorageProblem(context, l10n),
+                  JournalStorageProblem() => _buildStorageProblem(
+                    context,
+                    l10n,
+                  ),
                   JournalUnlocked() => const Center(
                     child: CircularProgressIndicator(),
                   ),
