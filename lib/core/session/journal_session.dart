@@ -38,10 +38,8 @@ final class JournalUnlocked extends JournalAccessState {
 /// application's mutable journal-key owner. The operation is idempotent so
 /// manual lock, lifecycle lock, and teardown may safely converge here later.
 final class JournalSession {
-  JournalSession._({
-    required this.database,
-    required this._keyMaterial,
-  }) : repository = JournalRepository(database) {
+  JournalSession._({required this.database, required this._keyMaterial})
+    : repository = JournalRepository(database) {
     service = JournalService(repository);
     dailyLog = DailyLogRepository(database, service);
   }
@@ -144,7 +142,7 @@ final class JournalSessionManager {
 
       final JournalSession session = JournalSession._(
         database: database,
-        keyMaterial: keyMaterial,
+        _keyMaterial: keyMaterial,
       );
       _session = session;
       return session;
@@ -180,7 +178,7 @@ final class JournalSessionManager {
 
       final JournalSession session = JournalSession._(
         database: database,
-        keyMaterial: keyMaterial,
+        _keyMaterial: keyMaterial,
       );
       _session = session;
       return session;
