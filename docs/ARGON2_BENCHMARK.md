@@ -220,6 +220,144 @@ flutter run --profile -d <device-id> -t tool/argon2_profile_matrix.dart
 
 The comparison should be run at least on the conservative M7 Android device and the representative Linux machine before selecting a different profile. Re-run on the Samsung device if the results are close enough that its data would affect the decision.
 
+### Recorded profile matrix: M7 3G PLUS
+
+Recorded 2026-09-02 on the same Android 8.1 / 32-bit ARM M7 device used for the conservative candidate benchmark.
+
+The runtime reported 2 available processors during this matrix run, whereas the earlier single-profile run reported 4. All tested profiles use Argon2 parallelism 1, so the matrix remains useful as a within-run comparison, but this runtime-state difference is retained as part of the record rather than hidden.
+
+Median results:
+
+| Profile | Median |
+| --- | ---: |
+| 19 MiB / 2 iterations | 4,297,218 µs |
+| 12 MiB / 3 iterations | 3,963,560 µs |
+| 9 MiB / 4 iterations | 3,964,379 µs |
+| 7 MiB / 5 iterations | 3,746,500 µs |
+
+The 7 MiB / 5-iteration profile is the fastest measured equivalent profile on this device, reducing median latency by about 12.8% relative to 19 MiB / 2 iterations in the same run. It is still roughly a 3.75-second derivation, so changing equivalent profiles does not remove the fundamental old-device latency cost.
+
+Complete matrix report:
+
+```json
+{
+  "benchmark": "daymark-argon2id-profile-matrix",
+  "platform": "android",
+  "platformVersion": "ML_WI12_M7_3G_PLUS.V4_20191031",
+  "dartVersion": "3.13.2 (stable) (Tue Aug 25 01:01:12 2026 -0700) on \"android_arm\"",
+  "processors": 2,
+  "warmupRunsPerProfile": 1,
+  "sampleRunsPerProfile": 5,
+  "profiles": [
+    {
+      "name": "owasp-19m-2t",
+      "parameters": {"memoryKiB": 19456, "iterations": 2, "parallelism": 1, "hashLength": 32},
+      "samplesMicros": [4087465, 4286610, 4297218, 4329240, 4460395],
+      "minimumMicros": 4087465,
+      "medianMicros": 4297218,
+      "averageMicros": 4292185,
+      "maximumMicros": 4460395
+    },
+    {
+      "name": "owasp-12m-3t",
+      "parameters": {"memoryKiB": 12288, "iterations": 3, "parallelism": 1, "hashLength": 32},
+      "samplesMicros": [3927776, 3935563, 3963560, 4029158, 4035035],
+      "minimumMicros": 3927776,
+      "medianMicros": 3963560,
+      "averageMicros": 3978218,
+      "maximumMicros": 4035035
+    },
+    {
+      "name": "owasp-9m-4t",
+      "parameters": {"memoryKiB": 9216, "iterations": 4, "parallelism": 1, "hashLength": 32},
+      "samplesMicros": [3949588, 3961974, 3964379, 4015834, 4022508],
+      "minimumMicros": 3949588,
+      "medianMicros": 3964379,
+      "averageMicros": 3982856,
+      "maximumMicros": 4022508
+    },
+    {
+      "name": "owasp-7m-5t",
+      "parameters": {"memoryKiB": 7168, "iterations": 5, "parallelism": 1, "hashLength": 32},
+      "samplesMicros": [3672337, 3674621, 3746500, 3845008, 3846700],
+      "minimumMicros": 3672337,
+      "medianMicros": 3746500,
+      "averageMicros": 3757033,
+      "maximumMicros": 3846700
+    }
+  ]
+}
+```
+
+### Recorded profile matrix: representative Linux
+
+Recorded 2026-09-02 on the existing representative Debian 13 system with Intel Core i5-2400 @ 3.10 GHz and 4 logical processors.
+
+Median results:
+
+| Profile | Median |
+| --- | ---: |
+| 19 MiB / 2 iterations | 228,366 µs |
+| 12 MiB / 3 iterations | 224,858 µs |
+| 9 MiB / 4 iterations | 227,339 µs |
+| 7 MiB / 5 iterations | 226,979 µs |
+
+All four equivalent profiles are effectively tied on this Linux machine: the complete spread between fastest and slowest median is about 3.5 ms. The lower-memory alternatives therefore offer no meaningful desktop latency advantage here.
+
+Complete matrix report:
+
+```json
+{
+  "benchmark": "daymark-argon2id-profile-matrix",
+  "platform": "linux",
+  "platformVersion": "Linux 6.12.94+deb13-amd64 #1 SMP PREEMPT_DYNAMIC Debian 6.12.94-1 (2026-06-20)",
+  "dartVersion": "3.13.2 (stable) (Tue Aug 25 01:01:12 2026 -0700) on \"linux_x64\"",
+  "processors": 4,
+  "warmupRunsPerProfile": 1,
+  "sampleRunsPerProfile": 5,
+  "profiles": [
+    {
+      "name": "owasp-19m-2t",
+      "parameters": {"memoryKiB": 19456, "iterations": 2, "parallelism": 1, "hashLength": 32},
+      "samplesMicros": [226908, 228268, 228366, 234156, 236924],
+      "minimumMicros": 226908,
+      "medianMicros": 228366,
+      "averageMicros": 230924,
+      "maximumMicros": 236924
+    },
+    {
+      "name": "owasp-12m-3t",
+      "parameters": {"memoryKiB": 12288, "iterations": 3, "parallelism": 1, "hashLength": 32},
+      "samplesMicros": [222850, 224031, 224858, 225833, 225972],
+      "minimumMicros": 222850,
+      "medianMicros": 224858,
+      "averageMicros": 224708,
+      "maximumMicros": 225972
+    },
+    {
+      "name": "owasp-9m-4t",
+      "parameters": {"memoryKiB": 9216, "iterations": 4, "parallelism": 1, "hashLength": 32},
+      "samplesMicros": [226677, 227198, 227339, 228025, 228595],
+      "minimumMicros": 226677,
+      "medianMicros": 227339,
+      "averageMicros": 227566,
+      "maximumMicros": 228595
+    },
+    {
+      "name": "owasp-7m-5t",
+      "parameters": {"memoryKiB": 7168, "iterations": 5, "parallelism": 1, "hashLength": 32},
+      "samplesMicros": [226597, 226939, 226979, 227964, 229513],
+      "minimumMicros": 226597,
+      "medianMicros": 226979,
+      "averageMicros": 227598,
+      "maximumMicros": 229513
+    }
+  ]
+}
+```
+
+These two matrix runs do not freeze a new profile. They show that profile choice has negligible effect on the representative Linux machine and only a modest effect on the conservative M7. A second, deliberately old Linux hardware data point may be added before the final parameter decision because Daymark intends to understand legacy-hardware behavior rather than silently optimize only for modern machines.
+
 ## Parameter-freeze rule
 
 `Argon2Parameters.productionCandidate` is not a compatibility promise yet.
