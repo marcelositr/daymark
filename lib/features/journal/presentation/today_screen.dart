@@ -364,10 +364,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen>
     }
   }
 
-  Future<void> _applyTaskAction(
-    DailyLogEntry entry,
-    _TaskAction action,
-  ) async {
+  Future<void> _applyTaskAction(DailyLogEntry entry, _TaskAction action) async {
     if (_taskActionEntryId != null ||
         entry.type != JournalEntryType.task ||
         entry.taskState != JournalTaskState.open) {
