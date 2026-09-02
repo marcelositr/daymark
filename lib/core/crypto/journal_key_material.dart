@@ -4,8 +4,7 @@ import 'dart:typed_data';
 import 'package:cryptography/cryptography.dart';
 
 final class JournalKeyMaterial {
-  JournalKeyMaterial._(this._journalKey, Uint8List cipherSalt)
-    : _cipherSalt = Uint8List.fromList(cipherSalt) {
+  JournalKeyMaterial._(this._journalKey, this._cipherSalt) {
     if (_journalKey.bytes.length != journalKeyLength) {
       throw ArgumentError.value(
         _journalKey.bytes.length,
@@ -68,8 +67,6 @@ final class JournalKeyMaterial {
   final SecretKeyData _journalKey;
   final Uint8List _cipherSalt;
 
-  SecretKey get journalKey => _journalKey;
-
   bool get isDestroyed => _journalKey.isDestroyed;
 
   Uint8List serialize() {
@@ -86,8 +83,8 @@ final class JournalKeyMaterial {
   void destroy() {
     if (!isDestroyed) {
       _journalKey.destroy();
-      _cipherSalt.fillRange(0, _cipherSalt.length, 0);
     }
+    _cipherSalt.fillRange(0, _cipherSalt.length, 0);
   }
 }
 
