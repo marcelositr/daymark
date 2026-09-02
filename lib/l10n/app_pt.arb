@@ -34,5 +34,11 @@
   "taskActions": "Ações da tarefa",
   "completeTask": "Concluir",
   "discardTask": "Descartar",
-  "taskActionFailed": "Não foi possível atualizar esta tarefa."
+  "taskActionFailed": "Não foi possível atualizar esta tarefa.",
+  "monthlyCalendar": "Calendário",
+  "monthlyTasks": "Tarefas",
+  "monthlyLogLoadFailed": "Não foi possível carregar este Registro Mensal.",
+  "emptyMonthlyTasks": "Nenhuma tarefa mensal ainda.",
+  "monthlyEventHint": "Adicione um evento para este dia",
+  "monthlyTaskHint": "Adicione uma tarefa para este mês"
 }
