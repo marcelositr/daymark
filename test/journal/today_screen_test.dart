@@ -96,6 +96,11 @@ void main() {
   testWidgets('failed Task action leaves the Task open and reports failure', (
     tester,
   ) async {
+    final FlutterExceptionHandler? previousErrorHandler = FlutterError.onError;
+    final List<FlutterErrorDetails> reportedErrors = <FlutterErrorDetails>[];
+    FlutterError.onError = reportedErrors.add;
+    addTearDown(() => FlutterError.onError = previousErrorHandler);
+
     final _MemoryTodayJournal dataSource = _MemoryTodayJournal(
       failTaskActions: true,
       entries: [
@@ -120,6 +125,11 @@ void main() {
     expect(dataSource.entries.single.taskState, JournalTaskState.open);
     expect(find.text('•'), findsOneWidget);
     expect(find.text('Could not update this task.'), findsOneWidget);
+    expect(reportedErrors, hasLength(1));
+    expect(
+      reportedErrors.single.exceptionAsString(),
+      contains('Journal task action failed (StateError).'),
+    );
 
     await tester.pumpWidget(const SizedBox.shrink());
   });
