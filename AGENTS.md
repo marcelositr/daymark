@@ -31,8 +31,8 @@ Before ending a meaningful work session, handing work to another agent, or stopp
 
 1. update the relevant tests and documentation;
 2. update `PROJECT.md` with what was completed, what remains, blockers, and the next concrete step;
-3. record any new durable architectural, security, product, or domain decision in its authoritative document;
-4. ensure the branch contains no accidental generated files, secrets, binaries, or unrelated changes;
+3. record any new durable architectural, security, product, domain, or workflow decision in its authoritative document;
+4. ensure the branch contains no accidental generated files, secrets, binaries, temporary diagnostic files, or unrelated changes;
 5. leave the repository in a state another agent can understand without the previous chat.
 
 A task is not considered properly handed off until `PROJECT.md` reflects reality.
@@ -53,6 +53,49 @@ It is intentionally organic. Agents may:
 Do not rewrite history to make the project appear linear. Record the change of direction and why it happened.
 
 Release history belongs in `CHANGELOG.md`; day-to-day implementation continuity belongs in `PROJECT.md`.
+
+## Preferred engineering loop
+
+For substantive feature, repair, lifecycle, persistence, security, or architecture work, use the validation ladder below unless the task is too small to justify every stage.
+
+1. **Establish a trustworthy baseline.** Confirm the intended base branch, current PR state, relevant CI, clean working state, pinned toolchain, and existing tests before editing.
+2. **Audit before repairing when evidence is contradictory.** If a branch has repeated fix commits, CI/manual behavior disagree, or the architecture is suspect, diagnose first. Prefer an isolated worktree or equivalent read-only inspection. Do not mix diagnosis and speculative fixes.
+3. **Choose the smallest healthy branch boundary.** Normal work starts from current `main`. If inherited work is structurally unsound, preserve it as reference and rebuild only the affected slice from a healthy base rather than stacking patches indefinitely.
+4. **Open a Draft PR early when CI feedback is useful.** Draft CI is the cheap feedback loop for dependency resolution, generation, stale generated artifacts, formatting, and static analysis. Keep heavy validation for the ready-for-review stage unless a focused test is needed to diagnose a failure.
+5. **Implement and test at the correct layer.** Presentation/widget tests should not perform real filesystem, expensive KDF/crypto, or encrypted SQLite work merely to reach the UI. Use controlled in-memory boundaries for presentation behavior and separate real persistence/session/integration tests for filesystem, cryptography, database, and lifecycle behavior.
+6. **Treat failures as evidence.** Capture the exact failing command, exit code, last completed step, and diagnostic output. Reduce the problem with the smallest useful probe. Never weaken security, invariants, tests, or CI just to turn a check green.
+7. **Validate progressively.** Prefer this order: generation/reproducibility -> formatting/static analysis -> focused tests -> complete test suite -> native builds -> manual product flow where platform behavior matters. A later green stage does not erase an unexplained earlier failure.
+8. **Remove diagnostic scaffolding.** Temporary workflows, probes, logging, and experiments used to locate a problem must be removed or deliberately promoted into maintainable tests before the PR is considered ready.
+9. **Align documentation before final review.** Update `PROJECT.md` and any authoritative product/domain/architecture/security/workflow document while the implementation context is still fresh.
+10. **Run full merge validation only from a reviewable state.** Mark the PR ready after the implementation, documentation, and applicable local/manual validation are coherent. Then require the repository's full non-Draft CI and `merge-gate` before asking for merge approval.
+11. **Merge only on explicit user approval.** Green CI means eligible for review/merge, not automatically merged.
+
+This ladder is a default, not bureaucracy. Tiny documentation or mechanical changes can use a proportionate subset, but skipping a layer must never hide uncertainty about persistence, lifecycle, security, migration, or user-data behavior.
+
+### Local/manual validation with the user
+
+When a required validation can only be performed in the user's environment or on hardware the agent cannot access:
+
+- provide complete copy-paste command blocks rather than fragments;
+- include a clean-worktree or other safety stop when destructive or branch-sensitive commands are involved;
+- state the expected success markers and what output should be returned;
+- ask the user to stop at the first unexpected result instead of improvising repairs;
+- prefer one bounded diagnostic block at a time when the result determines the next step;
+- do not ask the user to expose passwords, key envelopes, journal plaintext, recovery material, or other secrets.
+
+The user is an execution bridge for local evidence, not a substitute debugger. The agent remains responsible for interpreting the result and deciding the next safe step.
+
+### Tool and API degradation
+
+GitHub, CI, connectors, and external APIs can be delayed or return incomplete data.
+
+When required evidence is missing, stale, contradictory, or an API operation fails:
+
+- do not guess the unseen CI result or repository state;
+- retry only when doing so is safe and likely to resolve a transient read problem;
+- continue with independent work that does not depend on the missing fact;
+- when the missing fact blocks a decision, stop at that boundary and ask the user for the smallest concrete reference needed, such as a CI run result, job log, commit SHA, or terminal output;
+- never merge, rewrite history, or make a security/data-integrity decision based on assumed tool state.
 
 ## Scope and design discipline
 
