@@ -6,8 +6,10 @@ import 'package:daymark/core/crypto/key_envelope.dart';
 import 'package:daymark/core/database/daymark_database.dart';
 import 'package:daymark/core/database/encrypted_daymark_database.dart';
 import 'package:daymark/features/journal/application/journal_service.dart';
+import 'package:daymark/features/journal/application/task_action_service.dart';
 import 'package:daymark/features/journal/data/daily_log_repository.dart';
 import 'package:daymark/features/journal/data/journal_repository.dart';
+import 'package:daymark/features/journal/data/task_action_repository.dart';
 import 'package:daymark/features/journal/domain/journal_domain.dart';
 
 import 'journal_files.dart';
@@ -43,6 +45,7 @@ final class JournalSession {
   JournalSession._(this.database, this._keyMaterial)
     : repository = JournalRepository(database) {
     service = JournalService(repository);
+    taskActions = TaskActionService(TaskActionRepository(database));
     dailyLog = DailyLogRepository(database, service);
   }
 
@@ -50,6 +53,7 @@ final class JournalSession {
   final JournalKeyMaterial _keyMaterial;
   final JournalRepository repository;
   late final JournalService service;
+  late final TaskActionService taskActions;
   late final DailyLogRepository dailyLog;
 
   Future<void> _operationTail = Future<void>.value();
@@ -95,6 +99,14 @@ final class JournalSession {
     return run(
       () => dailyLog.capture(logId: logId, type: type, content: content),
     );
+  }
+
+  Future<void> completeTask({required String entryId}) {
+    return run(() => taskActions.complete(entryId: entryId));
+  }
+
+  Future<void> discardTask({required String entryId}) {
+    return run(() => taskActions.discard(entryId: entryId));
   }
 
   Future<void> close() async {
