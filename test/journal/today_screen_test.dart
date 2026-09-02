@@ -88,7 +88,9 @@ void main() {
     expect(dataSource.entries.single.taskState, JournalTaskState.discarded);
 
     final Text discardedMarker = tester.widget<Text>(find.text('•'));
-    final Text discardedContent = tester.widget<Text>(find.text('Old reminder'));
+    final Text discardedContent = tester.widget<Text>(
+      find.text('Old reminder'),
+    );
     expect(discardedMarker.style?.decoration, TextDecoration.lineThrough);
     expect(discardedContent.style?.decoration, TextDecoration.lineThrough);
     expect(find.byType(SnackBar), findsNothing);
@@ -144,9 +146,7 @@ Future<void> _pumpToday(
 ) async {
   await tester.pumpWidget(
     ProviderScope(
-      overrides: [
-        todayJournalDataSourceProvider.overrideWithValue(dataSource),
-      ],
+      overrides: [todayJournalDataSourceProvider.overrideWithValue(dataSource)],
       child: MaterialApp(
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
