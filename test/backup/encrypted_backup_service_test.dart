@@ -7,6 +7,7 @@ import 'package:daymark/core/crypto/key_envelope.dart';
 import 'package:daymark/core/crypto/security_exception.dart';
 import 'package:daymark/core/database/daymark_database.dart';
 import 'package:daymark/core/database/encrypted_daymark_database.dart';
+import 'package:drift/drift.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -178,7 +179,8 @@ void main() {
       );
 
       final List<int> bytes = backupFile.readAsBytesSync();
-      final int tamperOffset = bytes.length - EncryptedBackupService.macLength - 64;
+      final int tamperOffset =
+          bytes.length - EncryptedBackupService.macLength - 64;
       expect(tamperOffset, greaterThan(36));
       bytes[tamperOffset] ^= 0x01;
       backupFile.writeAsBytesSync(bytes, flush: true);
@@ -328,7 +330,7 @@ void main() {
     }
   });
 
-  test('interrupted commit restores the previous journal pair', () async {
+  test('in-process interrupted commit restores the previous journal pair', () async {
     final _JournalFixture source = await _createJournal(
       directory: tempDirectory,
       name: 'source',
@@ -384,22 +386,61 @@ void main() {
         ),
         existingText,
       );
-
-      for (final String suffix in <String>[
-        '.restore-staged',
-        '.restore-rollback',
-        '.restore-transaction',
-      ]) {
-        expect(File('${target.databaseFile.path}$suffix').existsSync(), isFalse);
-      }
-      for (final String suffix in <String>[
-        '.restore-staged',
-        '.restore-rollback',
-      ]) {
-        expect(File('${target.envelopeFile.path}$suffix').existsSync(), isFalse);
-      }
+      _expectNoRestoreResidue(target.databaseFile, target.envelopeFile);
     } finally {
       source.keyMaterial.destroy();
+      target.keyMaterial.destroy();
+    }
+  });
+
+  test('startup recovery aborts a process-interrupted restore', () async {
+    final _JournalFixture target = await _createJournal(
+      directory: tempDirectory,
+      name: 'target',
+      entryId: targetEntryId,
+      content: existingText,
+      password: masterPassword,
+      keyEnvelopeService: keyEnvelopeService,
+    );
+    final File rollbackDatabase = File(
+      '${target.databaseFile.path}.restore-rollback',
+    );
+    final File rollbackEnvelope = File(
+      '${target.envelopeFile.path}.restore-rollback',
+    );
+    final File transactionMarker = File(
+      '${target.databaseFile.path}.restore-transaction',
+    );
+
+    try {
+      await target.databaseFile.rename(rollbackDatabase.path);
+      await target.envelopeFile.rename(rollbackEnvelope.path);
+      await target.databaseFile.writeAsBytes(<int>[1, 2, 3, 4], flush: true);
+      await transactionMarker.writeAsString(
+        jsonEncode(<String, Object>{
+          'format': 'daymark-restore-transaction',
+          'version': 1,
+          'hadExistingJournal': true,
+        }),
+        flush: true,
+      );
+
+      await backupService.recoverInterruptedRestore(
+        destinationJournalFile: target.databaseFile,
+        destinationKeyEnvelopeFile: target.envelopeFile,
+      );
+
+      expect(await target.envelopeFile.readAsString(), target.encodedEnvelope);
+      expect(
+        await _readEntry(
+          databaseFile: target.databaseFile,
+          keyMaterial: target.keyMaterial,
+          entryId: targetEntryId,
+        ),
+        existingText,
+      );
+      _expectNoRestoreResidue(target.databaseFile, target.envelopeFile);
+    } finally {
       target.keyMaterial.destroy();
     }
   });
@@ -474,11 +515,27 @@ Future<String> _readEntry({
   try {
     final rows = await database.customSelect(
       'SELECT content FROM entries WHERE id = ?',
-      variables: <Object>[entryId],
+      variables: <Variable<Object>>[Variable<Object>(entryId)],
     ).get();
     return rows.single.read<String>('content');
   } finally {
     await database.close();
+  }
+}
+
+void _expectNoRestoreResidue(File databaseFile, File envelopeFile) {
+  for (final String suffix in <String>[
+    '.restore-staged',
+    '.restore-rollback',
+    '.restore-transaction',
+  ]) {
+    expect(File('${databaseFile.path}$suffix').existsSync(), isFalse);
+  }
+  for (final String suffix in <String>[
+    '.restore-staged',
+    '.restore-rollback',
+  ]) {
+    expect(File('${envelopeFile.path}$suffix').existsSync(), isFalse);
   }
 }
 
