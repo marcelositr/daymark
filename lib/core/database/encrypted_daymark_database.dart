@@ -66,6 +66,7 @@ abstract final class EncryptedDaymarkDatabase {
 
     Database? sourceDatabase;
     Database? destinationDatabase;
+    bool snapshotCompleted = false;
 
     try {
       sourceDatabase = sqlite3.open(
@@ -92,6 +93,7 @@ abstract final class EncryptedDaymarkDatabase {
       // Prove that the completed snapshot can be authenticated and read before
       // handing it to the backup container layer.
       destinationDatabase.select('SELECT count(*) FROM sqlite_master;');
+      snapshotCompleted = true;
     } on DaymarkSecurityException {
       rethrow;
     } on SqliteException {
@@ -102,8 +104,13 @@ abstract final class EncryptedDaymarkDatabase {
       destinationDatabase?.close();
       sourceDatabase?.close();
 
-      if (destinationFile.existsSync() && destinationFile.lengthSync() == 0) {
-        destinationFile.deleteSync();
+      if (!snapshotCompleted && destinationFile.existsSync()) {
+        try {
+          destinationFile.deleteSync();
+        } on FileSystemException {
+          // The caller also owns temporary snapshot cleanup. Preserve the
+          // original security/database error if deletion itself fails.
+        }
       }
     }
   }
