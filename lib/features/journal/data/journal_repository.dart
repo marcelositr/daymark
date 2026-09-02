@@ -1,0 +1,579 @@
+import 'package:daymark/core/database/daymark_database.dart';
+import 'package:daymark/features/journal/domain/journal_domain.dart';
+import 'package:drift/drift.dart';
+import 'package:uuid/uuid.dart';
+
+final class JournalRepository {
+  JournalRepository(
+    this._database, {
+    String Function()? idGenerator,
+    int Function()? nowUtcMicros,
+  }) : _idGenerator = idGenerator ?? _defaultIdGenerator,
+       _nowUtcMicros = nowUtcMicros ?? _defaultNowUtcMicros;
+
+  final DaymarkDatabase _database;
+  final String Function() _idGenerator;
+  final int Function() _nowUtcMicros;
+
+  Future<String> createLog({
+    required JournalLogKind kind,
+    required String periodStart,
+  }) {
+    return _database.transaction(() async {
+      _validateLogPeriod(kind, periodStart);
+
+      final existing = await _database.customSelect(
+        '''
+        SELECT id
+        FROM logs
+        WHERE kind = ? AND period_start = ?
+        ''',
+        variables: <Variable>[
+          Variable.withString(kind.code),
+          Variable.withString(periodStart),
+        ],
+      ).getSingleOrNull();
+      if (existing != null) {
+        throw JournalInvariantException(
+          'A ${kind.code} log already exists for $periodStart.',
+        );
+      }
+
+      final String id = _newId();
+      await _database.customStatement(
+        '''
+        INSERT INTO logs (id, kind, period_start, created_at)
+        VALUES (?, ?, ?, ?)
+        ''',
+        <Object>[id, kind.code, periodStart, _now()],
+      );
+      return id;
+    });
+  }
+
+  Future<String> createCollection({required String title}) {
+    return _database.transaction(() async {
+      if (title.trim().isEmpty) {
+        throw const JournalInvariantException(
+          'Collection title must not be blank.',
+        );
+      }
+
+      final int now = _now();
+      final String id = _newId();
+      await _database.customStatement(
+        '''
+        INSERT INTO collections (id, title, created_at, updated_at)
+        VALUES (?, ?, ?, ?)
+        ''',
+        <Object>[id, title, now, now],
+      );
+      return id;
+    });
+  }
+
+  Future<String> createEntry({
+    required JournalEntryType type,
+    required String content,
+    required JournalEntryOwner owner,
+    JournalTaskState? taskState,
+  }) {
+    return _database.transaction(() async {
+      if (content.trim().isEmpty) {
+        throw const JournalInvariantException('Entry content must not be blank.');
+      }
+
+      final JournalTaskState? resolvedTaskState;
+      if (type == JournalEntryType.task) {
+        resolvedTaskState = taskState ?? JournalTaskState.open;
+      } else {
+        if (taskState != null) {
+          throw const JournalInvariantException(
+            'Events and notes cannot have a task state.',
+          );
+        }
+        resolvedTaskState = null;
+      }
+
+      final _ResolvedOwner resolvedOwner = await _resolveOwner(owner);
+      final int ordinal = await _nextPlacementOrdinal(resolvedOwner);
+      final int now = _now();
+      final String id = _newId();
+
+      await _insertEntry(
+        id: id,
+        type: type,
+        taskState: resolvedTaskState,
+        content: content,
+        now: now,
+      );
+      await _insertPlacement(
+        entryId: id,
+        owner: resolvedOwner,
+        ordinal: ordinal,
+      );
+      return id;
+    });
+  }
+
+  Future<void> addCollectionReference({
+    required String collectionId,
+    required String entryId,
+  }) {
+    return _database.transaction(() async {
+      await _requireCollection(collectionId);
+      final _EntryRecord entry = await _requireEntry(entryId);
+      final _PlacementRecord placement = await _requirePlacement(entryId);
+
+      if (placement.collectionId == collectionId) {
+        throw const JournalInvariantException(
+          'An entry cannot reference the Collection that already owns it.',
+        );
+      }
+
+      final duplicate = await _database.customSelect(
+        '''
+        SELECT 1
+        FROM collection_references
+        WHERE collection_id = ? AND entry_id = ?
+        ''',
+        variables: <Variable>[
+          Variable.withString(collectionId),
+          Variable.withString(entry.id),
+        ],
+      ).getSingleOrNull();
+      if (duplicate != null) {
+        throw const JournalInvariantException(
+          'This Collection already references the entry.',
+        );
+      }
+
+      final row = await _database.customSelect(
+        '''
+        SELECT COALESCE(MAX(ordinal), -1) + 1 AS next_ordinal
+        FROM collection_references
+        WHERE collection_id = ?
+        ''',
+        variables: <Variable>[Variable.withString(collectionId)],
+      ).getSingle();
+
+      await _database.customStatement(
+        '''
+        INSERT INTO collection_references (
+          collection_id, entry_id, ordinal, created_at
+        ) VALUES (?, ?, ?, ?)
+        ''',
+        <Object>[
+          collectionId,
+          entry.id,
+          row.read<int>('next_ordinal'),
+          _now(),
+        ],
+      );
+    });
+  }
+
+  Future<String> migrateEntry({
+    required String sourceEntryId,
+    required JournalEntryOwner destinationOwner,
+    required JournalMigrationKind kind,
+  }) {
+    return _database.transaction(() async {
+      final _EntryRecord source = await _requireEntry(sourceEntryId);
+      final _PlacementRecord sourcePlacement = await _requirePlacement(
+        sourceEntryId,
+      );
+
+      final outgoing = await _database.customSelect(
+        'SELECT 1 FROM migrations WHERE source_entry_id = ?',
+        variables: <Variable>[Variable.withString(sourceEntryId)],
+      ).getSingleOrNull();
+      if (outgoing != null) {
+        throw const JournalInvariantException(
+          'An entry may have only one direct outgoing migration.',
+        );
+      }
+
+      if (source.type == JournalEntryType.task &&
+          source.taskState != JournalTaskState.open) {
+        throw const JournalInvariantException(
+          'Only an open task can be migrated or scheduled.',
+        );
+      }
+
+      final _ResolvedOwner resolvedDestination = await _resolveOwner(
+        destinationOwner,
+      );
+      if (_sameOwner(sourcePlacement, resolvedDestination)) {
+        throw const JournalInvariantException(
+          'Migration must move an entry to a different owner.',
+        );
+      }
+
+      if (kind == JournalMigrationKind.scheduled &&
+          resolvedDestination.logKind != JournalLogKind.future) {
+        throw const JournalInvariantException(
+          'Scheduled migration must target a Future Log.',
+        );
+      }
+      if (kind == JournalMigrationKind.migrated &&
+          resolvedDestination.logKind == JournalLogKind.future) {
+        throw const JournalInvariantException(
+          'A Future Log destination must use scheduled migration.',
+        );
+      }
+
+      final int destinationOrdinal = await _nextPlacementOrdinal(
+        resolvedDestination,
+      );
+      final int now = _now();
+      final String destinationEntryId = _newId();
+      final String migrationId = _newId();
+
+      await _insertEntry(
+        id: destinationEntryId,
+        type: source.type,
+        taskState: source.type == JournalEntryType.task
+            ? JournalTaskState.open
+            : null,
+        content: source.content,
+        now: now,
+      );
+      await _insertPlacement(
+        entryId: destinationEntryId,
+        owner: resolvedDestination,
+        ordinal: destinationOrdinal,
+      );
+
+      if (source.type == JournalEntryType.task) {
+        await _database.customStatement(
+          '''
+          UPDATE entries
+          SET task_state = ?, updated_at = ?
+          WHERE id = ?
+          ''',
+          <Object>[kind.sourceTaskState.code, now, sourceEntryId],
+        );
+      }
+
+      await _database.customStatement(
+        '''
+        INSERT INTO migrations (
+          id, source_entry_id, destination_entry_id, kind, created_at
+        ) VALUES (?, ?, ?, ?, ?)
+        ''',
+        <Object>[
+          migrationId,
+          sourceEntryId,
+          destinationEntryId,
+          kind.code,
+          now,
+        ],
+      );
+
+      return destinationEntryId;
+    });
+  }
+
+  Future<_ResolvedOwner> _resolveOwner(JournalEntryOwner owner) async {
+    return switch (owner) {
+      JournalCollectionOwner(:final collectionId) => () async {
+        await _requireCollection(collectionId);
+        return _ResolvedOwner(collectionId: collectionId);
+      }(),
+      JournalLogOwner(
+        :final logId,
+        :final monthlySection,
+        :final monthlyCalendarDate,
+      ) => () async {
+        final _LogRecord log = await _requireLog(logId);
+
+        if (log.kind == JournalLogKind.monthly) {
+          if (monthlySection == null) {
+            throw const JournalInvariantException(
+              'Monthly Log placements require a monthly section.',
+            );
+          }
+          if (monthlySection == JournalMonthlySection.calendar) {
+            if (monthlyCalendarDate == null) {
+              throw const JournalInvariantException(
+                'Monthly calendar placements require a calendar date.',
+              );
+            }
+            _parseMethodDate(monthlyCalendarDate);
+            if (!_sameMonth(log.periodStart, monthlyCalendarDate)) {
+              throw JournalInvariantException(
+                'Calendar date $monthlyCalendarDate is outside Monthly Log '
+                '${log.periodStart}.',
+              );
+            }
+          } else if (monthlyCalendarDate != null) {
+            throw const JournalInvariantException(
+              'Monthly task-list placements cannot have a calendar date.',
+            );
+          }
+        } else if (monthlySection != null || monthlyCalendarDate != null) {
+          throw const JournalInvariantException(
+            'Daily and Future Log placements cannot use Monthly fields.',
+          );
+        }
+
+        return _ResolvedOwner(
+          logId: logId,
+          logKind: log.kind,
+          monthlySection: monthlySection,
+          monthlyCalendarDate: monthlyCalendarDate,
+        );
+      }(),
+    };
+  }
+
+  Future<int> _nextPlacementOrdinal(_ResolvedOwner owner) async {
+    final String clause;
+    final String id;
+    if (owner.logId != null) {
+      clause = 'log_id = ?';
+      id = owner.logId!;
+    } else {
+      clause = 'collection_id = ?';
+      id = owner.collectionId!;
+    }
+
+    final row = await _database.customSelect(
+      '''
+      SELECT COALESCE(MAX(ordinal), -1) + 1 AS next_ordinal
+      FROM entry_placements
+      WHERE $clause
+      ''',
+      variables: <Variable>[Variable.withString(id)],
+    ).getSingle();
+    return row.read<int>('next_ordinal');
+  }
+
+  Future<void> _insertEntry({
+    required String id,
+    required JournalEntryType type,
+    required JournalTaskState? taskState,
+    required String content,
+    required int now,
+  }) {
+    return _database.customStatement(
+      '''
+      INSERT INTO entries (
+        id, entry_type, task_state, content, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?)
+      ''',
+      <Object?>[id, type.code, taskState?.code, content, now, now],
+    );
+  }
+
+  Future<void> _insertPlacement({
+    required String entryId,
+    required _ResolvedOwner owner,
+    required int ordinal,
+  }) {
+    return _database.customStatement(
+      '''
+      INSERT INTO entry_placements (
+        entry_id,
+        log_id,
+        collection_id,
+        ordinal,
+        monthly_section,
+        monthly_calendar_date
+      ) VALUES (?, ?, ?, ?, ?, ?)
+      ''',
+      <Object?>[
+        entryId,
+        owner.logId,
+        owner.collectionId,
+        ordinal,
+        owner.monthlySection?.code,
+        owner.monthlyCalendarDate,
+      ],
+    );
+  }
+
+  Future<_EntryRecord> _requireEntry(String id) async {
+    final row = await _database.customSelect(
+      '''
+      SELECT id, entry_type, task_state, content
+      FROM entries
+      WHERE id = ?
+      ''',
+      variables: <Variable>[Variable.withString(id)],
+    ).getSingleOrNull();
+    if (row == null) {
+      throw JournalNotFoundException('Entry', id);
+    }
+
+    return _EntryRecord(
+      id: row.read<String>('id'),
+      type: _entryTypeFromCode(row.read<String>('entry_type')),
+      taskState: _taskStateFromCode(row.readNullable<String>('task_state')),
+      content: row.read<String>('content'),
+    );
+  }
+
+  Future<_PlacementRecord> _requirePlacement(String entryId) async {
+    final row = await _database.customSelect(
+      '''
+      SELECT log_id, collection_id
+      FROM entry_placements
+      WHERE entry_id = ?
+      ''',
+      variables: <Variable>[Variable.withString(entryId)],
+    ).getSingleOrNull();
+    if (row == null) {
+      throw JournalInvariantException(
+        'Entry $entryId does not have an owning placement.',
+      );
+    }
+    return _PlacementRecord(
+      logId: row.readNullable<String>('log_id'),
+      collectionId: row.readNullable<String>('collection_id'),
+    );
+  }
+
+  Future<_LogRecord> _requireLog(String id) async {
+    final row = await _database.customSelect(
+      'SELECT kind, period_start FROM logs WHERE id = ?',
+      variables: <Variable>[Variable.withString(id)],
+    ).getSingleOrNull();
+    if (row == null) {
+      throw JournalNotFoundException('Log', id);
+    }
+    return _LogRecord(
+      kind: _logKindFromCode(row.read<String>('kind')),
+      periodStart: row.read<String>('period_start'),
+    );
+  }
+
+  Future<void> _requireCollection(String id) async {
+    final row = await _database.customSelect(
+      'SELECT 1 FROM collections WHERE id = ?',
+      variables: <Variable>[Variable.withString(id)],
+    ).getSingleOrNull();
+    if (row == null) {
+      throw JournalNotFoundException('Collection', id);
+    }
+  }
+
+  String _newId() => _idGenerator().toLowerCase();
+
+  int _now() {
+    final int value = _nowUtcMicros();
+    if (value < 0) {
+      throw StateError('UTC microsecond clock returned a negative instant.');
+    }
+    return value;
+  }
+}
+
+final class _ResolvedOwner {
+  const _ResolvedOwner({
+    this.logId,
+    this.collectionId,
+    this.logKind,
+    this.monthlySection,
+    this.monthlyCalendarDate,
+  }) : assert((logId == null) != (collectionId == null));
+
+  final String? logId;
+  final String? collectionId;
+  final JournalLogKind? logKind;
+  final JournalMonthlySection? monthlySection;
+  final String? monthlyCalendarDate;
+}
+
+final class _EntryRecord {
+  const _EntryRecord({
+    required this.id,
+    required this.type,
+    required this.taskState,
+    required this.content,
+  });
+
+  final String id;
+  final JournalEntryType type;
+  final JournalTaskState? taskState;
+  final String content;
+}
+
+final class _PlacementRecord {
+  const _PlacementRecord({this.logId, this.collectionId});
+
+  final String? logId;
+  final String? collectionId;
+}
+
+final class _LogRecord {
+  const _LogRecord({required this.kind, required this.periodStart});
+
+  final JournalLogKind kind;
+  final String periodStart;
+}
+
+bool _sameOwner(_PlacementRecord source, _ResolvedOwner destination) {
+  if (source.logId != null) {
+    return source.logId == destination.logId;
+  }
+  return source.collectionId == destination.collectionId;
+}
+
+void _validateLogPeriod(JournalLogKind kind, String periodStart) {
+  final DateTime date = _parseMethodDate(periodStart);
+  if ((kind == JournalLogKind.monthly || kind == JournalLogKind.future) &&
+      date.day != 1) {
+    throw const JournalInvariantException(
+      'Monthly and Future Log periods must start on the first day of a month.',
+    );
+  }
+}
+
+DateTime _parseMethodDate(String value) {
+  if (!RegExp(r'^\d{4}-\d{2}-\d{2}$').hasMatch(value)) {
+    throw JournalInvariantException('Invalid method date: $value.');
+  }
+  final DateTime? parsed = DateTime.tryParse(value);
+  if (parsed == null ||
+      '${parsed.year.toString().padLeft(4, '0')}-'
+              '${parsed.month.toString().padLeft(2, '0')}-'
+              '${parsed.day.toString().padLeft(2, '0')}' !=
+          value) {
+    throw JournalInvariantException('Invalid method date: $value.');
+  }
+  return parsed;
+}
+
+bool _sameMonth(String periodStart, String calendarDate) {
+  return periodStart.substring(0, 7) == calendarDate.substring(0, 7);
+}
+
+JournalLogKind _logKindFromCode(String code) => switch (code) {
+  'daily' => JournalLogKind.daily,
+  'monthly' => JournalLogKind.monthly,
+  'future' => JournalLogKind.future,
+  _ => throw JournalInvariantException('Unknown persisted log kind: $code.'),
+};
+
+JournalEntryType _entryTypeFromCode(String code) => switch (code) {
+  'task' => JournalEntryType.task,
+  'event' => JournalEntryType.event,
+  'note' => JournalEntryType.note,
+  _ => throw JournalInvariantException('Unknown persisted entry type: $code.'),
+};
+
+JournalTaskState? _taskStateFromCode(String? code) => switch (code) {
+  null => null,
+  'open' => JournalTaskState.open,
+  'completed' => JournalTaskState.completed,
+  'migrated' => JournalTaskState.migrated,
+  'scheduled' => JournalTaskState.scheduled,
+  'discarded' => JournalTaskState.discarded,
+  _ => throw JournalInvariantException('Unknown persisted task state: $code.'),
+};
+
+String _defaultIdGenerator() => const Uuid().v7();
+
+int _defaultNowUtcMicros() => DateTime.now().toUtc().microsecondsSinceEpoch;
