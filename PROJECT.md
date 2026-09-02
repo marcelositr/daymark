@@ -15,7 +15,7 @@ Every agent must read it before meaningful work and update it before handing wor
 - Current pull request: Draft PR #15, `feat(journal): add deliberate task completion and discard`
 - PR #15 scope: complete/discard open Tasks in Today while preserving history; migration/scheduling UI remains deferred until real Monthly/Future destinations exist
 - Merge policy: agents never merge without explicit user approval
-- Current focus: finish repository/session/widget coverage for Task completion/discard, pass Draft CI, then perform progressive local/manual/full-CI validation
+- Current focus: run the complete local suite and Linux debug build on the final documented head, then promote PR #15 for full non-Draft CI
 - Initial runtime targets: Linux and Android
 - Pinned toolchain: Flutter 3.47.2 / Dart 3.13.2
 - Initial production Argon2id baseline: **19 MiB / 2 iterations / p=1 / 32-byte output**
@@ -189,13 +189,13 @@ Migration/scheduling remain semantically implemented in `JournalService`/`Journa
 - [x] Today data-source boundary exposes completion/discard without filesystem/crypto work in widget tests
 - [x] open Task marker exposes a minimal action menu
 - [x] completed Task uses `×`
-- [x] discarded Task remains in journal history with a discarded marker and struck-through content
+- [x] discarded Task remains in journal history with the original `•` marker and content struck through
 - [x] Task-action failure leaves the Task open and reports a generic UI error
 - [x] English, pt, and pt_BR strings added for Task actions/failure
-- [ ] final Draft CI on the implementation/documentation HEAD
-- [ ] focused local tests
+- [x] final Draft CI #203 passed generation, Drift snapshot/artifact checks, formatting, and analyzer on implementation head `9a296c8047fe48457f5776bfe2afb19d3637c155`
+- [x] focused local validation passed on that head: formatter clean, analyzer clean, and 17 focused tests passed across Task actions, Today, and encrypted session lifecycle
 - [ ] complete local suite and Linux debug build
-- [ ] manual Linux behavior validation
+- [x] manual Linux behavior validation: complete/discard menus behaved correctly, completed Tasks persisted as `×`, discarded Tasks remained struck through in history, Event/Note exposed no Task actions, and states survived lock -> unlock
 - [ ] full non-Draft CI and `merge-gate`
 - [ ] explicit user merge approval
 
@@ -302,3 +302,4 @@ Do not start these until PR #15 is merged or deliberately abandoned.
 - Rebuilt encrypted access + Today/Daily Log cleanly in PR #13 and merged after staged local/manual/full-CI validation.
 - Implemented and validated automatic five-minute inactivity locking in PR #14; full CI #177 passed and the PR was squash-merged as `d93563184c01ef406398619212410c540d00712a` after explicit user approval.
 - Opened Draft PR #15 from merged `main` for deliberate Task completion/discard, keeping migration/scheduling UI deferred until Monthly/Future destinations exist.
+- PR #15 Draft CI #203 passed on implementation head `9a296c8047fe48457f5776bfe2afb19d3637c155`; focused local validation and manual Linux behavior validation also passed before the final documentation checkpoint.
