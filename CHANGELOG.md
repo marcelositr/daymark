@@ -18,6 +18,7 @@ This file is for user-visible behavior, data compatibility, security, packaging,
 - Functional Today/Daily Log with Rapid Logging for Task, Event, and Note entries.
 - Automatic Today date rollover at midnight and refresh when the application resumes.
 - Automatic journal lock after five minutes without journal interaction, with pointer/touch, hardware-keyboard, and text-edit activity resetting the deadline and background time continuing to count.
+- Deliberate completion and discard actions for open Tasks in the Today/Daily Log flow.
 
 ### Changed
 
@@ -30,6 +31,7 @@ This file is for user-visible behavior, data compatibility, security, packaging,
 - Portuguese parent localization resources include the journal-access and Daily Log strings used by the Brazilian Portuguese locale.
 - Human and AI contributors now follow a staged validation workflow: baseline/audit, Draft CI, layer-correct tests, progressive local/manual validation, documentation alignment, full merge CI, and explicit user merge approval.
 - Returning from application background re-evaluates the inactivity deadline immediately instead of trusting a platform timer to have continued firing while suspended.
+- Task terminal actions preserve the original Daily Log entry and change only its Task state, keeping journal history visible.
 
 ### Fixed
 
