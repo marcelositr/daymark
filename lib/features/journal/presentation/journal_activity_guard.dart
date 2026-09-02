@@ -10,9 +10,12 @@ typedef JournalLockCallback = Future<void> Function();
 
 /// Enforces the documented inactivity lock policy around unlocked journal UI.
 ///
-/// Pointer and keyboard interaction restart the deadline. Background time does
-/// not reset it, and returning to the foreground re-evaluates elapsed wall
-/// time so a suspended platform timer cannot keep an inactive journal open.
+/// Pointer and keyboard interaction restart the deadline. Controls whose user
+/// interaction does not necessarily emit a Flutter key event, such as text
+/// input through a mobile IME, can call [recordActivity] explicitly.
+/// Background time does not reset the deadline, and returning to the foreground
+/// re-evaluates elapsed wall time so a suspended platform timer cannot keep an
+/// inactive journal open.
 final class JournalActivityGuard extends StatefulWidget {
   JournalActivityGuard({
     required this.child,
@@ -27,6 +30,12 @@ final class JournalActivityGuard extends StatefulWidget {
   final JournalLockCallback onTimeout;
   final Duration timeout;
   final DateTime Function() _now;
+
+  static void recordActivity(BuildContext context) {
+    context
+        .dependOnInheritedWidgetOfExactType<_JournalActivityMarker>()
+        ?.onActivity();
+  }
 
   @override
   State<JournalActivityGuard> createState() => _JournalActivityGuardState();
@@ -137,8 +146,23 @@ final class _JournalActivityGuardState extends State<JournalActivityGuard>
           _recordActivity();
           return KeyEventResult.ignored;
         },
-        child: widget.child,
+        child: _JournalActivityMarker(
+          onActivity: _recordActivity,
+          child: widget.child,
+        ),
       ),
     );
   }
+}
+
+final class _JournalActivityMarker extends InheritedWidget {
+  const _JournalActivityMarker({
+    required this.onActivity,
+    required super.child,
+  });
+
+  final VoidCallback onActivity;
+
+  @override
+  bool updateShouldNotify(_JournalActivityMarker oldWidget) => false;
 }
