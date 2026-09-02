@@ -40,9 +40,8 @@ final class JournalUnlocked extends JournalAccessState {
 final class JournalSession {
   JournalSession._({
     required this.database,
-    required JournalKeyMaterial keyMaterial,
-  }) : _keyMaterial = keyMaterial,
-       repository = JournalRepository(database) {
+    required this._keyMaterial,
+  }) : repository = JournalRepository(database) {
     service = JournalService(repository);
     dailyLog = DailyLogRepository(database, service);
   }

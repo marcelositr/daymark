@@ -62,12 +62,10 @@ final class DailyLogRepository {
       }
     }
 
-    final String resolvedLogId =
-        logId ?? (throw StateError('Daily Log creation did not return an id.'));
     return DailyLogSnapshot(
-      logId: resolvedLogId,
+      logId: logId,
       methodDate: methodDate,
-      entries: await _loadEntries(resolvedLogId),
+      entries: await _loadEntries(logId),
     );
   }
 
