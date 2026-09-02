@@ -54,7 +54,7 @@ void main() {
       FROM entry_placements
       WHERE entry_id = ?
       ''',
-      variables: <Variable>[Variable.withString(entry)],
+      variables: <Variable<Object>>[Variable.withString(entry)],
     ).getSingle();
     expect(placement.read<String>('monthly_section'), 'calendar');
     expect(placement.read<String>('monthly_calendar_date'), '2026-09-15');
@@ -126,7 +126,7 @@ void main() {
       JOIN entry_placements p ON p.entry_id = e.id
       WHERE e.id = ?
       ''',
-      variables: <Variable>[Variable.withString(entry)],
+      variables: <Variable<Object>>[Variable.withString(entry)],
     ).getSingle();
     expect(row.read<String>('task_state'), 'open');
     expect(row.read<String>('log_id'), dailyLog);
@@ -138,7 +138,7 @@ void main() {
       FROM collection_references
       WHERE collection_id = ? AND entry_id = ?
       ''',
-      variables: <Variable>[
+      variables: <Variable<Object>>[
         Variable.withString(collection),
         Variable.withString(entry),
       ],
@@ -179,11 +179,11 @@ void main() {
 
     final sourceRow = await database.customSelect(
       'SELECT task_state, content FROM entries WHERE id = ?',
-      variables: <Variable>[Variable.withString(source)],
+      variables: <Variable<Object>>[Variable.withString(source)],
     ).getSingle();
     final destinationRow = await database.customSelect(
       'SELECT task_state, content FROM entries WHERE id = ?',
-      variables: <Variable>[Variable.withString(destination)],
+      variables: <Variable<Object>>[Variable.withString(destination)],
     ).getSingle();
     expect(sourceRow.read<String>('task_state'), 'migrated');
     expect(destinationRow.read<String>('task_state'), 'open');
@@ -191,7 +191,7 @@ void main() {
 
     final sourcePlacement = await database.customSelect(
       'SELECT log_id FROM entry_placements WHERE entry_id = ?',
-      variables: <Variable>[Variable.withString(source)],
+      variables: <Variable<Object>>[Variable.withString(source)],
     ).getSingle();
     final destinationPlacement = await database.customSelect(
       '''
@@ -199,7 +199,7 @@ void main() {
       FROM entry_placements
       WHERE entry_id = ?
       ''',
-      variables: <Variable>[Variable.withString(destination)],
+      variables: <Variable<Object>>[Variable.withString(destination)],
     ).getSingle();
     expect(sourcePlacement.read<String>('log_id'), dailyLog);
     expect(destinationPlacement.read<String>('log_id'), monthlyLog);
@@ -211,7 +211,7 @@ void main() {
       FROM migrations
       WHERE source_entry_id = ?
       ''',
-      variables: <Variable>[Variable.withString(source)],
+      variables: <Variable<Object>>[Variable.withString(source)],
     ).getSingle();
     expect(lineage.read<String>('destination_entry_id'), destination);
     expect(lineage.read<String>('kind'), 'migrated');
@@ -256,7 +256,7 @@ void main() {
 
     final sourceRow = await database.customSelect(
       'SELECT task_state FROM entries WHERE id = ?',
-      variables: <Variable>[Variable.withString(source)],
+      variables: <Variable<Object>>[Variable.withString(source)],
     ).getSingle();
     expect(sourceRow.read<String>('task_state'), 'open');
 
@@ -293,51 +293,57 @@ void main() {
       WHERE id IN (?, ?)
       ORDER BY id
       ''',
-      variables: <Variable>[
+      variables: <Variable<Object>>[
         Variable.withString(source),
         Variable.withString(destination),
       ],
     ).get();
     expect(rows, hasLength(2));
-    expect(rows.every((row) => row.readNullable<String>('task_state') == null), isTrue);
+    expect(
+      rows.every((row) => row.readNullable<String>('task_state') == null),
+      isTrue,
+    );
 
     final lineage = await database.customSelect(
       'SELECT kind FROM migrations WHERE source_entry_id = ?',
-      variables: <Variable>[Variable.withString(source)],
+      variables: <Variable<Object>>[Variable.withString(source)],
     ).getSingle();
     expect(lineage.read<String>('kind'), 'scheduled');
   });
 
-  test('migration to the same owner is rejected without changing source', () async {
-    final String dailyLog = await service.createLog(
-      kind: JournalLogKind.daily,
-      periodStart: '2026-09-02',
-    );
-    final String source = await service.capture(
-      type: JournalEntryType.task,
-      content: 'Keep history honest',
-      owner: JournalLogOwner(logId: dailyLog),
-    );
+  test(
+    'migration to the same owner is rejected without changing source',
+    () async {
+      final String dailyLog = await service.createLog(
+        kind: JournalLogKind.daily,
+        periodStart: '2026-09-02',
+      );
+      final String source = await service.capture(
+        type: JournalEntryType.task,
+        content: 'Keep history honest',
+        owner: JournalLogOwner(logId: dailyLog),
+      );
 
-    expect(
-      () => service.migrate(
-        sourceEntryId: source,
-        destinationOwner: JournalLogOwner(logId: dailyLog),
-      ),
-      throwsA(isA<JournalInvariantException>()),
-    );
+      expect(
+        () => service.migrate(
+          sourceEntryId: source,
+          destinationOwner: JournalLogOwner(logId: dailyLog),
+        ),
+        throwsA(isA<JournalInvariantException>()),
+      );
 
-    final sourceRow = await database.customSelect(
-      'SELECT task_state FROM entries WHERE id = ?',
-      variables: <Variable>[Variable.withString(source)],
-    ).getSingle();
-    expect(sourceRow.read<String>('task_state'), 'open');
+      final sourceRow = await database.customSelect(
+        'SELECT task_state FROM entries WHERE id = ?',
+        variables: <Variable<Object>>[Variable.withString(source)],
+      ).getSingle();
+      expect(sourceRow.read<String>('task_state'), 'open');
 
-    final migrationCount = await database.customSelect(
-      'SELECT COUNT(*) AS count FROM migrations',
-    ).getSingle();
-    expect(migrationCount.read<int>('count'), 0);
-  });
+      final migrationCount = await database.customSelect(
+        'SELECT COUNT(*) AS count FROM migrations',
+      ).getSingle();
+      expect(migrationCount.read<int>('count'), 0);
+    },
+  );
 
   test('Monthly and Future period buckets must start on day one', () async {
     expect(
