@@ -2,7 +2,7 @@ import 'package:daymark/core/database/daymark_database.dart';
 import 'package:daymark/features/journal/application/journal_service.dart';
 import 'package:daymark/features/journal/data/journal_repository.dart';
 import 'package:daymark/features/journal/domain/journal_domain.dart';
-import 'package:drift/drift.dart';
+import 'package:drift/drift.dart' hide isNull;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -134,7 +134,7 @@ void main() {
         .getSingle();
     expect(row.read<String>('task_state'), 'open');
     expect(row.read<String>('log_id'), dailyLog);
-    expect(row.readNullable<String>('collection_id'), nullValue);
+    expect(row.readNullable<String>('collection_id'), isNull);
 
     final reference = await database
         .customSelect(
