@@ -1,0 +1,47 @@
+{
+  "benchmark": "daymark-argon2id-profile-matrix",
+  "platform": "linux",
+  "platformVersion": "Linux 6.12.94+deb13-amd64 #1 SMP PREEMPT_DYNAMIC Debian 6.12.94-1 (2026-06-20)",
+  "dartVersion": "3.13.2 (stable) (Tue Aug 25 01:01:12 2026 -0700) on \"linux_x64\"",
+  "processors": 4,
+  "warmupRunsPerProfile": 1,
+  "sampleRunsPerProfile": 5,
+  "profiles": [
+    {
+      "name": "owasp-19m-2t",
+      "parameters": {"memoryKiB": 19456, "iterations": 2, "parallelism": 1, "hashLength": 32},
+      "samplesMicros": [226908, 228268, 228366, 234156, 236924],
+      "minimumMicros": 226908,
+      "medianMicros": 228366,
+      "averageMicros": 230924,
+      "maximumMicros": 236924
+    },
+    {
+      "name": "owasp-12m-3t",
+      "parameters": {"memoryKiB": 12288, "iterations": 3, "parallelism": 1, "hashLength": 32},
+      "samplesMicros": [222850, 224031, 224858, 225833, 225972],
+      "minimumMicros": 222850,
+      "medianMicros": 224858,
+      "averageMicros": 224708,
+      "maximumMicros": 225972
+    },
+    {
+      "name": "owasp-9m-4t",
+      "parameters": {"memoryKiB": 9216, "iterations": 4, "parallelism": 1, "hashLength": 32},
+      "samplesMicros": [226677, 227198, 227339, 228025, 228595],
+      "minimumMicros": 226677,
+      "medianMicros": 227339,
+      "averageMicros": 227566,
+      "maximumMicros": 228595
+    },
+    {
+      "name": "owasp-7m-5t",
+      "parameters": {"memoryKiB": 7168, "iterations": 5, "parallelism": 1, "hashLength": 32},
+      "samplesMicros": [226597, 226939, 226979, 227964, 229513],
+      "minimumMicros": 226597,
+      "medianMicros": 226979,
+      "averageMicros": 227598,
+      "maximumMicros": 229513
+    }
+  ]
+}
