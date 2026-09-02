@@ -86,8 +86,11 @@ void main() {
 
     expect(dataSource.entries, hasLength(1));
     expect(dataSource.entries.single.taskState, JournalTaskState.discarded);
-    expect(find.text('—'), findsOneWidget);
-    expect(find.text('Old reminder'), findsOneWidget);
+
+    final Text discardedMarker = tester.widget<Text>(find.text('•'));
+    final Text discardedContent = tester.widget<Text>(find.text('Old reminder'));
+    expect(discardedMarker.style?.decoration, TextDecoration.lineThrough);
+    expect(discardedContent.style?.decoration, TextDecoration.lineThrough);
     expect(find.byType(SnackBar), findsNothing);
 
     await tester.pumpWidget(const SizedBox.shrink());
