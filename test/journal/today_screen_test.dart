@@ -1,11 +1,12 @@
 import 'dart:io';
 
-import 'package:daymark/app/daymark_app.dart';
 import 'package:daymark/core/crypto/key_envelope.dart';
 import 'package:daymark/core/session/journal_files.dart';
 import 'package:daymark/core/session/journal_session.dart';
 import 'package:daymark/core/session/journal_session_controller.dart';
 import 'package:daymark/features/journal/data/daily_log_repository.dart';
+import 'package:daymark/features/journal/presentation/today_screen.dart';
+import 'package:daymark/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -40,7 +41,11 @@ void main() {
             (ref, controller) => JournalUnlocked(session),
           ),
         ],
-        child: const DaymarkApp(),
+        child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const Scaffold(body: TodayScreen()),
+        ),
       ),
     );
 
