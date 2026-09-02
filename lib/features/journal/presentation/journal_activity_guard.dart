@@ -1,7 +1,5 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
 const Duration defaultJournalAutoLockTimeout = Duration(minutes: 5);
@@ -17,7 +15,7 @@ typedef JournalLockCallback = Future<void> Function();
 /// re-evaluates elapsed wall time so a suspended platform timer cannot keep an
 /// inactive journal open.
 final class JournalActivityGuard extends StatefulWidget {
-  JournalActivityGuard({
+  const JournalActivityGuard({
     required this.child,
     required this.onTimeout,
     this.timeout = defaultJournalAutoLockTimeout,
