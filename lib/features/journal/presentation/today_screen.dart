@@ -291,9 +291,8 @@ class _TodayScreenState extends ConsumerState<TodayScreen>
       if (!mounted) {
         return;
       }
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.saveEntryFailed)),
-      );
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(l10n.saveEntryFailed)));
       setState(() => _saving = false);
     }
   }
