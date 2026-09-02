@@ -17,6 +17,7 @@ This file is for user-visible behavior, data compatibility, security, packaging,
 
 - English is the canonical and fallback UI locale; an exact Brazilian Portuguese system locale selects Portuguese (Brazil).
 - Device-assisted secure-storage integration is deferred until the portable master-password/recovery security baseline is complete.
+- Android OS-managed app-data backup and device-transfer paths are explicitly excluded; portable migration is reserved for Daymark's encrypted backup/restore design.
 
 ### Fixed
 
@@ -27,4 +28,5 @@ This file is for user-visible behavior, data compatibility, security, packaging,
 - Journal persistence uses SQLite3MultipleCiphers ChaCha20-Poly1305 with random per-journal key material instead of plaintext SQLite.
 - Master passwords protect the random journal key through Argon2id and XChaCha20-Poly1305 rather than being used directly as database passwords.
 - Key-envelope and encrypted-database tests cover wrong credentials, corrupted authenticated data, incorrect database keys, unkeyed SQLite access, and representative plaintext leakage.
-- Argon2id production parameters remain intentionally unfrozen until representative Linux and physical Android profile-mode benchmarks are reviewed.
+- Representative Linux and physical Android profile-mode benchmarks were recorded for Argon2id parameter selection.
+- The initial Argon2id production baseline is frozen at 19 MiB memory, 2 iterations, parallelism 1, and 32-byte output; parameters remain explicit in each key envelope for future strengthening and compatibility handling.
