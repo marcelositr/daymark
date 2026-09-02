@@ -9,6 +9,51 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+abstract interface class TodayJournalDataSource {
+  Future<DailyLogSnapshot> load(String methodDate);
+
+  Future<void> capture({
+    required String logId,
+    required JournalEntryType type,
+    required String content,
+  });
+}
+
+final Provider<TodayJournalDataSource> todayJournalDataSourceProvider =
+    Provider<TodayJournalDataSource>((ref) {
+      final JournalAccessState access = ref
+          .watch(journalSessionControllerProvider)
+          .requireValue;
+      if (access case JournalUnlocked(:final session)) {
+        return _SessionTodayJournalDataSource(session);
+      }
+      throw StateError('Today requires an unlocked journal session.');
+    });
+
+final class _SessionTodayJournalDataSource implements TodayJournalDataSource {
+  const _SessionTodayJournalDataSource(this._session);
+
+  final JournalSession _session;
+
+  @override
+  Future<DailyLogSnapshot> load(String methodDate) {
+    return _session.loadDailyLog(methodDate);
+  }
+
+  @override
+  Future<void> capture({
+    required String logId,
+    required JournalEntryType type,
+    required String content,
+  }) {
+    return _session.captureDailyLogEntry(
+      logId: logId,
+      type: type,
+      content: content,
+    );
+  }
+}
+
 class TodayScreen extends ConsumerStatefulWidget {
   const TodayScreen({super.key});
 
@@ -206,19 +251,12 @@ class _TodayScreenState extends ConsumerState<TodayScreen>
     );
   }
 
-  JournalSession _session() {
-    final JournalAccessState access = ref
-        .read(journalSessionControllerProvider)
-        .requireValue;
-    if (access case JournalUnlocked(:final session)) {
-      return session;
-    }
-    throw StateError('Today requires an unlocked journal session.');
+  TodayJournalDataSource _dataSource() {
+    return ref.read(todayJournalDataSourceProvider);
   }
 
   Future<DailyLogSnapshot> _loadSnapshot() {
-    final JournalSession session = _session();
-    return session.loadDailyLog(formatJournalMethodDate(_today));
+    return _dataSource().load(formatJournalMethodDate(_today));
   }
 
   Future<void> _capture() async {
@@ -231,9 +269,9 @@ class _TodayScreenState extends ConsumerState<TodayScreen>
     setState(() => _saving = true);
 
     try {
-      final JournalSession session = _session();
+      final TodayJournalDataSource dataSource = _dataSource();
       final DailyLogSnapshot snapshot = await _snapshotFuture;
-      await session.captureDailyLogEntry(
+      await dataSource.capture(
         logId: snapshot.logId,
         type: _entryType,
         content: content,
@@ -245,9 +283,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen>
 
       _entryController.clear();
       setState(() {
-        _snapshotFuture = session.loadDailyLog(
-          formatJournalMethodDate(_today),
-        );
+        _snapshotFuture = dataSource.load(formatJournalMethodDate(_today));
         _saving = false;
       });
     } catch (error, stackTrace) {
