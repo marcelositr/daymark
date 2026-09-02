@@ -79,6 +79,52 @@ void main() {
     }
   });
 
+  test('modified nonce fails authentication', () async {
+    final JournalKeyMaterial material = JournalKeyMaterial.generate();
+
+    try {
+      final String envelope = await service.wrap(
+        masterPassword: 'password',
+        keyMaterial: material,
+      );
+      final String tampered = _mutateEncodedField(
+        envelope,
+        section: 'wrap',
+        field: 'nonce',
+      );
+
+      await expectLater(
+        service.unwrap(masterPassword: 'password', encodedEnvelope: tampered),
+        throwsA(isA<JournalUnlockException>()),
+      );
+    } finally {
+      material.destroy();
+    }
+  });
+
+  test('modified authentication tag fails authentication', () async {
+    final JournalKeyMaterial material = JournalKeyMaterial.generate();
+
+    try {
+      final String envelope = await service.wrap(
+        masterPassword: 'password',
+        keyMaterial: material,
+      );
+      final String tampered = _mutateEncodedField(
+        envelope,
+        section: 'wrap',
+        field: 'mac',
+      );
+
+      await expectLater(
+        service.unwrap(masterPassword: 'password', encodedEnvelope: tampered),
+        throwsA(isA<JournalUnlockException>()),
+      );
+    } finally {
+      material.destroy();
+    }
+  });
+
   test('modified authenticated KDF metadata fails closed', () async {
     final JournalKeyMaterial material = JournalKeyMaterial.generate();
 
@@ -97,6 +143,32 @@ void main() {
           encodedEnvelope: jsonEncode(root),
         ),
         throwsA(isA<JournalUnlockException>()),
+      );
+    } finally {
+      material.destroy();
+    }
+  });
+
+  test('truncated envelope payload fails closed', () async {
+    final JournalKeyMaterial material = JournalKeyMaterial.generate();
+
+    try {
+      final String envelope = await service.wrap(
+        masterPassword: 'password',
+        keyMaterial: material,
+      );
+      final String truncated = _truncateEncodedField(
+        envelope,
+        section: 'wrap',
+        field: 'ciphertext',
+      );
+
+      await expectLater(
+        service.unwrap(
+          masterPassword: 'password',
+          encodedEnvelope: truncated,
+        ),
+        throwsA(isA<KeyEnvelopeFormatException>()),
       );
     } finally {
       material.destroy();
@@ -184,5 +256,21 @@ String _mutateEncodedField(
 
   final String replacement = rawValue.startsWith('A') ? 'B' : 'A';
   object[field] = '$replacement${rawValue.substring(1)}';
+  return jsonEncode(root);
+}
+
+String _truncateEncodedField(
+  String encoded, {
+  required String section,
+  required String field,
+}) {
+  final Map<String, Object?> root = _decodeEnvelope(encoded);
+  final Map<String, Object?> object = _section(root, section);
+  final Object? rawValue = object[field];
+  if (rawValue is! String || rawValue.length < 2) {
+    fail('Test fixture has no truncatable $section.$field value.');
+  }
+
+  object[field] = rawValue.substring(0, rawValue.length - 2);
   return jsonEncode(root);
 }
