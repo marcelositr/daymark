@@ -34,5 +34,11 @@
   "taskActions": "Task actions",
   "completeTask": "Complete",
   "discardTask": "Discard",
-  "taskActionFailed": "Could not update this task."
+  "taskActionFailed": "Could not update this task.",
+  "monthlyCalendar": "Calendar",
+  "monthlyTasks": "Tasks",
+  "monthlyLogLoadFailed": "Could not load this Monthly Log.",
+  "emptyMonthlyTasks": "No monthly tasks yet.",
+  "monthlyEventHint": "Add an event for this day",
+  "monthlyTaskHint": "Add a task for this month"
 }
