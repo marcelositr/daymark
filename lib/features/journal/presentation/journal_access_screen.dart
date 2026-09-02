@@ -32,23 +32,29 @@ class _JournalAccessScreenState extends ConsumerState<JournalAccessScreen> {
       journalSessionControllerProvider,
     );
 
-    return SafeArea(
-      child: Center(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(32),
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 420),
-            child: access.when(
-              data: (state) => switch (state) {
-                JournalNeedsCreation() => _buildCreate(context, l10n),
-                JournalLocked() => _buildUnlock(context, l10n),
-                JournalStorageProblem() => _buildStorageProblem(context, l10n),
-                JournalUnlocked() => const Center(
-                  child: CircularProgressIndicator(),
-                ),
-              },
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (error, stackTrace) => _buildLoadFailure(context, l10n),
+    return Scaffold(
+      body: SafeArea(
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(32),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 420),
+              child: access.when(
+                data: (state) => switch (state) {
+                  JournalNeedsCreation() => _buildCreate(context, l10n),
+                  JournalLocked() => _buildUnlock(context, l10n),
+                  JournalStorageProblem() => _buildStorageProblem(
+                    context,
+                    l10n,
+                  ),
+                  JournalUnlocked() => const Center(
+                    child: CircularProgressIndicator(),
+                  ),
+                },
+                loading: () =>
+                    const Center(child: CircularProgressIndicator()),
+                error: (error, stackTrace) => _buildLoadFailure(context, l10n),
+              ),
             ),
           ),
         ),
