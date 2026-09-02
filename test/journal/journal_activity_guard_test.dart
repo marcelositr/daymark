@@ -24,6 +24,36 @@ void main() {
     expect(lockCount, 1);
   });
 
+  testWidgets('widget rebuild does not restart the inactivity deadline', (
+    tester,
+  ) async {
+    int lockCount = 0;
+    Future<void> onTimeout() async {
+      lockCount += 1;
+    }
+
+    await tester.pumpWidget(
+      _testApp(
+        timeout: const Duration(seconds: 5),
+        onTimeout: onTimeout,
+        child: const Scaffold(body: Text('Initial child')),
+      ),
+    );
+
+    await tester.pump(const Duration(seconds: 4));
+    await tester.pumpWidget(
+      _testApp(
+        timeout: const Duration(seconds: 5),
+        onTimeout: onTimeout,
+        child: const Scaffold(body: Text('Rebuilt child')),
+      ),
+    );
+
+    await tester.pump(const Duration(seconds: 1));
+    await tester.pump();
+    expect(lockCount, 1);
+  });
+
   testWidgets('pointer interaction restarts the inactivity deadline', (
     tester,
   ) async {
