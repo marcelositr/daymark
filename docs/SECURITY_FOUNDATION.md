@@ -4,13 +4,13 @@
 
 This document defines the focused implementation and validation cycle that turns Daymark's security architecture into tested engineering constraints.
 
-`SECURITY.md` remains the authoritative threat model and product security contract. This document is narrower: it records what must be proven before Daymark treats master-password unlock, encrypted journal persistence, recovery, and portable key handling as an implementation baseline.
+`SECURITY.md` remains the authoritative threat model and product security contract. This document is narrower: it records what PR #7 must prove before Daymark treats master-password unlock, encrypted journal persistence, recovery compatibility, and portable key handling as an implementation baseline.
 
 The goal is not to invent cryptography. The goal is to compose mature primitives correctly, make failure explicit, and keep portable recovery independent from device-local convenience mechanisms.
 
 ## Scope of this cycle
 
-This branch must validate, with executable tests where practical:
+This branch validates, with executable tests where practical:
 
 1. cryptographically secure generation of a random journal data-encryption key;
 2. master-password key derivation using Argon2id;
@@ -20,12 +20,12 @@ This branch must validate, with executable tests where practical:
 6. proving that the on-disk journal database is not readable as plaintext SQLite;
 7. wrong-password and corrupted-envelope failure behavior;
 8. explicit key-material lifecycle boundaries in application code;
-9. optional offline recovery-key architecture at the same portable trust layer as the master password;
+9. an independent offline-recovery architecture at the same portable trust layer as the master password;
 10. benchmark hooks and recorded results needed to choose Argon2id parameters for Linux and Android.
 
 ## Explicitly not in this cycle
 
-This security-foundation PR does not need to finish:
+This security-foundation PR does not implement:
 
 - biometric UI;
 - Android Keystore integration;
@@ -40,124 +40,195 @@ Device-assisted unlock remains a convenience layer and will be connected only af
 
 The encrypted backup container is the next focused security task. This cycle may define reusable envelope primitives for it, but must not quietly expand into a full backup subsystem.
 
-## Key hierarchy
+## Validated implementation baseline
 
-The intended hierarchy remains:
+PR #7 currently uses the published Dart `cryptography` package 2.9.0 for application-level cryptography and `package:sqlite3` with SQLite3MultipleCiphers for encrypted persistence.
+
+The implemented hierarchy is:
 
 ```text
 master password
       |
       v
-Argon2id + random salt + versioned parameters
+Argon2id + random 16-byte salt + explicit parameters
       |
       v
-password-derived key-encryption key
+32-byte password-derived key-encryption key
       |
       v
-authenticated wrapping of random journal key
+XChaCha20-Poly1305 authenticated key envelope
       |
       v
-random journal data-encryption key
+32-byte random journal data-encryption key
++ 16-byte random SQLite3MC cipher salt
       |
       v
-SQLite3MultipleCiphers encrypted journal database
+SQLite3MultipleCiphers ChaCha20-Poly1305 journal database
 ```
 
-The master password is never stored.
+The master password is never stored and is never passed directly to SQLite3MultipleCiphers.
 
-The journal key is generated from a cryptographically secure random source and is not deterministically derived from the password. Changing the master password must therefore re-protect the journal key rather than require rewriting semantic journal data.
+Changing the master password re-protects the random journal key material rather than requiring semantic journal data to be rewritten.
 
-## Key-envelope boundary
+## Key-envelope v1
 
-Unlock metadata must exist before the encrypted database can be opened, so it remains outside the Drift journal schema.
+Unlock metadata must exist before the encrypted database can be opened, so the key envelope remains outside the Drift journal schema.
 
-The envelope must be small, versioned, authenticated, and portable. It may contain non-secret metadata needed to derive or select keys, such as:
+Version 1 is a strict JSON object whose interpretation-sensitive metadata is authenticated by XChaCha20-Poly1305 additional authenticated data.
 
-- format/version identifier;
-- KDF identifier;
-- Argon2id parameters;
-- random KDF salt;
-- authenticated-encryption algorithm identifier when versioning requires it;
-- nonce/IV material required by the selected reviewed primitive;
-- wrapped journal-key ciphertext and authentication data;
-- recovery metadata that does not expose the recovery secret itself.
+Top-level fields:
 
-The exact serialized representation is not frozen until the implementation spike proves that the chosen Dart APIs and platform behavior are maintainable.
+- `format`: `daymark-key-envelope`;
+- `version`: `1`;
+- `kdf`;
+- `wrap`.
 
-No envelope field may contain journal content, the master password, or plaintext journal-key material.
+`kdf` fields:
+
+- `name`: `argon2id`;
+- `memoryKiB`;
+- `iterations`;
+- `parallelism`;
+- `hashLength`;
+- `salt`: base64url-encoded 16-byte random salt.
+
+`wrap` fields:
+
+- `name`: `xchacha20-poly1305`;
+- `nonce`;
+- `ciphertext`;
+- `mac`.
+
+The encrypted payload is the 48-byte serialized journal-key material used by SQLite3MultipleCiphers: 32 bytes of random journal key followed by 16 bytes of random cipher salt.
+
+Unknown or extra envelope fields are not silently ignored. Unsupported envelope versions or KDF/AEAD identifiers fail explicitly.
+
+No envelope field contains journal content, the master password, or plaintext journal-key material.
 
 ## Password derivation
 
-Argon2id remains the preferred password KDF.
+Argon2id is implemented through `cryptography` 2.9.0.
 
-Do not freeze parameters from a desktop-only benchmark or copy a generic value without measurement. The final parameter set must be selected from representative measurements on both initial platforms, with Android treated as a first-class constraint rather than an afterthought.
-
-The implementation must make KDF parameters versioned data so stronger parameters can be introduced later without reinterpreting old journals.
-
-Tests must demonstrate at minimum:
+Tests prove that:
 
 - same password + same salt + same parameters derives the same key material;
 - changing salt changes derived key material;
 - changing password fails authenticated unwrap;
-- malformed or unsupported KDF metadata fails closed.
+- unsupported/malformed KDF metadata fails closed before journal data is opened.
+
+### Current candidate parameters
+
+The current pre-alpha candidate is:
+
+- memory: 19 MiB;
+- iterations: 2;
+- parallelism: 1;
+- hash length: 32 bytes.
+
+These values are not frozen for `v1.0.0-alpha.1`. Daymark must record representative Linux and physical Android measurements first.
+
+The reproducible benchmark harness is `tool/argon2_benchmark.dart`; the procedure and release-blocking rule are documented in `docs/ARGON2_BENCHMARK.md`.
+
+### Untrusted metadata bounds
+
+Argon2 parameters are parsed from unauthenticated envelope metadata before authenticated unwrap can occur. They therefore cannot be allowed to request arbitrary memory/work costs.
+
+The current defensive ceilings are:
+
+- memory: 64 MiB;
+- iterations: 5;
+- parallelism: 4;
+- hash length: exactly 32 bytes.
+
+These are parser safety ceilings, not production targets. The selected production parameters remain subject to Linux and physical Android benchmarking.
 
 ## Authenticated key wrapping
 
-Daymark must use a mature authenticated-encryption primitive exposed by a reviewed package. It must not implement AEAD, MAC construction, nonce generation rules, or password hashing manually.
+The key envelope uses `Xchacha20.poly1305Aead()` from the published `cryptography` package.
 
-The selected construction must authenticate the envelope fields that influence interpretation. Version or algorithm substitution must not be silently accepted.
-
-Tests must include:
+Tests cover:
 
 - successful wrap/unwrap;
 - wrong password;
 - modified ciphertext;
-- modified nonce/IV;
-- modified authenticated metadata;
-- truncated envelope;
-- unsupported envelope version.
+- modified nonce;
+- modified authentication tag;
+- modified authenticated KDF metadata;
+- truncated ciphertext payload;
+- unsupported envelope version;
+- unsupported KDF identifier;
+- unreasonable Argon2 parameters rejected before allocation/derivation.
 
-All integrity failures are unlock failures. The application must not attempt recovery by opening the journal with guessed/default parameters.
+Authentication failures map to the generic `JournalUnlockException`; failure reporting does not reveal password-quality hints.
+
+The application does not attempt recovery by opening the journal with guessed/default parameters.
 
 ## Encrypted SQLite validation
 
-The build already selects SQLite3MultipleCiphers through the `sqlite3` build hook. This cycle must prove runtime behavior, not merely trust build configuration.
+The build selects SQLite3MultipleCiphers through the `sqlite3` build hook:
 
-The implementation must verify that expected cipher support is present before journal creation/opening. If encrypted SQLite support is unavailable, Daymark must fail closed rather than create or open a plaintext journal.
+```yaml
+hooks:
+  user_defines:
+    sqlite3:
+      source: sqlite3mc
+```
 
-The spike must create a representative journal database using a random journal key, close it, and prove that:
+Runtime initialization checks that `PRAGMA cipher` is available before opening journal data. Missing encrypted-SQLite support is a security failure, not permission to create a plaintext fallback.
 
+Daymark selects the SQLite3MultipleCiphers ChaCha20 cipher and supplies raw material using the documented 48-byte ChaCha20 raw-key-plus-salt form:
+
+```text
+32-byte journal key || 16-byte cipher salt
+```
+
+`PRAGMA key` does not prove that a key is correct. Daymark therefore performs an actual read from `sqlite_master` after keying the connection before it returns an opened journal.
+
+Executable tests prove that:
+
+- a newly created Drift journal is fully initialized before `createNew()` returns;
 - reopening with the correct journal key succeeds;
-- reopening with an incorrect key fails;
-- ordinary plaintext SQLite access cannot read the journal schema/content;
-- the journal file does not contain representative sensitive test strings in plaintext;
-- normal Drift schema/invariant behavior still works through the encrypted connection.
+- reopening with an incorrect journal key fails;
+- ordinary unkeyed SQLite cannot read the journal schema/content;
+- representative sensitive content does not appear verbatim in the database file;
+- normal Drift schema constraints remain active through encrypted persistence.
 
-Exact SQLite3MultipleCiphers raw-key and salt handling must be documented from the working implementation rather than inferred from older SQLCipher examples.
+The negative path for a build that genuinely lacks SQLite3MultipleCiphers remains enforced by implementation code. Producing that exact missing-library environment inside the normal CI matrix is not required if doing so would introduce a test-only native-library architecture; this must remain a reviewed limitation rather than weakening the runtime check.
 
 ## Recovery direction
 
-The existing product decision remains: recovery is optional, offline, and account-independent.
+Recovery remains optional, offline, and account-independent.
 
-The security foundation must preserve the ability for a securely generated recovery secret to protect/recover the same random journal key without requiring the original device or its Keystore/keyring.
+The selected architecture is that a recovery secret independently protects the same random journal key material that the master password protects. It must not depend on the original device, Android Keystore, Linux keyring state, a server account, or a maintainer-controlled secret.
 
-The final human representation and recovery UX do not need to be frozen in this PR, but the envelope architecture must not make independent recovery impossible.
+The final human representation and recovery UX are deliberately deferred. PR #7 only establishes that the random journal key is independent from the password and can therefore be wrapped by more than one authorized portable credential without changing the encrypted database key.
 
 No server reset, maintainer backdoor, or hidden universal recovery mechanism is permitted.
 
 ## Sensitive-memory discipline
 
-Dart and Flutter do not provide a universal guarantee that secret bytes can be securely zeroized from all runtime copies. The implementation must therefore avoid pretending stronger guarantees than the runtime provides.
+Dart and Flutter do not provide a universal guarantee that secret bytes can be securely zeroized from all runtime copies. The implementation therefore avoids pretending stronger guarantees than the runtime provides.
 
-Practical rules:
+Current practical boundaries:
 
-- keep plaintext password and key material scoped as narrowly as possible;
-- avoid converting secret bytes to `String` except where the user password necessarily enters as text;
-- do not log secrets or derived material;
-- do not persist derived keys in preferences, diagnostics, crash output, or temporary files;
-- do not keep unlocked journal keys in global/static state longer than the unlocked session requires;
-- use explicit session/key-holder abstractions so locking can drop application references deterministically;
-- document runtime limitations instead of claiming perfect memory erasure.
+- journal key bytes are held in overwrite-on-destroy `SecretKeyData`;
+- owned mutable serialized key buffers are overwritten after use where practical;
+- journal-key material has an explicit `destroy()` lifecycle;
+- its owned cipher-salt buffer is overwritten on destroy;
+- unnecessary temporary key copies are avoided;
+- passwords, keys, decrypted content, and recovery material are never logged or persisted as diagnostics.
+
+SQLite3MultipleCiphers currently receives the raw key through SQL `PRAGMA key`, which requires hexadecimal representation as a Dart `String`. Dart strings are immutable and cannot be reliably zeroized by application code. The mutable raw byte buffer is overwritten after conversion, but Daymark explicitly does not claim guaranteed erasure of the runtime string copy.
+
+This limitation must not be "fixed" by introducing unsafe FFI without a measured need and a separately reviewed safety case.
+
+## Key/session boundary for later locking
+
+The current `JournalKeyMaterial` object is the narrow owner of unlocked journal key material and exposes an explicit destroy lifecycle.
+
+Later manual/automatic lock work must own that object through a session-level abstraction rather than global/static state. Locking must close or invalidate the encrypted database session and drop application references to unlocked key material deterministically as far as the Dart/Flutter runtime permits.
+
+The UI, timeout policy, Android lifecycle integration, and Linux session-lock integration remain later tasks.
 
 ## Test boundary
 
@@ -165,28 +236,24 @@ Security tests use synthetic secrets and disposable databases only.
 
 CI must never require real user credentials or committed secret material.
 
-Tests should distinguish:
+Tests distinguish:
 
-- expected authentication failure;
+- expected authentication/unlock failure;
 - unsupported-format failure;
 - corrupted-data failure;
 - missing cipher support;
 - programming/configuration errors.
 
-Failure classes must not encourage the UI to reveal whether a guessed password was "almost" correct.
+## Remaining gates before PR #7 review
 
-## Decisions this cycle must produce
+The implementation baseline is established, but PR #7 is not ready to merge until the remaining evidence is handled deliberately:
 
-Before this PR is ready for review, it should close or explicitly defer these questions:
-
-1. exact maintained Dart package/API used for Argon2id and key-envelope AEAD;
-2. exact AEAD primitive and nonce handling;
-3. envelope version-1 serialization and authenticated metadata;
-4. journal-key length and representation passed to SQLite3MultipleCiphers;
-5. runtime cipher-capability verification;
-6. measured Argon2id parameter baseline or, if physical Android benchmarking cannot be completed in CI, the exact benchmark harness and release-blocking validation procedure;
-7. recovery-envelope relationship to the primary password envelope;
-8. key/session object boundaries needed for later manual/automatic lock implementation.
+1. run and record the Argon2id benchmark on representative Linux hardware;
+2. run and record the Argon2id benchmark on a physical Android device;
+3. freeze or revise the initial Argon2id parameters only after both measurements are reviewed;
+4. align `SECURITY.md`, `docs/ARCHITECTURE.md`, `PROJECT.md`, README status, and the PR checklist with the proven implementation;
+5. obtain final green CI on the reviewed head;
+6. user review and explicit merge decision.
 
 ## Review rule
 
