@@ -101,7 +101,7 @@ void main() {
   testWidgets('failed Task action leaves the Task open and reports failure', (
     tester,
   ) async {
-    final FlutterExceptionHandler? previousErrorHandler = FlutterError.onError;
+    final previousErrorHandler = FlutterError.onError;
     final List<FlutterErrorDetails> reportedErrors = <FlutterErrorDetails>[];
     FlutterError.onError = reportedErrors.add;
     addTearDown(() => FlutterError.onError = previousErrorHandler);
