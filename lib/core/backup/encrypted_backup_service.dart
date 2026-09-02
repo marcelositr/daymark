@@ -30,9 +30,8 @@ enum RestoreCommitPhase {
 final class EncryptedBackupService {
   EncryptedBackupService({
     KeyEnvelopeService? keyEnvelopeService,
-    RestoreCommitHook? restoreCommitHook,
-  }) : _keyEnvelopeService = keyEnvelopeService ?? KeyEnvelopeService(),
-       _restoreCommitHook = restoreCommitHook;
+    this._restoreCommitHook,
+  }) : _keyEnvelopeService = keyEnvelopeService ?? KeyEnvelopeService();
 
   static const String format = 'daymark-backup';
   static const int version = 1;
