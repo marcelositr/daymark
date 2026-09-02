@@ -38,37 +38,40 @@ void main() {
     await database.close();
   });
 
-  test('complete transitions only an open Task and preserves placement', () async {
-    final String dailyLog = await journalService.createLog(
-      kind: JournalLogKind.daily,
-      periodStart: '2026-09-02',
-    );
-    final String task = await journalService.capture(
-      type: JournalEntryType.task,
-      content: 'Archive receipts',
-      owner: JournalLogOwner(logId: dailyLog),
-    );
+  test(
+    'complete transitions only an open Task and preserves placement',
+    () async {
+      final String dailyLog = await journalService.createLog(
+        kind: JournalLogKind.daily,
+        periodStart: '2026-09-02',
+      );
+      final String task = await journalService.capture(
+        type: JournalEntryType.task,
+        content: 'Archive receipts',
+        owner: JournalLogOwner(logId: dailyLog),
+      );
 
-    await taskActions.complete(entryId: task);
+      await taskActions.complete(entryId: task);
 
-    final row = await database
-        .customSelect(
-          '''
+      final row = await database
+          .customSelect(
+            '''
           SELECT e.task_state, e.content, e.updated_at, p.log_id, p.ordinal
           FROM entries e
           JOIN entry_placements p ON p.entry_id = e.id
           WHERE e.id = ?
           ''',
-          variables: <Variable<Object>>[Variable.withString(task)],
-        )
-        .getSingle();
+            variables: <Variable<Object>>[Variable.withString(task)],
+          )
+          .getSingle();
 
-    expect(row.read<String>('task_state'), 'completed');
-    expect(row.read<String>('content'), 'Archive receipts');
-    expect(row.read<int>('updated_at'), 2_000_000);
-    expect(row.read<String>('log_id'), dailyLog);
-    expect(row.read<int>('ordinal'), 0);
-  });
+      expect(row.read<String>('task_state'), 'completed');
+      expect(row.read<String>('content'), 'Archive receipts');
+      expect(row.read<int>('updated_at'), 2_000_000);
+      expect(row.read<String>('log_id'), dailyLog);
+      expect(row.read<int>('ordinal'), 0);
+    },
+  );
 
   test('discard transitions an open Task to discarded', () async {
     final String dailyLog = await journalService.createLog(
