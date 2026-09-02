@@ -101,6 +101,57 @@ Record:
 
 Run the benchmark on physical hardware with the device in a normal thermal state. Repeat the complete launch at least three times if results vary materially.
 
+## Recorded Android result: older ARM32 device
+
+First physical Android measurement, recorded 2026-09-01:
+
+- device: M7 3G PLUS;
+- Android 8.1.0 / API 27;
+- runtime architecture: 32-bit `android_arm`;
+- 4 logical processors;
+- firmware/platform identifier: `ML_WI12_M7_3G_PLUS.V4_20191031`;
+- Flutter 3.47.2 / Dart 3.13.2;
+- profile-mode candidate: 19 MiB memory, 2 iterations, parallelism 1, 32-byte output;
+- minimum: 4,083,909 microseconds;
+- median: 4,190,644 microseconds;
+- average: 4,187,815 microseconds;
+- maximum: 4,299,113 microseconds.
+
+Complete harness report:
+
+```json
+{
+  "benchmark": "daymark-argon2id",
+  "platform": "android",
+  "platformVersion": "ML_WI12_M7_3G_PLUS.V4_20191031",
+  "dartVersion": "3.13.2 (stable) (Tue Aug 25 01:01:12 2026 -0700) on \"android_arm\"",
+  "processors": 4,
+  "warmupRuns": 1,
+  "sampleRuns": 5,
+  "parameters": {
+    "memoryKiB": 19456,
+    "iterations": 2,
+    "parallelism": 1,
+    "hashLength": 32
+  },
+  "samplesMicros": [
+    4083909,
+    4104532,
+    4190644,
+    4260881,
+    4299113
+  ],
+  "minimumMicros": 4083909,
+  "medianMicros": 4190644,
+  "averageMicros": 4187815,
+  "maximumMicros": 4299113
+}
+```
+
+This is a valid physical-device measurement and an intentionally conservative data point. The current candidate is roughly 18.7 times slower at the median on this older 32-bit Android device than on the recorded Linux machine. A roughly 4.19-second password derivation is too slow to freeze the candidate from this result alone.
+
+Before changing the candidate, record at least one additional physical Android result from a newer, still representative device. That second Android data point will distinguish an extreme legacy-device cost from a broader Android usability problem. The current candidate remains unfrozen.
+
 ## Parameter-freeze rule
 
 `Argon2Parameters.productionCandidate` is not a compatibility promise yet.
