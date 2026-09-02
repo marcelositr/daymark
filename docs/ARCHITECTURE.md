@@ -145,13 +145,23 @@ hooks:
 
 This direction supersedes the earlier plan to depend on `sqlcipher_flutter_libs`, which is obsolete in the current Drift/sqlite3 ecosystem.
 
-The application must verify at runtime during database setup that the encrypted SQLite variant is actually loaded before opening journal data. Failure to provide the expected cipher support is a startup security failure, not a reason to silently open plaintext SQLite.
+The application verifies at runtime during database setup that the encrypted SQLite variant is loaded before opening journal data. Failure to provide the expected cipher support is a startup security failure, not a reason to silently open plaintext SQLite.
 
-SQLite3MultipleCiphers currently uses ChaCha20-Poly1305 as its recommended/default authenticated cipher. Daymark should begin with that non-legacy cipher unless the focused security prototype produces a concrete, documented reason to select another supported authenticated scheme.
+The implemented database cipher is SQLite3MultipleCiphers ChaCha20-Poly1305 (`chacha20` / sqleet mode).
 
-The database receives random raw journal key material. The master password must never be passed directly to SQLite3MultipleCiphers as the database passphrase.
+Each journal has 48 bytes of raw SQLite cipher material:
 
-Password KDF parameters, salts, wrapped journal-key material, recovery metadata, and device-assisted unlock handles are deliberately outside the encrypted Drift schema. They are required before the database can be opened and therefore belong to the versioned key-envelope design owned by the security layer.
+```text
+32-byte random journal key || 16-byte random cipher salt
+```
+
+This is passed using SQLite3MultipleCiphers' documented ChaCha20 raw-key-plus-salt representation. The master password is never passed directly to SQLite3MultipleCiphers as a database passphrase.
+
+Applying `PRAGMA key` alone is not treated as successful unlock. The database-opening layer performs a real `sqlite_master` read after configuring the cipher/key so an incorrect key fails before an opened Drift database is returned.
+
+The Drift open lifecycle is also forced before `createNew()` returns. This ensures schema creation, built-in seed data, and connection initialization have actually occurred rather than leaking Drift's lazy-open behavior into the journal-creation contract.
+
+Password KDF parameters, salts, wrapped journal-key material, recovery metadata, and device-assisted unlock handles remain outside the encrypted Drift schema. They are required before the database can be opened and therefore belong to the security layer's versioned portable envelope design.
 
 Database migrations must be:
 
@@ -173,17 +183,73 @@ Attachments, if introduced, should normally remain encrypted files rather than o
 
 Database encryption is only one layer of the security model.
 
-Use the published `cryptography` package 2.9.x for application-level cryptographic operations that belong outside the database engine, including Argon2id password-based key derivation and authenticated encryption needed for wrapped keys, recovery material, or portable backup containers.
+Daymark uses the published `cryptography` package 2.9.0 for the PR #7 application-level security baseline:
+
+- Argon2id for master-password key derivation;
+- XChaCha20-Poly1305 for authenticated wrapping of portable journal-key material.
 
 Do not implement cryptographic primitives manually.
 
-The exact authenticated-encryption envelope, nonce handling, metadata layout, and Argon2id parameters must be frozen only after the security spike described in `PROJECT.md` is implemented and benchmarked.
+### Journal key material
 
-The journal data-encryption key is generated from cryptographically secure random material and is distinct from the user's master password.
+`JournalKeyMaterial` owns:
 
-The master password protects access to the journal key through a versioned password-based key-derivation and key-wrapping layer.
+- a 32-byte cryptographically random journal data-encryption key in overwrite-on-destroy `SecretKeyData`;
+- a 16-byte random SQLite3MultipleCiphers salt in a private mutable buffer.
 
-Device-local assisted unlock requires a platform secure-storage abstraction, but that integration is intentionally deferred to the focused security spike rather than being forced into the general scaffold.
+Its serialized representation is exactly 48 bytes and is a compatibility-sensitive boundary once prerelease journals exist.
+
+The holder exposes an explicit `destroy()` lifecycle. Owned mutable buffers are overwritten where practical, while `SECURITY.md` documents the limits of guaranteed zeroization under Dart/Flutter.
+
+### Key envelope
+
+The current key-envelope format is version 1 and remains outside the encrypted database.
+
+It contains only pre-unlock metadata:
+
+- format/version;
+- Argon2id identifier, parameters, and random 16-byte KDF salt;
+- XChaCha20-Poly1305 identifier;
+- nonce;
+- ciphertext containing the 48-byte serialized journal-key material;
+- authentication tag.
+
+Interpretation-sensitive metadata is authenticated as AAD. The parser is strict about expected fields and rejects unsupported format/KDF/AEAD identifiers rather than silently reinterpreting them.
+
+Wrong password, modified ciphertext, modified nonce, modified authentication tag, modified authenticated KDF metadata, malformed/truncated data, and unsupported identifiers are covered by negative-path tests.
+
+Authentication failures use a generic journal-unlock error rather than exposing password-quality hints.
+
+### Argon2id parameters
+
+The current pre-alpha production candidate is:
+
+- memory: 19 MiB;
+- iterations: 2;
+- parallelism: 1;
+- output: 32 bytes.
+
+These values are not frozen until representative Linux and physical Android measurements are recorded and reviewed.
+
+`tool/argon2_benchmark.dart` provides the reproducible Flutter profile-mode harness. `docs/ARGON2_BENCHMARK.md` defines the measurement and release-blocking procedure.
+
+Because envelope KDF metadata is untrusted before authentication, parser limits are deliberately bounded to 64 MiB memory, 5 iterations, parallelism 4, and a fixed 32-byte output. Those limits are defensive input ceilings, not the selected production work factor.
+
+### Recovery relationship
+
+Recovery remains a portable credential over the same random journal key rather than a separate database-key hierarchy.
+
+A future recovery secret may independently wrap/protect the existing serialized journal-key material. The final human representation and UX remain deferred, but recovery must never depend solely on Android Keystore, Linux keyring state, an account server, or the original device.
+
+### Session and memory boundary
+
+Secret material must not live in global/static application state.
+
+The current explicit journal-key holder is the basis for a later unlocked-session abstraction. Manual/automatic lock work must close/invalidate the encrypted persistence session and deterministically drop application references to key material as far as the runtime permits.
+
+SQLite3MultipleCiphers' SQL `PRAGMA key` interface currently requires a hexadecimal Dart `String`. The mutable source buffer is overwritten after conversion, but immutable Dart strings cannot be reliably zeroized. This limitation is documented rather than hidden or "fixed" through speculative unsafe FFI.
+
+Device-local assisted unlock requires a platform secure-storage abstraction, but that integration is intentionally deferred until the portable security baseline is complete.
 
 `flutter_secure_storage` remains a candidate, not a baseline scaffold dependency. Version 11.0.0 raised Android `compileSdk` to 37, while the Flutter 3.47.2 generated Android project currently uses API 36 with Android Gradle Plugin 9.1.0, whose own build diagnostics recommend API 36 as its maximum compile SDK. Daymark will not distort the Android toolchain or pin a compatibility bridge merely for an unused convenience layer. Re-evaluate the maintained secure-storage option when device-assisted unlock is implemented.
 
@@ -273,7 +339,7 @@ The permanent CI workflow in `.github/workflows/ci.yml` gates:
 4. Drift schema-snapshot freshness through `make-migrations` plus a clean generated-artifact diff;
 5. formatting;
 6. static analysis;
-7. unit, widget, and schema-invariant tests;
+7. unit, widget, schema-invariant, encrypted-persistence, and security tests;
 8. Linux debug build;
 9. Android debug APK build;
 10. dependency/security review for pull requests.
@@ -287,11 +353,13 @@ Use Flutter/Dart's standard test infrastructure first:
 - `flutter_test` for unit and widget tests;
 - `integration_test` for end-to-end platform flows;
 - Drift migration/schema tests with real fixtures;
-- in-memory or temporary encrypted databases for repository tests where appropriate.
+- temporary encrypted databases for persistence/security tests where appropriate.
 
 The initial schema has direct invariant tests against an in-memory SQLite database. Future versions must test both target schema shape and representative data preservation across supported upgrades.
 
-Security-sensitive flows require tests for failure as well as success, including wrong password, corrupted backup, unavailable secure storage, incompatible schema, and missing encrypted-database support.
+Security-sensitive flows require tests for failure as well as success, including wrong password, corrupted key envelope, corrupted backup, unavailable secure storage, incompatible schema, and missing encrypted-database support.
+
+Performance/security parameter measurements are not frozen from shared CI runner timing. Argon2id parameters require the dedicated profile-mode benchmark procedure on representative Linux and physical Android hardware.
 
 Do not treat screenshot/golden testing as a substitute for behavioral tests. Add golden tests selectively when the visual contract becomes stable enough to justify their maintenance cost.
 
@@ -314,10 +382,11 @@ The current dependency sequence is:
 1. define the Bullet Journal domain semantics and product/security constraints;
 2. establish the minimal pinned Flutter scaffold and repeatable CI/build baseline;
 3. finalize the relational schema, identifiers, and migration strategy;
-4. implement and benchmark the encryption/key-management and backup security prototype;
-5. wire application, data, and presentation layers around those established contracts;
-6. build the minimal end-to-end journal workflow;
-7. refine UI and convenience features only after the core path is correct, testable, and secure.
+4. implement and validate encryption/key management, including representative KDF benchmarking;
+5. specify and validate the encrypted portable backup/restore security boundary;
+6. wire application, data, and presentation layers around those established contracts;
+7. build the minimal end-to-end journal workflow;
+8. refine UI and convenience features only after the core path is correct, testable, and secure.
 
 The scaffold must not be used as an excuse to implement journal persistence, key handling, or product features ahead of the focused foundation work that governs them.
 
