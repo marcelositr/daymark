@@ -4,7 +4,7 @@ import 'package:drift/drift.dart';
 
 /// Focused persistence boundary for terminal task-state transitions.
 ///
-/// Migration and scheduling remain in [JournalRepository] because they create a
+/// Migration and scheduling remain in `JournalRepository` because they create a
 /// destination Entry and lineage edge. Completion and discard are single-entry
 /// state transitions, but still validate the persisted entry before mutation.
 final class TaskActionRepository {
