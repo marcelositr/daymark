@@ -4,6 +4,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'journal_access_screen.dart';
+import 'journal_activity_guard.dart';
 
 /// Keeps the application root and router stable while journal access changes.
 ///
@@ -22,7 +23,12 @@ final class JournalGate extends ConsumerWidget {
     );
 
     return switch (access) {
-      AsyncData(value: JournalUnlocked()) => child,
+      AsyncData(value: JournalUnlocked()) => JournalActivityGuard(
+        onTimeout: () => ref
+            .read(journalSessionControllerProvider.notifier)
+            .lock(),
+        child: child,
+      ),
       _ => const JournalAccessScreen(),
     };
   }
