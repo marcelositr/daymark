@@ -222,18 +222,23 @@ Authentication failures use a generic journal-unlock error rather than exposing 
 
 ### Argon2id parameters
 
-The current pre-alpha production candidate is:
+The initial production baseline was frozen on 2026-09-02:
 
-- memory: 19 MiB;
+- memory: 19 MiB (`19456 KiB`);
 - iterations: 2;
 - parallelism: 1;
-- output: 32 bytes.
+- output: 32 bytes;
+- random KDF salt: 16 bytes per key envelope.
 
-These values are not frozen until representative Linux and physical Android measurements are recorded and reviewed.
+The decision followed profile-mode measurements on an Intel Core i5-2400 Linux system, Samsung SM-A015M Android hardware, and a deliberately conservative M7 3G PLUS Android 8.1 ARM32 device.
 
-`tool/argon2_benchmark.dart` provides the reproducible Flutter profile-mode harness. `docs/ARGON2_BENCHMARK.md` defines the measurement and release-blocking procedure.
+The review also measured the lower-memory/higher-iteration OWASP tradeoffs. They offered negligible desktop benefit and only modest Android latency reductions, so Daymark retained the 19 MiB / 2 baseline rather than lowering memory hardness to optimize for the slowest tested hardware.
 
-Because envelope KDF metadata is untrusted before authentication, parser limits are deliberately bounded to 64 MiB memory, 5 iterations, parallelism 4, and a fixed 32-byte output. Those limits are defensive input ceilings, not the selected production work factor.
+`tool/argon2_benchmark.dart` provides the selected-profile harness. `tool/argon2_profile_matrix.dart` provides the comparison harness. `docs/ARGON2_BENCHMARK.md` records the procedure, raw evidence paths, and retuning rule.
+
+Because envelope KDF metadata is untrusted before authentication, parser limits remain bounded to 64 MiB memory, 5 iterations, parallelism 4, and a fixed 32-byte output. Those limits are defensive input ceilings, not production work factors.
+
+KDF parameters are explicit versioned envelope data. Future defaults may be strengthened, but existing envelopes must remain interpretable through an explicit compatibility path once real prerelease journals exist.
 
 ### Recovery relationship
 
@@ -272,6 +277,8 @@ Backups must be:
 Automatic backup scheduling, retention rotation, remote synchronization, and cloud-specific integrations are later concerns.
 
 Human-readable Markdown or JSON export is a separate portability feature and may intentionally produce plaintext after explicit user action.
+
+Android OS-managed app-data backup is not the Daymark portable-backup mechanism. The Android manifest disables platform backup and references explicit rules that exclude all app-data domains from Android 11-and-earlier full backup and from Android 12+ cloud backup and device transfer. This is defense in depth around the independently encrypted journal and ensures cross-device portability is designed through Daymark's own authenticated backup/restore boundary rather than opaque platform migration state.
 
 ## Localization
 
@@ -359,7 +366,7 @@ The initial schema has direct invariant tests against an in-memory SQLite databa
 
 Security-sensitive flows require tests for failure as well as success, including wrong password, corrupted key envelope, corrupted backup, unavailable secure storage, incompatible schema, and missing encrypted-database support.
 
-Performance/security parameter measurements are not frozen from shared CI runner timing. Argon2id parameters require the dedicated profile-mode benchmark procedure on representative Linux and physical Android hardware.
+Performance/security parameters are not selected from shared CI runner timing. The initial Argon2id baseline was frozen from dedicated profile-mode measurements on representative Linux and physical Android hardware. Future retuning must follow the same evidence-first rule.
 
 Do not treat screenshot/golden testing as a substitute for behavioral tests. Add golden tests selectively when the visual contract becomes stable enough to justify their maintenance cost.
 
