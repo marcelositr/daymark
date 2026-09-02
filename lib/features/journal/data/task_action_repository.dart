@@ -8,10 +8,8 @@ import 'package:drift/drift.dart';
 /// destination Entry and lineage edge. Completion and discard are single-entry
 /// state transitions, but still validate the persisted entry before mutation.
 final class TaskActionRepository {
-  TaskActionRepository(
-    this._database, {
-    int Function()? nowUtcMicros,
-  }) : _nowUtcMicros = nowUtcMicros ?? _defaultNowUtcMicros;
+  TaskActionRepository(this._database, {int Function()? nowUtcMicros})
+    : _nowUtcMicros = nowUtcMicros ?? _defaultNowUtcMicros;
 
   final DaymarkDatabase _database;
   final int Function() _nowUtcMicros;
