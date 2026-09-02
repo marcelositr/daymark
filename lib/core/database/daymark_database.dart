@@ -6,8 +6,10 @@ part 'daymark_database.g.dart';
 class DaymarkDatabase extends _$DaymarkDatabase {
   DaymarkDatabase(super.executor);
 
+  static const int currentSchemaVersion = 1;
+
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => currentSchemaVersion;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
