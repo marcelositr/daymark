@@ -24,9 +24,8 @@ final class JournalGate extends ConsumerWidget {
 
     return switch (access) {
       AsyncData(value: JournalUnlocked()) => JournalActivityGuard(
-        onTimeout: () => ref
-            .read(journalSessionControllerProvider.notifier)
-            .lock(),
+        onTimeout: () =>
+            ref.read(journalSessionControllerProvider.notifier).lock(),
         child: child,
       ),
       _ => const JournalAccessScreen(),
