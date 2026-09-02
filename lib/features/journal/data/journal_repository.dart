@@ -28,7 +28,7 @@ final class JournalRepository {
         FROM logs
         WHERE kind = ? AND period_start = ?
         ''',
-        variables: <Variable>[
+        variables: <Variable<Object>>[
           Variable.withString(kind.code),
           Variable.withString(periodStart),
         ],
@@ -76,23 +76,12 @@ final class JournalRepository {
     required JournalEntryType type,
     required String content,
     required JournalEntryOwner owner,
-    JournalTaskState? taskState,
   }) {
     return _database.transaction(() async {
       if (content.trim().isEmpty) {
-        throw const JournalInvariantException('Entry content must not be blank.');
-      }
-
-      final JournalTaskState? resolvedTaskState;
-      if (type == JournalEntryType.task) {
-        resolvedTaskState = taskState ?? JournalTaskState.open;
-      } else {
-        if (taskState != null) {
-          throw const JournalInvariantException(
-            'Events and notes cannot have a task state.',
-          );
-        }
-        resolvedTaskState = null;
+        throw const JournalInvariantException(
+          'Entry content must not be blank.',
+        );
       }
 
       final _ResolvedOwner resolvedOwner = await _resolveOwner(owner);
@@ -103,7 +92,9 @@ final class JournalRepository {
       await _insertEntry(
         id: id,
         type: type,
-        taskState: resolvedTaskState,
+        taskState: type == JournalEntryType.task
+            ? JournalTaskState.open
+            : null,
         content: content,
         now: now,
       );
@@ -137,7 +128,7 @@ final class JournalRepository {
         FROM collection_references
         WHERE collection_id = ? AND entry_id = ?
         ''',
-        variables: <Variable>[
+        variables: <Variable<Object>>[
           Variable.withString(collectionId),
           Variable.withString(entry.id),
         ],
@@ -154,7 +145,7 @@ final class JournalRepository {
         FROM collection_references
         WHERE collection_id = ?
         ''',
-        variables: <Variable>[Variable.withString(collectionId)],
+        variables: <Variable<Object>>[Variable.withString(collectionId)],
       ).getSingle();
 
       await _database.customStatement(
@@ -186,7 +177,9 @@ final class JournalRepository {
 
       final outgoing = await _database.customSelect(
         'SELECT 1 FROM migrations WHERE source_entry_id = ?',
-        variables: <Variable>[Variable.withString(sourceEntryId)],
+        variables: <Variable<Object>>[
+          Variable.withString(sourceEntryId),
+        ],
       ).getSingleOrNull();
       if (outgoing != null) {
         throw const JournalInvariantException(
@@ -276,16 +269,15 @@ final class JournalRepository {
   }
 
   Future<_ResolvedOwner> _resolveOwner(JournalEntryOwner owner) async {
-    return switch (owner) {
-      JournalCollectionOwner(:final collectionId) => () async {
+    switch (owner) {
+      case JournalCollectionOwner(:final collectionId):
         await _requireCollection(collectionId);
         return _ResolvedOwner(collectionId: collectionId);
-      }(),
-      JournalLogOwner(
+      case JournalLogOwner(
         :final logId,
         :final monthlySection,
         :final monthlyCalendarDate,
-      ) => () async {
+      ):
         final _LogRecord log = await _requireLog(logId);
 
         if (log.kind == JournalLogKind.monthly) {
@@ -324,8 +316,7 @@ final class JournalRepository {
           monthlySection: monthlySection,
           monthlyCalendarDate: monthlyCalendarDate,
         );
-      }(),
-    };
+    }
   }
 
   Future<int> _nextPlacementOrdinal(_ResolvedOwner owner) async {
@@ -345,7 +336,7 @@ final class JournalRepository {
       FROM entry_placements
       WHERE $clause
       ''',
-      variables: <Variable>[Variable.withString(id)],
+      variables: <Variable<Object>>[Variable.withString(id)],
     ).getSingle();
     return row.read<int>('next_ordinal');
   }
@@ -401,7 +392,7 @@ final class JournalRepository {
       FROM entries
       WHERE id = ?
       ''',
-      variables: <Variable>[Variable.withString(id)],
+      variables: <Variable<Object>>[Variable.withString(id)],
     ).getSingleOrNull();
     if (row == null) {
       throw JournalNotFoundException('Entry', id);
@@ -422,7 +413,7 @@ final class JournalRepository {
       FROM entry_placements
       WHERE entry_id = ?
       ''',
-      variables: <Variable>[Variable.withString(entryId)],
+      variables: <Variable<Object>>[Variable.withString(entryId)],
     ).getSingleOrNull();
     if (row == null) {
       throw JournalInvariantException(
@@ -438,7 +429,7 @@ final class JournalRepository {
   Future<_LogRecord> _requireLog(String id) async {
     final row = await _database.customSelect(
       'SELECT kind, period_start FROM logs WHERE id = ?',
-      variables: <Variable>[Variable.withString(id)],
+      variables: <Variable<Object>>[Variable.withString(id)],
     ).getSingleOrNull();
     if (row == null) {
       throw JournalNotFoundException('Log', id);
@@ -452,7 +443,7 @@ final class JournalRepository {
   Future<void> _requireCollection(String id) async {
     final row = await _database.customSelect(
       'SELECT 1 FROM collections WHERE id = ?',
-      variables: <Variable>[Variable.withString(id)],
+      variables: <Variable<Object>>[Variable.withString(id)],
     ).getSingleOrNull();
     if (row == null) {
       throw JournalNotFoundException('Collection', id);
