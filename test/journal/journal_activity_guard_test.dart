@@ -187,7 +187,10 @@ Widget _testApp({
           child ??
           Scaffold(
             body: Center(
-              child: TextButton(onPressed: () {}, child: const Text('Interact')),
+              child: TextButton(
+                onPressed: () {},
+                child: const Text('Interact'),
+              ),
             ),
           ),
     ),
