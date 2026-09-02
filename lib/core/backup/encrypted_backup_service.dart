@@ -270,31 +270,38 @@ final class EncryptedBackupService {
         );
       }
 
-      await _extractDatabase(
-        backupFile: backupFile,
-        metadata: metadata,
-        destinationFile: restorePaths.stagedDatabase,
-      );
-      await restorePaths.stagedEnvelope.writeAsString(
-        metadata.encodedKeyEnvelope,
-        flush: true,
-      );
-
       try {
-        EncryptedDaymarkDatabase.validateExisting(
-          file: restorePaths.stagedDatabase,
-          keyMaterial: keyMaterial,
-          expectedSchemaVersion: metadata.manifest.databaseSchemaVersion,
+        await _extractDatabase(
+          backupFile: backupFile,
+          metadata: metadata,
+          destinationFile: restorePaths.stagedDatabase,
         );
-      } on JournalUnlockException {
-        throw const BackupAuthenticationException();
-      } on JournalDatabaseOpenException {
-        throw const BackupFormatException(
-          'The backup contains an invalid encrypted journal database.',
+        await restorePaths.stagedEnvelope.writeAsString(
+          metadata.encodedKeyEnvelope,
+          flush: true,
         );
-      }
 
-      await _commitRestore(restorePaths);
+        try {
+          EncryptedDaymarkDatabase.validateExisting(
+            file: restorePaths.stagedDatabase,
+            keyMaterial: keyMaterial,
+            expectedSchemaVersion: metadata.manifest.databaseSchemaVersion,
+          );
+        } on JournalUnlockException {
+          throw const BackupAuthenticationException();
+        } on JournalDatabaseOpenException {
+          throw const BackupFormatException(
+            'The backup contains an invalid encrypted journal database.',
+          );
+        }
+
+        await _commitRestore(restorePaths);
+      } finally {
+        if (!restorePaths.transactionMarker.existsSync()) {
+          _deleteBestEffort(restorePaths.stagedDatabase);
+          _deleteBestEffort(restorePaths.stagedEnvelope);
+        }
+      }
     } on FileSystemException {
       throw const BackupRestoreException(
         'The backup could not be restored to the requested destination.',
@@ -322,27 +329,33 @@ final class EncryptedBackupService {
       try {
         await _deleteRequired(paths.stagedDatabase);
         await _deleteRequired(paths.stagedEnvelope);
+
+        final bool databaseExists = destinationJournalFile.existsSync();
+        final bool envelopeExists = destinationKeyEnvelopeFile.existsSync();
+        if (databaseExists != envelopeExists) {
+          throw const BackupRestoreException(
+            'An incomplete destination journal pair exists without a restore '
+            'transaction marker.',
+          );
+        }
+
+        final bool rollbackExists =
+            paths.rollbackDatabase.existsSync() ||
+            paths.rollbackEnvelope.existsSync();
+        if (databaseExists && envelopeExists) {
+          await _deleteRequired(paths.rollbackDatabase);
+          await _deleteRequired(paths.rollbackEnvelope);
+        } else if (rollbackExists) {
+          throw const BackupRestoreException(
+            'Rollback material exists without a committed journal pair.',
+          );
+        }
+      } on BackupRestoreException {
+        rethrow;
       } on FileSystemException {
         throw const BackupRestoreException(
-          'Stale restore staging files could not be removed safely.',
+          'Stale restore state could not be removed safely.',
         );
-      }
-
-      final bool destinationPairExists =
-          destinationJournalFile.existsSync() &&
-          destinationKeyEnvelopeFile.existsSync();
-      final bool rollbackExists =
-          paths.rollbackDatabase.existsSync() ||
-          paths.rollbackEnvelope.existsSync();
-
-      if (rollbackExists && !destinationPairExists) {
-        throw const BackupRestoreException(
-          'Rollback material exists without a committed journal pair.',
-        );
-      }
-      if (destinationPairExists) {
-        _deleteBestEffort(paths.rollbackDatabase);
-        _deleteBestEffort(paths.rollbackEnvelope);
       }
       return;
     }
@@ -613,6 +626,12 @@ final class EncryptedBackupService {
     if (databaseExists != envelopeExists) {
       throw const BackupRestoreException(
         'Refusing to replace an incomplete destination journal pair.',
+      );
+    }
+    if (paths.rollbackDatabase.existsSync() ||
+        paths.rollbackEnvelope.existsSync()) {
+      throw const BackupRestoreException(
+        'Refusing to start restore with stale rollback material.',
       );
     }
 
