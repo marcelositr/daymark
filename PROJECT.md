@@ -125,8 +125,9 @@ Benchmark procedure: `docs/ARGON2_BENCHMARK.md`.
 
 ### Key/session boundaries
 
-- [x] Define narrow journal-key ownership through `JournalKeyMaterial`
+- [x] Define single-owner journal-key material through `JournalKeyMaterial`
 - [x] Use overwrite-on-destroy secret-key storage and wipe owned mutable key/salt buffers where practical
+- [x] Keep key destruction idempotent for converging lock/error/teardown paths
 - [x] Avoid logging/persisting key material
 - [x] Document Dart runtime limits around guaranteed memory zeroization
 - [x] Document the immutable hexadecimal `String` limitation imposed by SQLite3MultipleCiphers' SQL `PRAGMA key` interface
@@ -140,8 +141,10 @@ Actual lock timers, lifecycle UI, Android device-lock integration, and Linux ses
 - [x] Align `docs/SECURITY_FOUNDATION.md` with proven implementation details
 - [x] Align `docs/ARCHITECTURE.md` with proven implementation details
 - [x] Add reproducible Linux/Android Argon2id benchmark procedure
+- [x] Update README to the current PR #7/security-foundation state
+- [x] Update PR #7 checklist to match implementation and remaining gates
+- [x] Update `CHANGELOG.md` with the pre-alpha security foundation
 - [x] Update this checkpoint with decisions and remaining limitations
-- [ ] Correct README / PR status text to current PR #7 state
 - [ ] Permanent CI green on the final reviewed PR head
 - [ ] User review / merge decision
 
@@ -269,7 +272,8 @@ Resolved during PR #7:
 - envelope metadata/serialization and negative failure paths are implemented and tested;
 - SQLite3MultipleCiphers uses the documented ChaCha20 32-byte raw key + 16-byte salt representation;
 - encrypted database opening requires an actual read after `PRAGMA key`;
-- the journal-key holder has explicit ownership/destruction boundaries;
+- Drift creation is forced through its lazy-open lifecycle before `createNew()` returns;
+- the journal-key holder is single-owned with explicit idempotent destruction boundaries;
 - recovery is architecturally a second portable protection path over the same random journal key rather than a device/account reset mechanism.
 
 ## Recent work log
@@ -294,13 +298,13 @@ Resolved during PR #7:
 - Proved correct-key reopen, wrong-key rejection, unreadability through unkeyed SQLite, absence of representative plaintext content, and schema constraints through encrypted persistence.
 - Added direct Argon2id determinism/salt tests and bounded untrusted KDF metadata.
 - Added `tool/argon2_benchmark.dart` and `docs/ARGON2_BENCHMARK.md` for representative Linux/physical-Android parameter validation.
-- Hardened journal-key ownership to reduce temporary plaintext copies and explicitly destroy owned mutable key/salt buffers where practical.
+- Hardened journal-key ownership to avoid redundant salt copies, hide direct secret-key access, and make destruction idempotent.
 - Documented the Dart immutable-string limitation around SQLite3MultipleCiphers raw-key PRAGMA handling instead of claiming guaranteed zeroization.
-- Aligned `SECURITY.md`, `docs/SECURITY_FOUNDATION.md`, and `docs/ARCHITECTURE.md` with the implemented pre-alpha security baseline.
+- Aligned `SECURITY.md`, `docs/SECURITY_FOUNDATION.md`, `docs/ARCHITECTURE.md`, README, PR #7 metadata, and `CHANGELOG.md` with the implemented pre-alpha security baseline.
 
 ## Next concrete action
 
-Correct stale README/PR status, obtain green CI on the documentation/security-hardening head, then run and record the Argon2id benchmark on representative Linux and physical Android hardware. Do not freeze the production KDF parameters until both platform measurements are reviewed.
+Obtain green CI on this frozen documentation/security-hardening head, then run and record the Argon2id benchmark on representative Linux and physical Android hardware. Do not freeze the production KDF parameters until both platform measurements are reviewed.
 
 Do not add biometric/keyring convenience, lock UI, journal product screens, sync, or the final backup-container implementation to PR #7.
 
