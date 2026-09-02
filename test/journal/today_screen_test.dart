@@ -92,6 +92,37 @@ void main() {
 
     await tester.pumpWidget(const SizedBox.shrink());
   });
+
+  testWidgets('failed Task action leaves the Task open and reports failure', (
+    tester,
+  ) async {
+    final _MemoryTodayJournal dataSource = _MemoryTodayJournal(
+      failTaskActions: true,
+      entries: [
+        const DailyLogEntry(
+          id: 'task-1',
+          type: JournalEntryType.task,
+          taskState: JournalTaskState.open,
+          content: 'Keep me open',
+          ordinal: 0,
+        ),
+      ],
+    );
+
+    await _pumpToday(tester, dataSource);
+
+    await tester.tap(find.text('•'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Complete'));
+    await tester.pump();
+    await tester.pump();
+
+    expect(dataSource.entries.single.taskState, JournalTaskState.open);
+    expect(find.text('•'), findsOneWidget);
+    expect(find.text('Could not update this task.'), findsOneWidget);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
 }
 
 Future<void> _pumpToday(
@@ -114,10 +145,13 @@ Future<void> _pumpToday(
 }
 
 final class _MemoryTodayJournal implements TodayJournalDataSource {
-  _MemoryTodayJournal({List<DailyLogEntry>? entries})
-    : entries = entries ?? <DailyLogEntry>[];
+  _MemoryTodayJournal({
+    List<DailyLogEntry>? entries,
+    this.failTaskActions = false,
+  }) : entries = entries ?? <DailyLogEntry>[];
 
   final List<DailyLogEntry> entries;
+  final bool failTaskActions;
 
   @override
   Future<DailyLogSnapshot> load(String methodDate) async {
@@ -147,11 +181,17 @@ final class _MemoryTodayJournal implements TodayJournalDataSource {
 
   @override
   Future<void> completeTask({required String entryId}) async {
+    if (failTaskActions) {
+      throw StateError('Injected Task action failure.');
+    }
     _transitionTask(entryId, JournalTaskState.completed);
   }
 
   @override
   Future<void> discardTask({required String entryId}) async {
+    if (failTaskActions) {
+      throw StateError('Injected Task action failure.');
+    }
     _transitionTask(entryId, JournalTaskState.discarded);
   }
 
