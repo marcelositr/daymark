@@ -75,5 +75,5 @@ Future<void> _pumpUntilFound(
     }
   }
 
-  fail('Timed out waiting for ${finder.description}.');
+  fail('Timed out waiting for the expected widget.');
 }
