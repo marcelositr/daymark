@@ -34,8 +34,10 @@ void main() {
     }
   });
 
-  test('destroyed journal key material cannot be serialized', () {
+  test('destroy is idempotent and prevents further serialization', () {
     final JournalKeyMaterial material = JournalKeyMaterial.generate();
+
+    material.destroy();
     material.destroy();
 
     expect(material.isDestroyed, isTrue);
