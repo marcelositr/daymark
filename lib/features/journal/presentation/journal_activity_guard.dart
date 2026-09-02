@@ -33,7 +33,7 @@ final class JournalActivityGuard extends StatefulWidget {
 
   static void recordActivity(BuildContext context) {
     context
-        .dependOnInheritedWidgetOfExactType<_JournalActivityMarker>()
+        .getInheritedWidgetOfExactType<_JournalActivityMarker>()
         ?.onActivity();
   }
 
