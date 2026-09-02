@@ -1,8 +1,8 @@
 # Development workflow
 
-This document defines the common Git, pull request, versioning, and release process for Daymark.
+This document defines the common Git, pull request, validation, versioning, and release process for Daymark.
 
-The purpose is consistency across human and AI contributors. Agents must not invent a different branch model or release numbering scheme for each task.
+The purpose is consistency across human and AI contributors. Agents must not invent a different branch model, validation sequence, or release numbering scheme for each task.
 
 ## Branch model
 
@@ -47,7 +47,7 @@ Every change to `main` goes through a pull request.
 
 A pull request should have one coherent responsibility. Small supporting refactors or documentation required by that responsibility may be included, but unrelated cleanup should not be bundled merely because an agent noticed it.
 
-Draft PRs are acceptable for incomplete work that benefits from visible CI or review.
+Open a Draft PR early when visible CI feedback will reduce risk. Draft does not mean low quality; it means the branch is still inside the implementation/diagnostic loop and is not yet asking for full merge validation.
 
 ### PR title
 
@@ -93,21 +93,130 @@ Delete the task branch after successful merge unless an explicit reason requires
 
 AI agents must never merge a PR unless the user explicitly requests the merge.
 
+## Staged implementation and validation
+
+Daymark uses a staged validation flow so cheap, high-signal checks happen before expensive builds and so CI failures are diagnosed rather than patched blindly.
+
+### 1. Baseline before edits
+
+Before implementation:
+
+1. start from an up-to-date `main` unless a current task branch is already the explicit source of truth;
+2. verify the current branch, PR, and working-tree state;
+3. read `PROJECT.md` plus the authoritative documents for the affected area;
+4. inspect the existing implementation and tests;
+5. establish what is already green and what failure or requirement is actually being addressed.
+
+If inherited work has repeated corrective commits, contradictory CI/manual results, or unclear architecture, audit it before editing. An isolated worktree is preferred when it helps keep diagnosis non-mutating.
+
+### 2. Draft PR as the development gate
+
+Create or keep the PR as Draft while implementation is still changing materially.
+
+The repository's Draft `dev-check` is intentionally lightweight and should remain fast enough to use as an implementation feedback loop. It validates:
+
+- locked dependency resolution;
+- localization generation;
+- Drift/code generation;
+- migration snapshot generation;
+- absence of stale generated Drift artifacts;
+- formatting;
+- static analysis.
+
+Do not weaken these checks to accommodate a branch. Fix the underlying source, generated-state, or toolchain problem.
+
+Focused tests may be run during Draft development whenever they are useful to prove behavior or diagnose a failure. The full suite and native builds are merge gates, not substitutes for targeted reasoning.
+
+### 3. Test at the correct layer
+
+Tests should match the boundary they claim to validate.
+
+- widget/presentation tests use controlled in-memory or fake boundaries and should not perform real filesystem, expensive KDF/crypto, or encrypted SQLite work merely to render a screen;
+- repository/session/security tests may use real temporary filesystem, cryptography, and encrypted persistence where those behaviors are the subject under test;
+- integration tests cover transitions across layers when the interaction itself is the risk;
+- manual platform tests cover behavior that depends on the real Linux/Android application environment.
+
+A test that bypasses the production transition responsible for a bug is not a sufficient regression test for that bug.
+
+### 4. Diagnose failures before changing behavior
+
+When a command, test, or CI job fails:
+
+1. preserve the exact failure output and exit code;
+2. identify the last operation that definitely completed;
+3. reduce the failure with the smallest useful probe when necessary;
+4. distinguish the original failure from shutdown/cancellation noise;
+5. change production code only after evidence identifies a production defect;
+6. change tests when the test architecture itself is invalid;
+7. remove temporary probes/workflows after diagnosis.
+
+Repeated speculative fixes are a signal to stop and re-audit the affected slice.
+
+### 5. Local validation ladder
+
+Before requesting full merge validation, run the applicable local checks in this order:
+
+1. locked dependency resolution and required generators;
+2. generated-artifact/reproducibility checks;
+3. formatter;
+4. analyzer;
+5. focused tests for changed behavior;
+6. complete test suite;
+7. native build for the locally available target;
+8. manual application flow when lifecycle, persistence, input, rendering, or platform behavior is involved.
+
+For risky lifecycle/persistence work, manual validation should exercise the full user path rather than only the happy-path screen. Examples include create -> capture -> lock -> wrong unlock -> correct unlock -> restart -> persistence verification.
+
+When an AI agent cannot execute a required local step, it should provide the user a complete copy-paste block with stop conditions, expected success markers, and a clear request for the resulting output. Do not require the user to invent debugging commands.
+
+### 6. Documentation alignment
+
+Before the PR becomes ready for review:
+
+- update `PROJECT.md` with actual implementation and validation state;
+- update authoritative product/domain/architecture/security/workflow documents for durable changes;
+- update `CHANGELOG.md` only for release-facing behavior;
+- remove temporary diagnostic scaffolding and unrelated artifacts.
+
+The repository must be sufficient for a different agent to continue without the previous chat.
+
+### 7. Ready for review and full CI
+
+Mark the PR ready only when its implementation and documentation are coherent and applicable local/manual validation has passed or is explicitly recorded as the remaining review gate.
+
+A non-Draft PR runs the full validation tier:
+
+- `quality`, including generation, formatting, analysis, and the complete Flutter test suite;
+- Linux build;
+- Android build;
+- dependency review;
+- `merge-gate`, which requires the merge-tier jobs to succeed.
+
+The live `main` ruleset requires the exact `merge-gate` status. A PR is not merge-eligible until that check succeeds.
+
+If GitHub Actions or an API is delayed or returns incomplete data, do not infer success. Wait for reliable evidence or ask the user for the smallest missing CI/job reference needed to continue.
+
+### 8. Explicit merge decision
+
+Green local checks and green `merge-gate` make a PR eligible for merge. They do not authorize it.
+
+The user makes the final merge decision. AI agents must not enable auto-merge or merge implicitly.
+
 ## Before merge
 
 Before a PR is eligible for merge:
 
 1. the branch is based on a current enough `main` that conflicts and migration interactions are understood;
 2. `PROJECT.md` reflects the work and next step;
-3. relevant product/domain/security/architecture documentation is updated;
+3. relevant product/domain/security/architecture/workflow documentation is updated;
 4. formatting, analysis, tests, and required builds pass;
 5. schema changes include migrations and migration tests;
 6. security-sensitive changes include their threat-model impact;
 7. dependency changes include a concrete rationale and security/license review;
-8. no secrets, generated junk, build artifacts, or accidental binaries are committed;
-9. review conversations are resolved.
-
-Once CI exists, the main-branch ruleset should require the actual stable check names rather than guessed placeholders.
+8. no secrets, generated junk, temporary diagnostics, build artifacts, or accidental binaries are committed;
+9. review conversations are resolved;
+10. the required `merge-gate` check is green;
+11. the user has explicitly approved the merge.
 
 ## Versioning
 

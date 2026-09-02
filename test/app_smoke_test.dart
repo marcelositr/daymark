@@ -1,14 +1,50 @@
 import 'package:daymark/app/daymark_app.dart';
+import 'package:daymark/core/session/journal_session.dart';
+import 'package:daymark/core/session/journal_session_controller.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  testWidgets('starts on Today', (tester) async {
-    await tester.pumpWidget(const DaymarkApp());
-    await tester.pumpAndSettle();
+  testWidgets('starts on encrypted journal creation when storage is empty', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          journalSessionControllerProvider.overrideWithBuild(
+            (ref, controller) => const JournalNeedsCreation(),
+          ),
+        ],
+        child: const DaymarkApp(),
+      ),
+    );
+    await tester.pump();
 
-    expect(find.text('Today'), findsWidgets);
-    expect(find.text('Daymark foundation is ready.'), findsOneWidget);
+    expect(find.text('Create your journal'), findsOneWidget);
+    expect(find.text('Master password'), findsOneWidget);
+    expect(find.text('Confirm master password'), findsOneWidget);
+  });
+
+  testWidgets('journal creation rejects an empty master password in the UI', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          journalSessionControllerProvider.overrideWithBuild(
+            (ref, controller) => const JournalNeedsCreation(),
+          ),
+        ],
+        child: const DaymarkApp(),
+      ),
+    );
+    await tester.pump();
+
+    await tester.tap(find.widgetWithText(FilledButton, 'Create journal'));
+    await tester.pump();
+
+    expect(find.text('A master password is required.'), findsOneWidget);
   });
 
   group('locale resolution', () {
