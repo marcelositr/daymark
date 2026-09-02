@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:cryptography/cryptography.dart';
 import 'package:daymark/core/crypto/journal_key_material.dart';
 import 'package:daymark/core/crypto/key_envelope.dart';
 import 'package:daymark/core/crypto/security_exception.dart';
@@ -9,6 +10,116 @@ void main() {
   final KeyEnvelopeService service = KeyEnvelopeService(
     parameters: Argon2Parameters.test,
   );
+
+  test('Argon2id derives the same key from identical inputs', () async {
+    const Argon2Parameters parameters = Argon2Parameters.test;
+    final Argon2id algorithm = Argon2id(
+      memory: parameters.memoryKiB,
+      iterations: parameters.iterations,
+      parallelism: parameters.parallelism,
+      hashLength: parameters.hashLength,
+    );
+    const List<int> salt = <int>[
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+    ];
+
+    final SecretKey first = await algorithm.deriveKeyFromPassword(
+      password: 'same-password',
+      nonce: salt,
+    );
+    final SecretKey second = await algorithm.deriveKeyFromPassword(
+      password: 'same-password',
+      nonce: salt,
+    );
+
+    try {
+      final List<int> firstBytes = await first.extractBytes();
+      final List<int> secondBytes = await second.extractBytes();
+      expect(firstBytes, orderedEquals(secondBytes));
+    } finally {
+      first.destroy();
+      second.destroy();
+    }
+  });
+
+  test('Argon2id salt changes derived key material', () async {
+    const Argon2Parameters parameters = Argon2Parameters.test;
+    final Argon2id algorithm = Argon2id(
+      memory: parameters.memoryKiB,
+      iterations: parameters.iterations,
+      parallelism: parameters.parallelism,
+      hashLength: parameters.hashLength,
+    );
+    const List<int> firstSalt = <int>[
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+    ];
+    const List<int> secondSalt = <int>[
+      15,
+      14,
+      13,
+      12,
+      11,
+      10,
+      9,
+      8,
+      7,
+      6,
+      5,
+      4,
+      3,
+      2,
+      1,
+      0,
+    ];
+
+    final SecretKey first = await algorithm.deriveKeyFromPassword(
+      password: 'same-password',
+      nonce: firstSalt,
+    );
+    final SecretKey second = await algorithm.deriveKeyFromPassword(
+      password: 'same-password',
+      nonce: secondSalt,
+    );
+
+    try {
+      final List<int> firstBytes = await first.extractBytes();
+      final List<int> secondBytes = await second.extractBytes();
+      expect(firstBytes, isNot(orderedEquals(secondBytes)));
+    } finally {
+      first.destroy();
+      second.destroy();
+    }
+  });
 
   test('wraps and unwraps journal key material', () async {
     final JournalKeyMaterial original = JournalKeyMaterial.generate();
@@ -182,6 +293,30 @@ void main() {
       );
       final Map<String, Object?> root = _decodeEnvelope(envelope);
       root['version'] = 2;
+
+      await expectLater(
+        service.unwrap(
+          masterPassword: 'password',
+          encodedEnvelope: jsonEncode(root),
+        ),
+        throwsA(isA<KeyEnvelopeFormatException>()),
+      );
+    } finally {
+      material.destroy();
+    }
+  });
+
+  test('unsupported KDF identifier is rejected before KDF work', () async {
+    final JournalKeyMaterial material = JournalKeyMaterial.generate();
+
+    try {
+      final String envelope = await service.wrap(
+        masterPassword: 'password',
+        keyMaterial: material,
+      );
+      final Map<String, Object?> root = _decodeEnvelope(envelope);
+      final Map<String, Object?> kdf = _section(root, 'kdf');
+      kdf['name'] = 'unsupported-kdf';
 
       await expectLater(
         service.unwrap(
