@@ -1,0 +1,47 @@
+{
+  "benchmark": "daymark-argon2id-profile-matrix",
+  "platform": "android",
+  "platformVersion": "ML_WI12_M7_3G_PLUS.V4_20191031",
+  "dartVersion": "3.13.2 (stable) (Tue Aug 25 01:01:12 2026 -0700) on \"android_arm\"",
+  "processors": 2,
+  "warmupRunsPerProfile": 1,
+  "sampleRunsPerProfile": 5,
+  "profiles": [
+    {
+      "name": "owasp-19m-2t",
+      "parameters": {"memoryKiB": 19456, "iterations": 2, "parallelism": 1, "hashLength": 32},
+      "samplesMicros": [4087465, 4286610, 4297218, 4329240, 4460395],
+      "minimumMicros": 4087465,
+      "medianMicros": 4297218,
+      "averageMicros": 4292185,
+      "maximumMicros": 4460395
+    },
+    {
+      "name": "owasp-12m-3t",
+      "parameters": {"memoryKiB": 12288, "iterations": 3, "parallelism": 1, "hashLength": 32},
+      "samplesMicros": [3927776, 3935563, 3963560, 4029158, 4035035],
+      "minimumMicros": 3927776,
+      "medianMicros": 3963560,
+      "averageMicros": 3978218,
+      "maximumMicros": 4035035
+    },
+    {
+      "name": "owasp-9m-4t",
+      "parameters": {"memoryKiB": 9216, "iterations": 4, "parallelism": 1, "hashLength": 32},
+      "samplesMicros": [3949588, 3961974, 3964379, 4015834, 4022508],
+      "minimumMicros": 3949588,
+      "medianMicros": 3964379,
+      "averageMicros": 3982856,
+      "maximumMicros": 4022508
+    },
+    {
+      "name": "owasp-7m-5t",
+      "parameters": {"memoryKiB": 7168, "iterations": 5, "parallelism": 1, "hashLength": 32},
+      "samplesMicros": [3672337, 3674621, 3746500, 3845008, 3846700],
+      "minimumMicros": 3672337,
+      "medianMicros": 3746500,
+      "averageMicros": 3757033,
+      "maximumMicros": 3846700
+    }
+  ]
+}
