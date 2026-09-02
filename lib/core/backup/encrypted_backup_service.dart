@@ -46,8 +46,7 @@ final class EncryptedBackupService {
   static const String _integrityKdfName = 'hkdf-sha256';
   static const String _integrityMacName = 'hmac-sha256';
   static const String _integrityInfo = 'daymark-backup-v1-integrity';
-  static const String _restoreTransactionFormat =
-      'daymark-restore-transaction';
+  static const String _restoreTransactionFormat = 'daymark-restore-transaction';
   static const int _restoreTransactionVersion = 1;
   static const List<int> _magic = <int>[
     0x44,
@@ -70,10 +69,7 @@ final class EncryptedBackupService {
 
   final KeyEnvelopeService _keyEnvelopeService;
   final RestoreCommitHook? _restoreCommitHook;
-  final Hkdf _integrityKdf = Hkdf(
-    hmac: Hmac.sha256(),
-    outputLength: macLength,
-  );
+  final Hkdf _integrityKdf = Hkdf(hmac: Hmac.sha256(), outputLength: macLength);
   final Hmac _integrityMac = Hmac.sha256();
 
   Future<void> createBackup({
@@ -573,7 +569,8 @@ final class EncryptedBackupService {
   }
 
   void _validateCompatibility(_BackupManifest manifest) {
-    if (manifest.databaseSchemaVersion != DaymarkDatabase.currentSchemaVersion) {
+    if (manifest.databaseSchemaVersion !=
+        DaymarkDatabase.currentSchemaVersion) {
       throw BackupCompatibilityException(
         'Backup database schema ${manifest.databaseSchemaVersion} is not '
         'supported by schema ${DaymarkDatabase.currentSchemaVersion}.',
@@ -648,7 +645,9 @@ final class EncryptedBackupService {
           paths.rollbackEnvelope.path,
         );
       }
-      await _invokeRestoreCommitHook(RestoreCommitPhase.afterExistingFilesMoved);
+      await _invokeRestoreCommitHook(
+        RestoreCommitPhase.afterExistingFilesMoved,
+      );
 
       await paths.stagedDatabase.rename(paths.destinationJournalFile.path);
       await _invokeRestoreCommitHook(RestoreCommitPhase.afterDatabaseInstalled);

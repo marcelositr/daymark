@@ -69,10 +69,7 @@ abstract final class EncryptedDaymarkDatabase {
     bool snapshotCompleted = false;
 
     try {
-      sourceDatabase = sqlite3.open(
-        sourceFile.path,
-        mode: OpenMode.readOnly,
-      );
+      sourceDatabase = sqlite3.open(sourceFile.path, mode: OpenMode.readOnly);
       _configureEncryptedDatabase(
         sourceDatabase,
         rawKeyHex: rawKeyHex,
@@ -160,7 +157,9 @@ abstract final class EncryptedDaymarkDatabase {
         );
       }
 
-      final ResultSet integrityRows = database.select('PRAGMA integrity_check;');
+      final ResultSet integrityRows = database.select(
+        'PRAGMA integrity_check;',
+      );
       if (integrityRows.length != 1 ||
           integrityRows.first['integrity_check'] != 'ok') {
         throw const JournalDatabaseOpenException(

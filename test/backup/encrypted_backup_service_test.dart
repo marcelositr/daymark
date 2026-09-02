@@ -35,67 +35,72 @@ void main() {
     }
   });
 
-  test('portable backup restores after the source in-memory key is gone', () async {
-    final _JournalFixture source = await _createJournal(
-      directory: tempDirectory,
-      name: 'source',
-      entryId: sourceEntryId,
-      content: sensitiveText,
-      password: masterPassword,
-      keyEnvelopeService: keyEnvelopeService,
-    );
-    final File backupFile = File('${tempDirectory.path}/source.daymark-backup');
-    final File restoredDatabase = File(
-      '${tempDirectory.path}/restored.daymark',
-    );
-    final File restoredEnvelope = File(
-      '${tempDirectory.path}/restored.key-envelope.json',
-    );
-
-    try {
-      await backupService.createBackup(
-        journalFile: source.databaseFile,
-        backupFile: backupFile,
-        keyMaterial: source.keyMaterial,
-        encodedKeyEnvelope: source.encodedEnvelope,
-        masterPassword: masterPassword,
+  test(
+    'portable backup restores after the source in-memory key is gone',
+    () async {
+      final _JournalFixture source = await _createJournal(
+        directory: tempDirectory,
+        name: 'source',
+        entryId: sourceEntryId,
+        content: sensitiveText,
+        password: masterPassword,
+        keyEnvelopeService: keyEnvelopeService,
+      );
+      final File backupFile = File(
+        '${tempDirectory.path}/source.daymark-backup',
+      );
+      final File restoredDatabase = File(
+        '${tempDirectory.path}/restored.daymark',
+      );
+      final File restoredEnvelope = File(
+        '${tempDirectory.path}/restored.key-envelope.json',
       );
 
-      expect(backupFile.existsSync(), isTrue);
-      expect(_fileContainsUtf8(backupFile, sensitiveText), isFalse);
-      expect(_fileStartsWithSqliteHeader(backupFile), isFalse);
-
-      source.keyMaterial.destroy();
-
-      await backupService.restoreBackup(
-        backupFile: backupFile,
-        destinationJournalFile: restoredDatabase,
-        destinationKeyEnvelopeFile: restoredEnvelope,
-        masterPassword: masterPassword,
-      );
-
-      expect(await restoredEnvelope.readAsString(), source.encodedEnvelope);
-
-      final JournalKeyMaterial restoredKey = await keyEnvelopeService.unwrap(
-        masterPassword: masterPassword,
-        encodedEnvelope: await restoredEnvelope.readAsString(),
-      );
       try {
-        expect(
-          await _readEntry(
-            databaseFile: restoredDatabase,
-            keyMaterial: restoredKey,
-            entryId: sourceEntryId,
-          ),
-          sensitiveText,
+        await backupService.createBackup(
+          journalFile: source.databaseFile,
+          backupFile: backupFile,
+          keyMaterial: source.keyMaterial,
+          encodedKeyEnvelope: source.encodedEnvelope,
+          masterPassword: masterPassword,
         );
+
+        expect(backupFile.existsSync(), isTrue);
+        expect(_fileContainsUtf8(backupFile, sensitiveText), isFalse);
+        expect(_fileStartsWithSqliteHeader(backupFile), isFalse);
+
+        source.keyMaterial.destroy();
+
+        await backupService.restoreBackup(
+          backupFile: backupFile,
+          destinationJournalFile: restoredDatabase,
+          destinationKeyEnvelopeFile: restoredEnvelope,
+          masterPassword: masterPassword,
+        );
+
+        expect(await restoredEnvelope.readAsString(), source.encodedEnvelope);
+
+        final JournalKeyMaterial restoredKey = await keyEnvelopeService.unwrap(
+          masterPassword: masterPassword,
+          encodedEnvelope: await restoredEnvelope.readAsString(),
+        );
+        try {
+          expect(
+            await _readEntry(
+              databaseFile: restoredDatabase,
+              keyMaterial: restoredKey,
+              entryId: sourceEntryId,
+            ),
+            sensitiveText,
+          );
+        } finally {
+          restoredKey.destroy();
+        }
       } finally {
-        restoredKey.destroy();
+        source.keyMaterial.destroy();
       }
-    } finally {
-      source.keyMaterial.destroy();
-    }
-  });
+    },
+  );
 
   test('wrong backup password leaves an existing journal untouched', () async {
     final _JournalFixture source = await _createJournal(
@@ -150,65 +155,73 @@ void main() {
     }
   });
 
-  test('tampered backup fails authentication before replacing a journal', () async {
-    final _JournalFixture source = await _createJournal(
-      directory: tempDirectory,
-      name: 'source',
-      entryId: sourceEntryId,
-      content: sensitiveText,
-      password: masterPassword,
-      keyEnvelopeService: keyEnvelopeService,
-    );
-    final _JournalFixture target = await _createJournal(
-      directory: tempDirectory,
-      name: 'target',
-      entryId: targetEntryId,
-      content: existingText,
-      password: masterPassword,
-      keyEnvelopeService: keyEnvelopeService,
-    );
-    final File backupFile = File('${tempDirectory.path}/source.daymark-backup');
-
-    try {
-      await backupService.createBackup(
-        journalFile: source.databaseFile,
-        backupFile: backupFile,
-        keyMaterial: source.keyMaterial,
-        encodedKeyEnvelope: source.encodedEnvelope,
-        masterPassword: masterPassword,
+  test(
+    'tampered backup fails authentication before replacing a journal',
+    () async {
+      final _JournalFixture source = await _createJournal(
+        directory: tempDirectory,
+        name: 'source',
+        entryId: sourceEntryId,
+        content: sensitiveText,
+        password: masterPassword,
+        keyEnvelopeService: keyEnvelopeService,
+      );
+      final _JournalFixture target = await _createJournal(
+        directory: tempDirectory,
+        name: 'target',
+        entryId: targetEntryId,
+        content: existingText,
+        password: masterPassword,
+        keyEnvelopeService: keyEnvelopeService,
+      );
+      final File backupFile = File(
+        '${tempDirectory.path}/source.daymark-backup',
       );
 
-      final List<int> bytes = backupFile.readAsBytesSync();
-      final int tamperOffset =
-          bytes.length - EncryptedBackupService.macLength - 64;
-      expect(tamperOffset, greaterThan(36));
-      bytes[tamperOffset] ^= 0x01;
-      backupFile.writeAsBytesSync(bytes, flush: true);
-
-      await expectLater(
-        backupService.restoreBackup(
+      try {
+        await backupService.createBackup(
+          journalFile: source.databaseFile,
           backupFile: backupFile,
-          destinationJournalFile: target.databaseFile,
-          destinationKeyEnvelopeFile: target.envelopeFile,
+          keyMaterial: source.keyMaterial,
+          encodedKeyEnvelope: source.encodedEnvelope,
           masterPassword: masterPassword,
-        ),
-        throwsA(isA<BackupAuthenticationException>()),
-      );
+        );
 
-      expect(await target.envelopeFile.readAsString(), target.encodedEnvelope);
-      expect(
-        await _readEntry(
-          databaseFile: target.databaseFile,
-          keyMaterial: target.keyMaterial,
-          entryId: targetEntryId,
-        ),
-        existingText,
-      );
-    } finally {
-      source.keyMaterial.destroy();
-      target.keyMaterial.destroy();
-    }
-  });
+        final List<int> bytes = backupFile.readAsBytesSync();
+        final int tamperOffset =
+            bytes.length - EncryptedBackupService.macLength - 64;
+        expect(tamperOffset, greaterThan(36));
+        bytes[tamperOffset] ^= 0x01;
+        backupFile.writeAsBytesSync(bytes, flush: true);
+
+        await expectLater(
+          backupService.restoreBackup(
+            backupFile: backupFile,
+            destinationJournalFile: target.databaseFile,
+            destinationKeyEnvelopeFile: target.envelopeFile,
+            masterPassword: masterPassword,
+          ),
+          throwsA(isA<BackupAuthenticationException>()),
+        );
+
+        expect(
+          await target.envelopeFile.readAsString(),
+          target.encodedEnvelope,
+        );
+        expect(
+          await _readEntry(
+            databaseFile: target.databaseFile,
+            keyMaterial: target.keyMaterial,
+            entryId: targetEntryId,
+          ),
+          existingText,
+        );
+      } finally {
+        source.keyMaterial.destroy();
+        target.keyMaterial.destroy();
+      }
+    },
+  );
 
   test('truncated backup fails before restore staging', () async {
     final _JournalFixture source = await _createJournal(
@@ -298,100 +311,112 @@ void main() {
     }
   });
 
-  test('backup creation rejects an envelope for a different journal key', () async {
-    final _JournalFixture source = await _createJournal(
-      directory: tempDirectory,
-      name: 'source',
-      entryId: sourceEntryId,
-      content: sensitiveText,
-      password: masterPassword,
-      keyEnvelopeService: keyEnvelopeService,
-    );
-    final JournalKeyMaterial unrelatedKey = JournalKeyMaterial.generate();
-    final String unrelatedEnvelope = await keyEnvelopeService.wrap(
-      masterPassword: masterPassword,
-      keyMaterial: unrelatedKey,
-    );
-
-    try {
-      await expectLater(
-        backupService.createBackup(
-          journalFile: source.databaseFile,
-          backupFile: File('${tempDirectory.path}/invalid.daymark-backup'),
-          keyMaterial: source.keyMaterial,
-          encodedKeyEnvelope: unrelatedEnvelope,
-          masterPassword: masterPassword,
-        ),
-        throwsA(isA<BackupAuthenticationException>()),
-      );
-    } finally {
-      unrelatedKey.destroy();
-      source.keyMaterial.destroy();
-    }
-  });
-
-  test('in-process interrupted commit restores the previous journal pair', () async {
-    final _JournalFixture source = await _createJournal(
-      directory: tempDirectory,
-      name: 'source',
-      entryId: sourceEntryId,
-      content: sensitiveText,
-      password: masterPassword,
-      keyEnvelopeService: keyEnvelopeService,
-    );
-    final _JournalFixture target = await _createJournal(
-      directory: tempDirectory,
-      name: 'target',
-      entryId: targetEntryId,
-      content: existingText,
-      password: masterPassword,
-      keyEnvelopeService: keyEnvelopeService,
-    );
-    final File backupFile = File('${tempDirectory.path}/source.daymark-backup');
-
-    try {
-      await backupService.createBackup(
-        journalFile: source.databaseFile,
-        backupFile: backupFile,
-        keyMaterial: source.keyMaterial,
-        encodedKeyEnvelope: source.encodedEnvelope,
-        masterPassword: masterPassword,
-      );
-
-      final EncryptedBackupService interruptedService = EncryptedBackupService(
+  test(
+    'backup creation rejects an envelope for a different journal key',
+    () async {
+      final _JournalFixture source = await _createJournal(
+        directory: tempDirectory,
+        name: 'source',
+        entryId: sourceEntryId,
+        content: sensitiveText,
+        password: masterPassword,
         keyEnvelopeService: keyEnvelopeService,
-        restoreCommitHook: (RestoreCommitPhase phase) {
-          if (phase == RestoreCommitPhase.afterDatabaseInstalled) {
-            throw StateError('simulated restore interruption');
-          }
-        },
+      );
+      final JournalKeyMaterial unrelatedKey = JournalKeyMaterial.generate();
+      final String unrelatedEnvelope = await keyEnvelopeService.wrap(
+        masterPassword: masterPassword,
+        keyMaterial: unrelatedKey,
       );
 
-      await expectLater(
-        interruptedService.restoreBackup(
+      try {
+        await expectLater(
+          backupService.createBackup(
+            journalFile: source.databaseFile,
+            backupFile: File('${tempDirectory.path}/invalid.daymark-backup'),
+            keyMaterial: source.keyMaterial,
+            encodedKeyEnvelope: unrelatedEnvelope,
+            masterPassword: masterPassword,
+          ),
+          throwsA(isA<BackupAuthenticationException>()),
+        );
+      } finally {
+        unrelatedKey.destroy();
+        source.keyMaterial.destroy();
+      }
+    },
+  );
+
+  test(
+    'in-process interrupted commit restores the previous journal pair',
+    () async {
+      final _JournalFixture source = await _createJournal(
+        directory: tempDirectory,
+        name: 'source',
+        entryId: sourceEntryId,
+        content: sensitiveText,
+        password: masterPassword,
+        keyEnvelopeService: keyEnvelopeService,
+      );
+      final _JournalFixture target = await _createJournal(
+        directory: tempDirectory,
+        name: 'target',
+        entryId: targetEntryId,
+        content: existingText,
+        password: masterPassword,
+        keyEnvelopeService: keyEnvelopeService,
+      );
+      final File backupFile = File(
+        '${tempDirectory.path}/source.daymark-backup',
+      );
+
+      try {
+        await backupService.createBackup(
+          journalFile: source.databaseFile,
           backupFile: backupFile,
-          destinationJournalFile: target.databaseFile,
-          destinationKeyEnvelopeFile: target.envelopeFile,
+          keyMaterial: source.keyMaterial,
+          encodedKeyEnvelope: source.encodedEnvelope,
           masterPassword: masterPassword,
-        ),
-        throwsA(isA<BackupRestoreException>()),
-      );
+        );
 
-      expect(await target.envelopeFile.readAsString(), target.encodedEnvelope);
-      expect(
-        await _readEntry(
-          databaseFile: target.databaseFile,
-          keyMaterial: target.keyMaterial,
-          entryId: targetEntryId,
-        ),
-        existingText,
-      );
-      _expectNoRestoreResidue(target.databaseFile, target.envelopeFile);
-    } finally {
-      source.keyMaterial.destroy();
-      target.keyMaterial.destroy();
-    }
-  });
+        final EncryptedBackupService interruptedService =
+            EncryptedBackupService(
+              keyEnvelopeService: keyEnvelopeService,
+              restoreCommitHook: (RestoreCommitPhase phase) {
+                if (phase == RestoreCommitPhase.afterDatabaseInstalled) {
+                  throw StateError('simulated restore interruption');
+                }
+              },
+            );
+
+        await expectLater(
+          interruptedService.restoreBackup(
+            backupFile: backupFile,
+            destinationJournalFile: target.databaseFile,
+            destinationKeyEnvelopeFile: target.envelopeFile,
+            masterPassword: masterPassword,
+          ),
+          throwsA(isA<BackupRestoreException>()),
+        );
+
+        expect(
+          await target.envelopeFile.readAsString(),
+          target.encodedEnvelope,
+        );
+        expect(
+          await _readEntry(
+            databaseFile: target.databaseFile,
+            keyMaterial: target.keyMaterial,
+            entryId: targetEntryId,
+          ),
+          existingText,
+        );
+        _expectNoRestoreResidue(target.databaseFile, target.envelopeFile);
+      } finally {
+        source.keyMaterial.destroy();
+        target.keyMaterial.destroy();
+      }
+    },
+  );
 
   test('startup recovery aborts a process-interrupted restore', () async {
     final _JournalFixture target = await _createJournal(
@@ -513,10 +538,12 @@ Future<String> _readEntry({
     keyMaterial: keyMaterial,
   );
   try {
-    final rows = await database.customSelect(
-      'SELECT content FROM entries WHERE id = ?',
-      variables: <Variable<Object>>[Variable<Object>(entryId)],
-    ).get();
+    final rows = await database
+        .customSelect(
+          'SELECT content FROM entries WHERE id = ?',
+          variables: <Variable<Object>>[Variable<Object>(entryId)],
+        )
+        .get();
     return rows.single.read<String>('content');
   } finally {
     await database.close();
