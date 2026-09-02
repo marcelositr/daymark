@@ -13,10 +13,11 @@ Every agent must read it before meaningful work and update it before handing wor
 - Current working branch: `feat/security-foundation`
 - Current pull request: `#7`
 - Merge status: **DO NOT MERGE until explicitly requested by the user**
-- Current focus: representative Argon2id benchmarking and security-foundation review readiness
+- Current focus: final security-foundation documentation alignment, CI, and user review
 - Initial runtime targets: Linux and Android
 - Pinned toolchain: Flutter 3.47.2 / Dart 3.13.2
-- Last updated: 2026-09-01
+- Initial production Argon2id baseline: **frozen at 19 MiB / 2 iterations / p=1 / 32-byte output**
+- Last updated: 2026-09-02
 
 ## How to maintain this file
 
@@ -74,7 +75,7 @@ Authoritative validation plan: `docs/SECURITY_FOUNDATION.md`.
 - [x] Generate journal data-encryption keys from a cryptographically secure random source
 - [x] Define versioned key-envelope format v1 outside the encrypted Drift database
 - [x] Derive a key-encryption key from master password + random salt + explicit Argon2id parameters
-- [x] Authenticated-wrap and unwrap the random journal key material
+- [x] Authenticated-wrap and unwrap random journal key material
 - [x] Never persist the master password or plaintext journal key
 - [x] Preserve architecture for optional independent offline recovery over the same random journal key
 
@@ -102,26 +103,47 @@ Authoritative validation plan: `docs/SECURITY_FOUNDATION.md`.
 - [x] Existing Drift schema/invariant behavior remains active through encrypted persistence
 - [x] Verify/document SQLite3MultipleCiphers raw ChaCha20 representation as 32-byte key + 16-byte cipher salt
 
-The normal build matrix always bundles SQLite3MultipleCiphers, so CI does not currently manufacture a second native runtime containing only vanilla SQLite to exercise the unavailable-library branch. The runtime check remains mandatory implementation behavior and must not be removed merely because the production build normally satisfies it.
+The normal build matrix always bundles SQLite3MultipleCiphers, so CI does not manufacture a second native runtime containing only vanilla SQLite to exercise the unavailable-library branch. The runtime check remains mandatory implementation behavior.
 
 ### Password-hardening validation
 
 - [x] Add reproducible Argon2id benchmark harness
-- [ ] Record representative Linux benchmark results
+- [x] Record representative Linux benchmark results
 - [x] Define Android physical-device benchmark procedure
-- [ ] Record representative physical Android benchmark results
-- [ ] Freeze initial Argon2id parameters only after Linux + physical Android validation
+- [x] Record representative physical Android benchmark results
+- [x] Compare OWASP-listed memory/iteration profiles on Linux and physical Android hardware
+- [x] Preserve raw profile-matrix evidence under `docs/argon2-results/`
+- [x] Freeze the initial production Argon2id parameters after Linux + physical Android review
 - [x] Keep KDF parameters explicit in the envelope for future strengthening
 - [x] Bound untrusted envelope parameters independently from the selected production work factor
 
-Current pre-alpha Argon2id candidate, not yet frozen:
+Frozen initial production baseline:
 
-- 19 MiB memory;
-- 2 iterations;
-- parallelism 1;
-- 32-byte output.
+- memory: 19 MiB (`19456 KiB`);
+- iterations: 2;
+- parallelism: 1;
+- output: 32 bytes;
+- random KDF salt: 16 bytes per envelope.
 
-Benchmark procedure: `docs/ARGON2_BENCHMARK.md`.
+Benchmark procedure and rationale: `docs/ARGON2_BENCHMARK.md`.
+
+Representative evidence includes:
+
+- Debian 13 / Intel Core i5-2400;
+- Samsung SM-A015M / Android 12 / 32-bit ARM runtime;
+- M7 3G PLUS / Android 8.1 / 32-bit ARM as a deliberately conservative old-device point.
+
+The lower-memory alternatives improved the oldest Android device only modestly and offered effectively no Linux latency advantage. Daymark therefore retains the higher-memory 19 MiB / 2 baseline instead of weakening memory hardness merely to make unusually slow hardware somewhat faster.
+
+### Android OS-backup boundary
+
+- [x] Disable Android app-data backup through `android:allowBackup="false"`
+- [x] Provide Android 11-and-earlier full-backup exclusions for all Daymark app-data domains
+- [x] Provide Android 12+ cloud-backup exclusions for all Daymark app-data domains
+- [x] Provide Android 12+ device-transfer exclusions for all Daymark app-data domains
+- [x] Document Android OS backup as distinct from Daymark's future explicit encrypted portable backup
+
+The hardening was prompted by physical-device investigation: an Android full-backup job included Daymark and terminated a running Argon2 benchmark process. The observed interruption was platform backup behavior, not evidence of Argon2 OOM or cryptographic failure.
 
 ### Key/session boundaries
 
@@ -141,12 +163,12 @@ Actual lock timers, lifecycle UI, Android device-lock integration, and Linux ses
 - [x] Align `docs/SECURITY_FOUNDATION.md` with proven implementation details
 - [x] Align `docs/ARCHITECTURE.md` with proven implementation details
 - [x] Add reproducible Linux/Android Argon2id benchmark procedure
-- [x] Update README to the current PR #7/security-foundation state
-- [x] Update PR #7 checklist to match implementation and remaining gates
+- [x] Record matrix evidence and KDF freeze rationale
+- [x] Document Android OS-backup exclusions
 - [x] Update `CHANGELOG.md` with the pre-alpha security foundation
-- [x] Update this checkpoint with decisions and remaining limitations
-- [x] CI #75 green on the pre-benchmark implementation/documentation baseline (`40312d01b9746874c8fb1f480984705c6f90f5cc`)
-- [ ] Permanent CI green on the final reviewed PR head after any benchmark-driven parameter decision
+- [x] CI #75 green on pre-benchmark baseline (`40312d01b9746874c8fb1f480984705c6f90f5cc`)
+- [x] CI #88 green after physical benchmark evidence commit (`e3cdd95edc7c5006419a093bd536b193fb31bbdb`)
+- [ ] Permanent CI green on the final reviewed PR head after documentation alignment
 - [ ] User review / merge decision
 
 ## Relational baseline
@@ -190,12 +212,13 @@ The authoritative details live in `docs/ARCHITECTURE.md`.
 - `cryptography` 2.9.0 with Argon2id + XChaCha20-Poly1305 for portable key-envelope protection
 - key-envelope format v1 outside the encrypted Drift database
 - 48-byte SQLite raw journal material: 32-byte random journal key + 16-byte random cipher salt
+- frozen initial Argon2id production baseline: 19 MiB / 2 / p=1 / 32-byte output
 - platform secure storage deferred to a later device-assisted unlock task
 - UUID v7 through `uuid`
 - Flutter `gen_l10n`, English canonical/fallback, Portuguese (Brazil) first additional locale
 - GitHub Actions with immutable action SHAs
 
-`flutter_secure_storage` 11.0.0 was intentionally not retained in the baseline because its Android compileSdk requirement did not match the pinned Flutter-generated Android toolchain. Device-assisted unlock must be re-evaluated when that feature is actually implemented rather than distorting the baseline for an unused convenience layer.
+`flutter_secure_storage` 11.0.0 was intentionally not retained in the baseline because its Android compileSdk requirement did not match the pinned Flutter-generated Android toolchain. Device-assisted unlock must be re-evaluated when that feature is implemented rather than distorting the baseline for an unused convenience layer.
 
 ## Alpha milestone
 
@@ -259,13 +282,12 @@ Stable `v1.0.0` is released only after RC testing is deliberately considered suf
 
 These are not permission to invent behavior silently. Resolve them through focused work and update the authoritative document.
 
-1. Final Argon2id parameters after representative Linux and physical Android measurements.
-2. Exact offline recovery-secret human representation and UX. The cryptographic relationship to the random journal key is established.
-3. Exact secure-storage integration for optional Android/Linux assisted unlock.
-4. Exact backup container versioning, atomic restore, and rollback behavior.
-5. Packaging/distribution formats for Linux and Android.
-6. Live GitHub ruleset still needs the repository-defined required check names applied and verified.
-7. Repository/application services must enforce cross-table semantic invariants that ordinary SQLite `CHECK` constraints cannot express.
+1. Exact offline recovery-secret human representation and UX. The cryptographic relationship to the random journal key is established.
+2. Exact secure-storage integration for optional Android/Linux assisted unlock.
+3. Exact encrypted backup container versioning, atomic restore, and rollback behavior.
+4. Packaging/distribution formats for Linux and Android.
+5. Live GitHub ruleset still needs the repository-defined required check names applied and verified.
+6. Repository/application services must enforce cross-table semantic invariants that ordinary SQLite `CHECK` constraints cannot express.
 
 Resolved during PR #7:
 
@@ -274,8 +296,10 @@ Resolved during PR #7:
 - SQLite3MultipleCiphers uses the documented ChaCha20 32-byte raw key + 16-byte salt representation;
 - encrypted database opening requires an actual read after `PRAGMA key`;
 - Drift creation is forced through its lazy-open lifecycle before `createNew()` returns;
-- the journal-key holder is single-owned with explicit idempotent destruction boundaries;
-- recovery is architecturally a second portable protection path over the same random journal key rather than a device/account reset mechanism.
+- journal-key ownership has explicit idempotent destruction boundaries;
+- recovery is architecturally a second portable protection path over the same random journal key rather than a device/account reset mechanism;
+- the initial Argon2id production baseline is frozen at 19 MiB / 2 / p=1 / 32 bytes after Linux and physical Android benchmarking;
+- Android OS-managed backup/cloud migration is explicitly excluded from Daymark app-private state; Daymark's own encrypted backup/restore path remains the portable migration mechanism.
 
 ## Recent work log
 
@@ -289,28 +313,32 @@ Resolved during PR #7:
 - Merged `actions/setup-java` 6.0.0 update through PR #4.
 - Merged `actions/checkout` 7.0.1 update through PR #5.
 - Merged relational model, Drift schema v1, schema snapshots, invariants, and migration-tooling baseline through PR #6 (`3efd445351df59d95d92da0bc73f6c4bdccb4063`).
-- Corrected the unreleased schema v1 to persist Monthly Log calendar dates explicitly before any public user data existed.
 - Opened draft PR #7 on `feat/security-foundation` for master-password key hierarchy and encrypted journal validation.
-- Added `docs/SECURITY_FOUNDATION.md` as the focused security implementation/validation contract.
 - Implemented random journal-key material and version-1 Argon2id/XChaCha20-Poly1305 key envelope.
-- Added generic fail-closed unlock/format error boundaries and negative-path envelope tests.
 - Implemented SQLite3MultipleCiphers encrypted journal creation/opening and runtime cipher capability checking.
-- Fixed the Drift lazy-open lifecycle so `createNew()` completes schema initialization before returning; CI #57 validated the wrong-key regression fix.
-- Proved correct-key reopen, wrong-key rejection, unreadability through unkeyed SQLite, absence of representative plaintext content, and schema constraints through encrypted persistence.
-- Added direct Argon2id determinism/salt tests and bounded untrusted KDF metadata.
-- Added `tool/argon2_benchmark.dart` and `docs/ARGON2_BENCHMARK.md` for representative Linux/physical-Android parameter validation.
-- Hardened journal-key ownership to avoid redundant salt copies, hide direct secret-key access, and make destruction idempotent.
-- Documented the Dart immutable-string limitation around SQLite3MultipleCiphers raw-key PRAGMA handling instead of claiming guaranteed zeroization.
-- Aligned `SECURITY.md`, `docs/SECURITY_FOUNDATION.md`, `docs/ARCHITECTURE.md`, README, PR #7 metadata, and `CHANGELOG.md` with the implemented pre-alpha security baseline.
-- CI #75 completed successfully on baseline head `40312d01b9746874c8fb1f480984705c6f90f5cc` with quality/tests, Linux build, Android build, and dependency review green.
+- Proved correct-key reopen, wrong-key rejection, unkeyed SQLite unreadability, representative plaintext absence, and schema constraints through encrypted persistence.
+- Added Argon2id benchmark tooling and security documentation.
+- CI #75 completed successfully on baseline head `40312d01b9746874c8fb1f480984705c6f90f5cc`.
+
+### 2026-09-02
+
+- Recorded the representative Linux Argon2id profile matrix on Intel Core i5-2400 hardware.
+- Recorded physical Android profile matrices on Samsung SM-A015M and M7 3G PLUS hardware.
+- Preserved raw profile-matrix evidence under `docs/argon2-results/`.
+- Compared OWASP-listed Argon2id memory/iteration tradeoffs across all three physical systems.
+- Froze the initial production baseline at 19 MiB memory, 2 iterations, parallelism 1, 32-byte output.
+- Investigated an interrupted M7 matrix run and traced the process termination to an Android full-backup job rather than Argon2/OOM behavior.
+- Disabled Android app-data backup and added explicit Android 11-and-earlier and Android 12+ cloud/device-transfer exclusions.
+- CI #88 completed successfully after the Samsung matrix evidence commit.
+- Aligned the core security and architecture documents with the KDF freeze and Android backup boundary.
 
 ## Next concrete action
 
-Run and record the Argon2id benchmark on representative Linux and physical Android hardware, then review the measurements before freezing or changing the production KDF parameters.
-
-After any benchmark-driven parameter/documentation change, obtain final green CI again before user review.
+Obtain final green CI on the fully aligned PR #7 head, then perform user review of the PR.
 
 Do not add biometric/keyring convenience, lock UI, journal product screens, sync, or the final backup-container implementation to PR #7.
+
+Do not merge PR #7 unless the user explicitly requests the merge.
 
 ## Handoff
 
@@ -318,7 +346,8 @@ If work stops unexpectedly, the next agent should:
 
 1. read `AGENTS.md` and this file;
 2. inspect the current branch and PR rather than trusting stale chat context;
-3. read `SECURITY.md`, `docs/SECURITY_FOUNDATION.md`, and `docs/ARGON2_BENCHMARK.md` before changing security code;
-4. treat the Argon2id candidate as unfrozen until representative Linux and physical Android measurements exist;
-5. continue from the first genuinely actionable unchecked item unless the user sets another priority;
-6. update this file again before stopping.
+3. read `SECURITY.md`, `docs/SECURITY_FOUNDATION.md`, `docs/ARGON2_BENCHMARK.md`, and `docs/ARCHITECTURE.md` before changing security code;
+4. treat 19 MiB / 2 / p=1 / 32-byte output as the frozen initial production KDF baseline unless a new reviewed retuning cycle explicitly changes it;
+5. preserve the Android OS-backup exclusion boundary;
+6. continue from the first genuinely actionable unchecked item unless the user sets another priority;
+7. update this file again before stopping.
