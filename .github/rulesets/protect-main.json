@@ -27,16 +27,7 @@
         "strict_required_status_checks_policy": true,
         "required_status_checks": [
           {
-            "context": "quality"
-          },
-          {
-            "context": "linux-build"
-          },
-          {
-            "context": "android-build"
-          },
-          {
-            "context": "dependency-review"
+            "context": "merge-gate"
           }
         ]
       }
