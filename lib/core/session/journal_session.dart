@@ -38,7 +38,7 @@ final class JournalUnlocked extends JournalAccessState {
 /// application's mutable journal-key owner. The operation is idempotent so
 /// manual lock, lifecycle lock, and teardown may safely converge here later.
 final class JournalSession {
-  JournalSession._({required this.database, required this._keyMaterial})
+  JournalSession._(this.database, this._keyMaterial)
     : repository = JournalRepository(database) {
     service = JournalService(repository);
     dailyLog = DailyLogRepository(database, service);
@@ -140,10 +140,7 @@ final class JournalSessionManager {
 
       await files.creatingKeyEnvelopeFile.rename(files.keyEnvelopeFile.path);
 
-      final JournalSession session = JournalSession._(
-        database: database,
-        _keyMaterial: keyMaterial,
-      );
+      final JournalSession session = JournalSession._(database, keyMaterial);
       _session = session;
       return session;
     } catch (error, stackTrace) {
@@ -176,10 +173,7 @@ final class JournalSessionManager {
         keyMaterial: keyMaterial,
       );
 
-      final JournalSession session = JournalSession._(
-        database: database,
-        _keyMaterial: keyMaterial,
-      );
+      final JournalSession session = JournalSession._(database, keyMaterial);
       _session = session;
       return session;
     } catch (error, stackTrace) {
