@@ -62,7 +62,8 @@ final class DailyLogRepository {
       }
     }
 
-    final String resolvedLogId = logId;
+    final String resolvedLogId =
+        logId ?? (throw StateError('Daily Log creation did not return an id.'));
     return DailyLogSnapshot(
       logId: resolvedLogId,
       methodDate: methodDate,
