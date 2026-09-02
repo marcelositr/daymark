@@ -227,9 +227,8 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
       }
     } catch (_) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l10n.saveEntryFailed)),
-        );
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(l10n.saveEntryFailed)));
       }
     } finally {
       if (mounted) {

@@ -16,9 +16,7 @@ void main() {
     files = JournalFiles(directory);
     manager = JournalSessionManager(
       files: files,
-      keyEnvelopeService: KeyEnvelopeService(
-        parameters: Argon2Parameters.test,
-      ),
+      keyEnvelopeService: KeyEnvelopeService(parameters: Argon2Parameters.test),
     );
   });
 
@@ -29,29 +27,32 @@ void main() {
     }
   });
 
-  test('create, lock, and unlock own the encrypted session lifecycle', () async {
-    expect(await manager.inspect(), isA<JournalNeedsCreation>());
+  test(
+    'create, lock, and unlock own the encrypted session lifecycle',
+    () async {
+      expect(await manager.inspect(), isA<JournalNeedsCreation>());
 
-    final JournalSession created = await manager.create(
-      masterPassword: 'correct horse battery staple',
-    );
+      final JournalSession created = await manager.create(
+        masterPassword: 'correct horse battery staple',
+      );
 
-    expect(created.isClosed, isFalse);
-    expect(await files.databaseFile.exists(), isTrue);
-    expect(await files.keyEnvelopeFile.exists(), isTrue);
-    expect(await files.creatingKeyEnvelopeFile.exists(), isFalse);
-    expect(await manager.inspect(), isA<JournalUnlocked>());
+      expect(created.isClosed, isFalse);
+      expect(await files.databaseFile.exists(), isTrue);
+      expect(await files.keyEnvelopeFile.exists(), isTrue);
+      expect(await files.creatingKeyEnvelopeFile.exists(), isFalse);
+      expect(await manager.inspect(), isA<JournalUnlocked>());
 
-    await manager.lock();
-    expect(created.isClosed, isTrue);
-    expect(await manager.inspect(), isA<JournalLocked>());
+      await manager.lock();
+      expect(created.isClosed, isTrue);
+      expect(await manager.inspect(), isA<JournalLocked>());
 
-    final JournalSession reopened = await manager.unlock(
-      masterPassword: 'correct horse battery staple',
-    );
-    expect(reopened.isClosed, isFalse);
-    expect(await manager.inspect(), isA<JournalUnlocked>());
-  });
+      final JournalSession reopened = await manager.unlock(
+        masterPassword: 'correct horse battery staple',
+      );
+      expect(reopened.isClosed, isFalse);
+      expect(await manager.inspect(), isA<JournalUnlocked>());
+    },
+  );
 
   test('wrong password fails closed and leaves the journal locked', () async {
     await manager.create(masterPassword: 'right password');

@@ -33,9 +33,7 @@ void main() {
     expect(second.logId, first.logId);
 
     final row = await database
-        .customSelect(
-          "SELECT COUNT(*) AS count FROM logs WHERE kind = 'daily'",
-        )
+        .customSelect("SELECT COUNT(*) AS count FROM logs WHERE kind = 'daily'")
         .getSingle();
     expect(row.read<int>('count'), 1);
   });
@@ -63,14 +61,11 @@ void main() {
 
     expect(loaded.entries, hasLength(3));
     expect(loaded.entries.map((entry) => entry.ordinal), <int>[0, 1, 2]);
-    expect(
-      loaded.entries.map((entry) => entry.type),
-      <JournalEntryType>[
-        JournalEntryType.task,
-        JournalEntryType.event,
-        JournalEntryType.note,
-      ],
-    );
+    expect(loaded.entries.map((entry) => entry.type), <JournalEntryType>[
+      JournalEntryType.task,
+      JournalEntryType.event,
+      JournalEntryType.note,
+    ]);
     expect(loaded.entries[0].taskState, JournalTaskState.open);
     expect(loaded.entries[1].taskState, isNull);
     expect(loaded.entries[2].taskState, isNull);

@@ -13,9 +13,8 @@ final class JournalFiles {
 
   final Directory directory;
 
-  File get databaseFile => File(
-    '${directory.path}${Platform.pathSeparator}journal.sqlite3',
-  );
+  File get databaseFile =>
+      File('${directory.path}${Platform.pathSeparator}journal.sqlite3');
 
   File get keyEnvelopeFile => File(
     '${directory.path}${Platform.pathSeparator}journal.key-envelope.json',
