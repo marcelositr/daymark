@@ -157,17 +157,14 @@ void main() {
         masterPassword: 'password',
         keyMaterial: material,
       );
-      final String truncated = _truncateEncodedField(
+      final String tampered = _truncateEncodedField(
         envelope,
         section: 'wrap',
         field: 'ciphertext',
       );
 
       await expectLater(
-        service.unwrap(
-          masterPassword: 'password',
-          encodedEnvelope: truncated,
-        ),
+        service.unwrap(masterPassword: 'password', encodedEnvelope: tampered),
         throwsA(isA<KeyEnvelopeFormatException>()),
       );
     } finally {
