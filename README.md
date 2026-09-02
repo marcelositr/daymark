@@ -10,7 +10,7 @@ Daymark is in foundation / pre-alpha development. The product, domain, security,
 
 The Flutter scaffold and relational schema v1 are integrated on `main`. The current development cycle is PR #7, which is validating the master-password key hierarchy and encrypted journal persistence. The pinned toolchain is Flutter 3.47.2 with Dart 3.13.2, targeting Linux and Android.
 
-PR #7 currently has an implemented and tested pre-alpha security baseline using Argon2id + XChaCha20-Poly1305 for portable journal-key protection and SQLite3MultipleCiphers ChaCha20-Poly1305 for encrypted journal storage. Final Argon2id production parameters remain intentionally unfrozen until representative Linux and physical Android benchmarks are reviewed.
+PR #7 has an implemented and tested pre-alpha security baseline using Argon2id + XChaCha20-Poly1305 for portable journal-key protection and SQLite3MultipleCiphers ChaCha20-Poly1305 for encrypted journal storage. Representative Linux and physical Android profile-mode measurements are recorded, and the initial Argon2id production baseline is frozen at 19 MiB memory, 2 iterations, parallelism 1, and 32-byte output. Android OS-managed app-data backup/device transfer is explicitly excluded so portable migration remains an intentional Daymark encrypted-backup boundary.
 
 The canonical live development checkpoint is [`PROJECT.md`](PROJECT.md).
 
@@ -94,7 +94,7 @@ Release candidates are not promoted automatically. Stable `1.0.0` happens only a
 - [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md): technical architecture and technology baseline
 - [`SECURITY.md`](SECURITY.md): threat model and security constraints
 - [`docs/SECURITY_FOUNDATION.md`](docs/SECURITY_FOUNDATION.md): current security implementation/validation contract
-- [`docs/ARGON2_BENCHMARK.md`](docs/ARGON2_BENCHMARK.md): Linux/Android KDF benchmark procedure
+- [`docs/ARGON2_BENCHMARK.md`](docs/ARGON2_BENCHMARK.md): Linux/Android KDF benchmark procedure, evidence, and initial parameter decision
 - [`docs/WORKFLOW.md`](docs/WORKFLOW.md): branches, PRs, versioning, and releases
 - [`CONTRIBUTING.md`](CONTRIBUTING.md): contribution expectations
 - [`CHANGELOG.md`](CHANGELOG.md): release-facing history
