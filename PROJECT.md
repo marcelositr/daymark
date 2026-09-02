@@ -6,16 +6,17 @@ Every agent must read it before meaningful work and update it before handing wor
 
 ## Current state
 
-- Phase: pre-alpha, first usable journal vertical slice ready for final merge review
+- Phase: pre-alpha, automatic journal-lock lifecycle ready for full merge validation
 - Public release status: no release yet
 - Intended first public release stage: `v1.0.0-alpha.1`
 - Integration branch: `main`
-- Current working branch: `feat/rebuild-unlock-daily-log`
-- Current pull request: PR #13, `feat(journal): rebuild unlock and Daily Log flow`
-- PR #13 status: Ready for review; implementation CI, 63-test local suite, Linux debug build, manual Linux lifecycle/persistence validation, and full non-Draft CI #155 have passed; final CI after workflow-documentation commits and explicit user merge approval remain
-- Superseded work: PR #11 remains unmerged and is retained only as an audit/reference branch until PR #13 is merged or deliberately abandoned
+- Current `main` baseline: PR #13 merged as `d9e2a5e334ce13f2efcdf99a43ac677c661eaa6d`
+- Current working branch: `feat/automatic-lock-lifecycle`
+- Current pull request: PR #14, `feat(session): add automatic inactivity lock`
+- PR #14 status: Draft; final implementation, documentation, Draft CI #175, 71-test local suite, Linux debug build, and manual Linux inactivity/lifecycle validation have passed; non-Draft CI and explicit user merge approval remain
+- Superseded work: PR #11 is closed and intentionally unmerged; PR #13 replaced it from a clean audited baseline
 - Merge policy: agents never merge without explicit user approval
-- Current focus: land the staged AI/human validation workflow documentation, confirm the resulting full CI, then request the explicit merge decision
+- Current focus: promote PR #14 to Ready for review, run the full merge-validation CI, then request the explicit merge decision
 - Initial runtime targets: Linux and Android
 - Pinned toolchain: Flutter 3.47.2 / Dart 3.13.2
 - Initial production Argon2id baseline: **19 MiB / 2 iterations / p=1 / 32-byte output**
@@ -32,6 +33,7 @@ Every agent must read it before meaningful work and update it before handing wor
 - Keep `CHANGELOG.md` release-facing rather than using it as a development scratchpad.
 - Follow the staged engineering/validation ladder in `AGENTS.md` and `docs/WORKFLOW.md`: trustworthy baseline -> audit when needed -> Draft CI -> layer-correct tests -> progressive local validation -> documentation alignment -> full non-Draft CI -> explicit merge approval.
 - When local-only evidence is required, agents provide complete safe command blocks with stop conditions and interpret the returned output rather than asking the user to improvise debugging.
+- Command blocks intended for an interactive user shell must not terminate that shell as a side effect; report exit codes instead of calling a bare final `exit`.
 - When GitHub/API data is delayed, missing, or contradictory, do not guess state; continue independent work or stop at the exact blocked boundary and request the smallest missing reference.
 - Do not weaken security or data-integrity behavior merely to make a build or test pass.
 - Do not add speculative framework layers when a focused concrete boundary is sufficient.
@@ -62,6 +64,7 @@ Daymark is a faithful digital Bullet Journal, not a generic productivity suite.
 - [x] Live `main` ruleset requires the exact `merge-gate` status check
 - [x] Generated Drift artifact and schema-snapshot freshness checks in CI
 - [x] English fallback, exact Brazilian Portuguese locale, light/dark/system theme foundations
+- [x] Staged AI/human development workflow in `AGENTS.md` and `docs/WORKFLOW.md`
 
 ### Relational / domain foundation
 
@@ -96,8 +99,6 @@ Domain/application rules already enforced:
 - [x] capture creates Tasks as `open`; migrated/scheduled states arise through deliberate migration operations
 - [x] cross-table semantic writes are transactional through `JournalRepository` / `JournalService`
 
-PR #10 merged after explicit user approval.
-
 ### Security / backup foundation
 
 Merged through PR #7 and extended through PR #9.
@@ -123,9 +124,30 @@ Merged through PR #7 and extended through PR #9.
 
 Authoritative security details remain in `SECURITY.md`, `docs/SECURITY_FOUNDATION.md`, `docs/BACKUP_FORMAT.md`, and `docs/ARCHITECTURE.md`.
 
-## Audit of PR #11
+### Usable encrypted journal vertical slice
 
-PR #11 (`feat/unlock-daily-log`) was fully audited before further product work.
+Merged in PR #13 after the full audit/rebuild cycle.
+
+- [x] application-support paths for encrypted DB + external key envelope
+- [x] incomplete DB/envelope pairs fail closed rather than being overwritten
+- [x] `JournalSession` owns encrypted Drift DB, key material, repository, and application services while unlocked
+- [x] create journal with a non-empty master password
+- [x] unlock existing encrypted journal with generic wrong-password failure
+- [x] one stable `MaterialApp.router`; journal access is gated inside the route tree
+- [x] manual lock closes DB before key destruction
+- [x] journal operations are serialized; lock waits for an active operation before closing persistence
+- [x] controller restores a known state after create/unlock/lock failures
+- [x] Today route backed by one real Daily Log per method date
+- [x] Rapid Logging for Task, Event, and Note
+- [x] Daily Log writes continue through `JournalService`
+- [x] Today refreshes after midnight and when the application resumes
+- [x] widget tests keep filesystem/Argon2/SQLite outside `testWidgets`
+- [x] real session tests prove persistence across lock -> unlock and lock waiting for active work
+- [x] local 63-test suite, Linux debug build, manual Linux lifecycle/persistence flow, and full CI passed
+
+## Historical audit: PR #11
+
+PR #11 (`feat/unlock-daily-log`) was fully audited, closed, and intentionally not merged.
 
 Healthy findings that were preserved conceptually:
 
@@ -133,84 +155,78 @@ Healthy findings that were preserved conceptually:
 - Daily Log repository boundary;
 - writes through the existing semantic `JournalService`;
 - persistence and security foundation remained healthy;
-- 57 existing tests outside the Today widget regression test passed serially.
+- 57 existing tests outside the invalid Today widget regression test passed serially.
 
 Problems that blocked merging PR #11:
 
 - the Today regression test performed real filesystem/Argon2/SQLite work inside `testWidgets` and timed out before reaching `TodayScreen`;
-- the test also bypassed the real application/router access transition;
+- the test bypassed the real application/router access transition;
 - locked and unlocked states used different root `MaterialApp` configurations;
-- presentation used generic `catch (_)` paths that discarded diagnostic context;
-- empty master passwords were accepted by the creation flow;
+- presentation discarded diagnostic context through generic catches;
+- empty master passwords were accepted;
 - lock could compete conceptually with an in-flight journal operation;
-- Today captured the date once at initialization and could remain on yesterday after midnight.
+- Today could remain on yesterday after midnight.
 
-Decision: do not merge PR #11. Rebuild the vertical slice from the audited `main` baseline in PR #13 and retain #11 only as reference until the replacement is proven.
+Decision: PR #13 rebuilt the vertical slice from audited `main`; #11 remains only as closed historical evidence of why the rebuild was necessary.
 
-## Current work: PR #13
+## Current work: PR #14 automatic inactivity lock
 
-Goal: land the first usable end-to-end encrypted journal flow with simpler lifecycle boundaries and tests that reflect the correct layer.
+Goal: enforce the locking policy already defined by `SECURITY.md` without moving timeout/lifecycle concerns into cryptographic persistence code.
 
-Implemented on `feat/rebuild-unlock-daily-log`:
+Implemented on `feat/automatic-lock-lifecycle`:
 
-- [x] application-support paths for encrypted DB + external key envelope
-- [x] incomplete DB/envelope pairs fail closed rather than being overwritten
-- [x] `JournalSession` owns encrypted Drift DB, key material, repository, and application services while unlocked
-- [x] create journal with master password
-- [x] reject an empty master password in both UI and session manager
-- [x] unlock existing encrypted journal with master password
-- [x] wrong password returns to locked state without password-quality leakage
-- [x] one stable `MaterialApp.router`; journal access is gated inside the route tree
-- [x] manual lock closes DB before key destruction
-- [x] journal operations are serialized; lock waits for an active operation before closing persistence
-- [x] controller restores a known state after create/unlock/lock failures
-- [x] create/unlock UI in English and pt_BR
-- [x] parent Portuguese localization contains the same vertical-slice keys, eliminating the previous untranslated-message warning
-- [x] Today route backed by a real Daily Log
-- [x] one Daily Log per method date
-- [x] Rapid Logging for Task, Event, and Note
-- [x] Daily Log reads remain focused while writes continue through `JournalService`
-- [x] Today refreshes after midnight and when the application resumes
-- [x] widget test for Today uses an in-memory presentation boundary instead of real filesystem/cryptographic I/O
-- [x] real session test proves Daily Log entries survive lock -> unlock
-- [x] real session test proves manual lock waits for an active journal operation
-- [x] Draft CI generation, migration snapshot, stale-artifact check, formatting, and analyzer passed
-- [x] local complete suite passed with 63 tests, including the Today widget regression without timeout
-- [x] local Linux debug build passed
-- [x] manual Linux create/capture/lock/wrong-password/unlock/restart persistence flow passed without the false save-failure message
-- [x] full non-Draft CI #155 passed `quality`, Linux build, Android build, dependency review, and `merge-gate`
-- [x] user functional review passed
-- [x] staged AI/human engineering workflow codified in `AGENTS.md` and `docs/WORKFLOW.md`
-- [ ] final full CI after the workflow-documentation commits
-- [ ] explicit user merge approval
+- [x] default automatic lock deadline is five minutes after the last journal interaction
+- [x] inactivity timing lives in a presentation/lifecycle guard around unlocked journal UI; `JournalSessionManager` remains responsible for how a lock safely closes persistence
+- [x] pointer/touch interaction renews the deadline
+- [x] hardware keyboard interaction renews the deadline
+- [x] text editing can explicitly renew the deadline so mobile IME input does not look inactive merely because it emits no Flutter `KeyEvent`
+- [x] rebuilds do not count as user activity
+- [x] background time does not reset the deadline
+- [x] returning to foreground immediately re-evaluates elapsed wall-clock time, so a suspended platform timer cannot keep the journal open indefinitely
+- [x] a backward wall-clock jump on resume fails closed instead of extending the unlocked period
+- [x] automatic timeout delegates to the same session-controller lock path used by manual lock
+- [x] existing serialized journal operations remain authoritative, so an operation already in progress completes before encrypted persistence is closed and key material is destroyed
+- [x] timeout tests use controlled durations rather than waiting five real minutes
+- [x] focused automated behavior is covered alongside the existing Today regression
+- [x] full local suite passed with 71 tests on final implementation/documentation candidate HEAD `d0a3f7714af09bf0ff46c541acf60c298120f038`
+- [x] local Linux debug build passed on the same candidate HEAD
+- [x] manual Linux validation confirmed the real five-minute timeout while idle, activity renewal during mouse use and active editing, and lock after remaining inactive in another workspace
+- [x] Draft CI #175 passed generation, Drift snapshot/artifact checks, formatting, and analyzer on the same candidate HEAD
 
-Explicitly outside PR #13:
+Explicitly outside PR #14:
 
-- automatic lock timers and operating-system lifecycle/session-lock integration;
+- platform-specific immediate lock from Linux desktop-session lock or Android device-lock signals;
+- configurable timeout UI or persistence of timeout preferences;
 - device-assisted unlock / platform secure storage;
-- task completion/discard/migration controls in UI;
-- Monthly, Future, Collections, Index, and Search product screens;
-- backup/restore UI and recovery-secret UX;
-- exports, sync, collaboration, or AI-generated journal content.
+- operating-system recent-app/screenshot privacy hardening;
+- task completion/discard/migration controls;
+- Monthly, Future, Collections, Index, Search, or backup/restore product UI.
 
-## Validation policy for PR #13
+## Validation policy for PR #14
 
-The implementation gates have been satisfied. Final merge eligibility now requires:
+Completed before promotion from Draft:
 
-1. the full non-Draft CI triggered by the final workflow/documentation commits must pass, including `merge-gate`;
-2. no new implementation or documentation inconsistency may be introduced while resolving that CI;
-3. merge remains an explicit user decision.
+1. [x] documentation matches the implemented five-minute inactivity policy and its platform boundary;
+2. [x] the full local test suite passed on the exact final candidate branch HEAD;
+3. [x] Linux debug build passed locally;
+4. [x] manual Linux review confirmed the real five-minute inactivity lock and activity renewal behavior.
 
-The validated manual Linux flow covered:
+Remaining merge gates:
 
-- empty password rejected;
-- journal creation with a non-empty password;
-- Task, Event, and Note capture without a false save-failure message;
-- manual lock;
-- generic wrong-password failure;
-- correct-password unlock;
-- persistence across relock and application restart;
-- disappearance of the previous untranslated Portuguese warning.
+5. [ ] non-Draft CI must pass `quality`, Linux build, Android build, dependency review, and `merge-gate`;
+6. [ ] merge remains an explicit user decision.
+
+The automated coverage includes:
+
+- timeout after the inactivity deadline;
+- rebuilds not resetting the deadline;
+- pointer/touch reset;
+- physical-keyboard reset;
+- explicit text-edit/IME-style reset;
+- immediate lock after a background gap beyond the deadline;
+- preservation of only the remaining deadline after a shorter background gap;
+- fail-closed handling of a backward wall-clock jump;
+- existing Today capture regression behavior.
 
 ## Alpha milestone
 
@@ -218,18 +234,19 @@ Target: `v1.0.0-alpha.1` as an end-to-end but intentionally incomplete product.
 
 ### Security / journal lifecycle
 
-- [ ] Create/open a journal with master password (PR #13 pending merge)
-- [ ] Open encrypted persistence only after successful unlock (PR #13 pending merge)
-- [ ] Manual lock (PR #13 pending merge)
-- [ ] Automatic lock
+- [x] Create/open a journal with master password
+- [x] Open encrypted persistence only after successful unlock
+- [x] Manual lock
+- [ ] Automatic inactivity lock (PR #14 pending full CI/merge)
+- [ ] Immediate lock from reliable operating-system protected-state signals
 - [ ] Recovery UX over an alternate protection path for the same random journal key
 - [x] Manual encrypted backup/restore foundation
 - [ ] Backup/restore product UI
 
 ### Bullet Journal product flows
 
-- [ ] Daily Log and Rapid Logging (PR #13 pending merge)
-- [ ] Task/Event/Note capture UI (PR #13 pending merge)
+- [x] Daily Log and Rapid Logging
+- [x] Task/Event/Note capture UI
 - [ ] Task completion and discard UI
 - [x] Migration/scheduling semantic persistence and lineage
 - [ ] Migration/scheduling UI
@@ -254,27 +271,28 @@ Target: `v1.0.0-alpha.1` as an end-to-end but intentionally incomplete product.
 - [ ] no known unresolved data-loss bug
 - [ ] no known unresolved high-severity security issue
 
-## Next work after PR #13
+## Next work after PR #14
 
-Do not start these until PR #13 is merged or deliberately abandoned.
+Do not start these until PR #14 is merged or deliberately abandoned.
 
-1. Add automatic lock/lifecycle behavior on top of the explicit session owner.
-2. Add deliberate task actions: complete, discard, migrate, schedule.
-3. Build Monthly Log and Future Log flows using the already-enforced semantic services.
-4. Build Collections and deliberate Index behavior.
-5. Add encrypted Search over journal storage with no plaintext side index.
-6. Expose portable backup/restore in the product UI.
-7. Add explicit open export formats.
+1. Add deliberate task actions: complete, discard, migrate, schedule.
+2. Build Monthly Log and Future Log flows using the already-enforced semantic services.
+3. Build Collections and deliberate Index behavior.
+4. Add encrypted Search over journal storage with no plaintext side index.
+5. Expose portable backup/restore in the product UI.
+6. Add explicit open export formats.
+7. Add platform-specific immediate lock/privacy hooks where reliable signals are available.
 8. Continue accessibility, keyboard, compact Android, and packaging passes toward alpha.
 
 ## Open questions / follow-up validation
 
 1. Exact offline recovery-secret human representation and UX.
 2. Exact optional secure-storage integration for Android/Linux assisted unlock.
-3. Automatic lock policy: timeout, app background behavior, and Linux session-lock integration.
-4. Packaging/distribution formats for Linux and Android.
-5. Filesystem permission hardening for Linux journal files beyond the encrypted-at-rest guarantee.
-6. Physical-device Android validation of the normal journal-access flow once PR #13 is stable.
+3. Reliable platform hooks for immediate lock on Android device lock and Linux desktop-session lock.
+4. Whether timeout configurability belongs before or after the first alpha; five minutes remains the security default.
+5. Packaging/distribution formats for Linux and Android.
+6. Filesystem permission hardening for Linux journal files beyond the encrypted-at-rest guarantee.
+7. Physical-device Android validation of the normal journal-access flow.
 
 ## Recent work
 
@@ -284,8 +302,9 @@ Do not start these until PR #13 is merged or deliberately abandoned.
 - Merged portable encrypted backup/restore foundation through PR #9.
 - Merged semantic journal application services through PR #10.
 - Merged tiered CI validation through PR #12 and verified the live `merge-gate` ruleset requirement.
-- Audited PR #11 after repeated CI/manual-test inconsistencies; isolated its Today widget-test timeout and chose not to merge the branch.
-- Created PR #13 from clean `main` to rebuild encrypted access + Today/Daily Log with stable routing, serialized session operations, explicit password validation, date rollover, and layer-correct tests.
-- Validated PR #13 locally with reproducible generation, formatter/analyzer, 63 passing tests, Linux debug build, and the real create/capture/lock/unlock/restart flow.
-- Passed full non-Draft CI #155, including Linux and Android builds, dependency review, and the required `merge-gate`.
-- Promoted the successful PR #13 development process into the permanent staged engineering workflow for future human and AI contributors.
+- Audited PR #11 after repeated CI/manual-test inconsistencies; isolated its invalid Today widget-test design and closed the PR without merge.
+- Rebuilt encrypted access + Today/Daily Log cleanly in PR #13 with stable routing, serialized session operations, password validation, date rollover, layer-correct tests, and the staged AI/human engineering workflow.
+- Validated PR #13 locally and through full CI, then squash-merged it to `main` after explicit user approval.
+- Opened PR #14 from the merged #13 baseline to implement the documented five-minute automatic inactivity lock.
+- Added interaction-driven timeout handling for pointer/touch, hardware keyboard, and explicit text editing; background/resume elapsed-time enforcement; and fail-closed handling of backward wall-clock jumps.
+- Passed Draft CI #175, the full 71-test local suite, Linux debug build, and manual Linux validation of idle, active-editing, mouse-interaction, and alternate-workspace timeout behavior.

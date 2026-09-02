@@ -1,0 +1,166 @@
+import 'dart:async';
+
+import 'package:flutter/widgets.dart';
+
+const Duration defaultJournalAutoLockTimeout = Duration(minutes: 5);
+
+typedef JournalLockCallback = Future<void> Function();
+
+/// Enforces the documented inactivity lock policy around unlocked journal UI.
+///
+/// Pointer and keyboard interaction restart the deadline. Controls whose user
+/// interaction does not necessarily emit a Flutter key event, such as text
+/// input through a mobile IME, can call [recordActivity] explicitly.
+/// Background time does not reset the deadline, and returning to the foreground
+/// re-evaluates elapsed wall time so a suspended platform timer cannot keep an
+/// inactive journal open.
+final class JournalActivityGuard extends StatefulWidget {
+  const JournalActivityGuard({
+    required this.child,
+    required this.onTimeout,
+    this.timeout = defaultJournalAutoLockTimeout,
+    DateTime Function()? now,
+    super.key,
+  }) : assert(timeout > Duration.zero),
+       _now = now ?? DateTime.now;
+
+  final Widget child;
+  final JournalLockCallback onTimeout;
+  final Duration timeout;
+  final DateTime Function() _now;
+
+  static void recordActivity(BuildContext context) {
+    context
+        .getInheritedWidgetOfExactType<_JournalActivityMarker>()
+        ?.onActivity();
+  }
+
+  @override
+  State<JournalActivityGuard> createState() => _JournalActivityGuardState();
+}
+
+final class _JournalActivityGuardState extends State<JournalActivityGuard>
+    with WidgetsBindingObserver {
+  Timer? _timer;
+  late DateTime _lastActivityAt;
+  int _generation = 0;
+  bool _timeoutRunning = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _lastActivityAt = widget._now();
+    _armTimer(widget.timeout);
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _evaluateDeadline();
+    }
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  void _recordActivity() {
+    if (_timeoutRunning) {
+      return;
+    }
+
+    _lastActivityAt = widget._now();
+    _generation += 1;
+    _armTimer(widget.timeout);
+  }
+
+  void _evaluateDeadline() {
+    if (_timeoutRunning) {
+      return;
+    }
+
+    final DateTime now = widget._now();
+    final Duration elapsed = now.isBefore(_lastActivityAt)
+        ? widget.timeout
+        : now.difference(_lastActivityAt);
+
+    if (elapsed >= widget.timeout) {
+      unawaited(_requestTimeout(_generation));
+      return;
+    }
+
+    _armTimer(widget.timeout - elapsed);
+  }
+
+  void _armTimer(Duration delay) {
+    _timer?.cancel();
+    final int generation = _generation;
+    _timer = Timer(delay, () {
+      unawaited(_requestTimeout(generation));
+    });
+  }
+
+  Future<void> _requestTimeout(int generation) async {
+    if (!mounted || _timeoutRunning || generation != _generation) {
+      return;
+    }
+
+    _timeoutRunning = true;
+    _timer?.cancel();
+
+    try {
+      await widget.onTimeout();
+    } catch (error, stackTrace) {
+      debugPrint(
+        'Unexpected automatic journal lock failure (${error.runtimeType}).',
+      );
+      debugPrintStack(stackTrace: stackTrace);
+
+      if (!mounted) {
+        return;
+      }
+
+      _timeoutRunning = false;
+      _lastActivityAt = widget._now();
+      _generation += 1;
+      _armTimer(widget.timeout);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Listener(
+      behavior: HitTestBehavior.translucent,
+      onPointerDown: (_) => _recordActivity(),
+      onPointerSignal: (_) => _recordActivity(),
+      child: Focus(
+        canRequestFocus: false,
+        skipTraversal: true,
+        onKeyEvent: (_, _) {
+          _recordActivity();
+          return KeyEventResult.ignored;
+        },
+        child: _JournalActivityMarker(
+          onActivity: _recordActivity,
+          child: widget.child,
+        ),
+      ),
+    );
+  }
+}
+
+final class _JournalActivityMarker extends InheritedWidget {
+  const _JournalActivityMarker({
+    required this.onActivity,
+    required super.child,
+  });
+
+  final VoidCallback onActivity;
+
+  @override
+  bool updateShouldNotify(_JournalActivityMarker oldWidget) => false;
+}

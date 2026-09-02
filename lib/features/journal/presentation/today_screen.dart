@@ -8,6 +8,8 @@ import 'package:daymark/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'journal_activity_guard.dart';
+
 abstract interface class TodayJournalDataSource {
   Future<DailyLogSnapshot> load(String methodDate);
 
@@ -229,6 +231,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen>
             enabled: !_saving,
             minLines: 1,
             maxLines: 4,
+            onChanged: (_) => JournalActivityGuard.recordActivity(context),
             decoration: InputDecoration(
               hintText: l10n.rapidLogHint,
               isDense: true,
