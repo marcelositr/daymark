@@ -13,7 +13,7 @@ Every agent must read it before meaningful work and update it before handing wor
 - Current working branch: `feat/security-foundation`
 - Current pull request: `#7`
 - Merge status: **DO NOT MERGE until explicitly requested by the user**
-- Current focus: master-password key hierarchy and encrypted journal opening
+- Current focus: finish security-foundation evidence, representative Argon2id benchmarking, and review readiness
 - Initial runtime targets: Linux and Android
 - Pinned toolchain: Flutter 3.47.2 / Dart 3.13.2
 - Last updated: 2026-09-01
@@ -69,57 +69,80 @@ Authoritative validation plan: `docs/SECURITY_FOUNDATION.md`.
 
 ### Portable trust foundation
 
-- [ ] Confirm maintained Argon2id API/library on the pinned toolchain
-- [ ] Confirm maintained AEAD API/library for key-envelope protection
-- [ ] Generate journal data-encryption keys from a cryptographically secure random source
-- [ ] Define versioned key-envelope format v1 outside the encrypted Drift database
-- [ ] Derive a key-encryption key from master password + random salt + versioned Argon2id parameters
-- [ ] Authenticated-wrap and unwrap the random journal key
-- [ ] Never persist the master password or plaintext journal key
-- [ ] Preserve architecture for optional independent offline recovery
+- [x] Confirm maintained Argon2id API/library on the pinned toolchain (`cryptography` 2.9.0)
+- [x] Confirm maintained AEAD API/library for key-envelope protection (`XChaCha20-Poly1305` through `cryptography` 2.9.0)
+- [x] Generate journal data-encryption keys from a cryptographically secure random source
+- [x] Define versioned key-envelope format v1 outside the encrypted Drift database
+- [x] Derive a key-encryption key from master password + random salt + explicit Argon2id parameters
+- [x] Authenticated-wrap and unwrap the random journal key material
+- [x] Never persist the master password or plaintext journal key
+- [x] Preserve architecture for optional independent offline recovery over the same random journal key
 
 ### Failure behavior
 
-- [ ] Wrong master password fails closed
-- [ ] Modified ciphertext/authentication data fails closed
-- [ ] Modified nonce/IV fails closed
-- [ ] Modified authenticated metadata fails closed
-- [ ] Truncated envelope fails closed
-- [ ] Unsupported envelope/KDF version fails explicitly
-- [ ] Failure reporting does not leak password-quality hints or sensitive material
+- [x] Wrong master password fails closed
+- [x] Modified ciphertext/authentication data fails closed
+- [x] Modified nonce fails closed
+- [x] Modified authenticated metadata fails closed
+- [x] Truncated envelope payload fails closed
+- [x] Unsupported envelope version / KDF identifier fails explicitly
+- [x] Failure reporting does not leak password-quality hints or sensitive material
+- [x] Reject excessive untrusted Argon2id parameters before allocation/derivation
 
 ### Encrypted database proof
 
-- [ ] Verify SQLite3MultipleCiphers capability at runtime
-- [ ] Refuse journal creation/open when expected encrypted SQLite support is unavailable
-- [ ] Open Drift schema v1 using the recovered random journal key
-- [ ] Correct journal key reopens the encrypted journal
-- [ ] Incorrect journal key cannot open/read the journal
-- [ ] Ordinary plaintext SQLite cannot read representative journal schema/content
-- [ ] Representative sensitive test strings do not appear verbatim in the database file
-- [ ] Existing Drift schema/invariant tests remain valid through encrypted persistence
+- [x] Verify SQLite3MultipleCiphers capability at runtime
+- [x] Refuse journal creation/open when expected encrypted SQLite support is unavailable rather than falling back to plaintext
+- [x] Open Drift schema v1 using recovered random journal key material
+- [x] Force Drift initialization before `createNew()` returns
+- [x] Correct journal key reopens the encrypted journal
+- [x] Incorrect journal key cannot open/read the journal
+- [x] Ordinary unkeyed SQLite cannot read representative journal schema/content
+- [x] Representative sensitive test strings do not appear verbatim in the database file
+- [x] Existing Drift schema/invariant behavior remains active through encrypted persistence
+- [x] Verify/document SQLite3MultipleCiphers raw ChaCha20 representation as 32-byte key + 16-byte cipher salt
+
+The normal build matrix always bundles SQLite3MultipleCiphers, so CI does not currently manufacture a second native runtime containing only vanilla SQLite to exercise the unavailable-library branch. The runtime check remains mandatory implementation behavior and must not be removed merely because the production build normally satisfies it.
 
 ### Password-hardening validation
 
-- [ ] Add reproducible Argon2id benchmark harness
-- [ ] Record Linux benchmark results
-- [ ] Define Android physical-device benchmark procedure
-- [ ] Freeze initial Argon2id parameters only after representative Android validation
-- [ ] Keep KDF parameters versioned for future strengthening
+- [x] Add reproducible Argon2id benchmark harness
+- [ ] Record representative Linux benchmark results
+- [x] Define Android physical-device benchmark procedure
+- [ ] Record representative physical Android benchmark results
+- [ ] Freeze initial Argon2id parameters only after Linux + physical Android validation
+- [x] Keep KDF parameters explicit in the envelope for future strengthening
+- [x] Bound untrusted envelope parameters independently from the selected production work factor
+
+Current pre-alpha Argon2id candidate, not yet frozen:
+
+- 19 MiB memory;
+- 2 iterations;
+- parallelism 1;
+- 32-byte output.
+
+Benchmark procedure: `docs/ARGON2_BENCHMARK.md`.
 
 ### Key/session boundaries
 
-- [ ] Define narrow secret/key ownership abstractions
-- [ ] Avoid logging/persisting key material
-- [ ] Document Dart runtime limits around guaranteed memory zeroization
-- [ ] Make later manual/automatic lock capable of dropping application references deterministically
+- [x] Define narrow journal-key ownership through `JournalKeyMaterial`
+- [x] Use overwrite-on-destroy secret-key storage and wipe owned mutable key/salt buffers where practical
+- [x] Avoid logging/persisting key material
+- [x] Document Dart runtime limits around guaranteed memory zeroization
+- [x] Document the immutable hexadecimal `String` limitation imposed by SQLite3MultipleCiphers' SQL `PRAGMA key` interface
+- [x] Preserve an explicit destroy lifecycle that later manual/automatic lock can own through an unlocked-session abstraction
+
+Actual lock timers, lifecycle UI, Android device-lock integration, and Linux session-lock integration remain later product tasks and are outside PR #7.
 
 ### Documentation / review
 
-- [ ] Align `SECURITY.md` with proven implementation details
-- [ ] Align `docs/ARCHITECTURE.md` with proven implementation details
-- [ ] Update this checkpoint with decisions and remaining limitations
-- [ ] Permanent CI green on reviewed PR head
+- [x] Align `SECURITY.md` with proven implementation details
+- [x] Align `docs/SECURITY_FOUNDATION.md` with proven implementation details
+- [x] Align `docs/ARCHITECTURE.md` with proven implementation details
+- [x] Add reproducible Linux/Android Argon2id benchmark procedure
+- [x] Update this checkpoint with decisions and remaining limitations
+- [ ] Correct README / PR status text to current PR #7 state
+- [ ] Permanent CI green on the final reviewed PR head
 - [ ] User review / merge decision
 
 ## Relational baseline
@@ -159,8 +182,10 @@ The authoritative details live in `docs/ARCHITECTURE.md`.
 - go_router 18.x
 - Drift 2.34.x
 - sqlite3 3.x with SQLite3MultipleCiphers through build hooks
-- ChaCha20-Poly1305 as current encrypted-database direction unless the security spike demonstrates a better supported choice
-- `cryptography` 2.9.x as the current candidate for Argon2id and application-level authenticated cryptography, subject to validation in PR #7
+- SQLite3MultipleCiphers ChaCha20-Poly1305 for encrypted journal persistence
+- `cryptography` 2.9.0 with Argon2id + XChaCha20-Poly1305 for portable key-envelope protection
+- key-envelope format v1 outside the encrypted Drift database
+- 48-byte SQLite raw journal material: 32-byte random journal key + 16-byte random cipher salt
 - platform secure storage deferred to a later device-assisted unlock task
 - UUID v7 through `uuid`
 - Flutter `gen_l10n`, English canonical/fallback, Portuguese (Brazil) first additional locale
@@ -230,15 +255,22 @@ Stable `v1.0.0` is released only after RC testing is deliberately considered suf
 
 These are not permission to invent behavior silently. Resolve them through focused work and update the authoritative document.
 
-1. Exact key-envelope v1 AEAD and serialization.
-2. Argon2id parameters after representative Linux and Android measurements.
-3. Exact SQLite3MultipleCiphers raw-key and salt handling verified by working code.
-4. Exact offline recovery-secret representation and UX.
-5. Exact secure-storage integration for optional Android/Linux assisted unlock.
-6. Exact backup container versioning, atomic restore, and rollback behavior.
-7. Packaging/distribution formats for Linux and Android.
-8. Live GitHub ruleset still needs the repository-defined required check names applied and verified.
-9. Repository/application services must enforce cross-table semantic invariants that ordinary SQLite `CHECK` constraints cannot express.
+1. Final Argon2id parameters after representative Linux and physical Android measurements.
+2. Exact offline recovery-secret human representation and UX. The cryptographic relationship to the random journal key is established.
+3. Exact secure-storage integration for optional Android/Linux assisted unlock.
+4. Exact backup container versioning, atomic restore, and rollback behavior.
+5. Packaging/distribution formats for Linux and Android.
+6. Live GitHub ruleset still needs the repository-defined required check names applied and verified.
+7. Repository/application services must enforce cross-table semantic invariants that ordinary SQLite `CHECK` constraints cannot express.
+
+Resolved during PR #7:
+
+- key-envelope v1 uses Argon2id + XChaCha20-Poly1305 through `cryptography` 2.9.0;
+- envelope metadata/serialization and negative failure paths are implemented and tested;
+- SQLite3MultipleCiphers uses the documented ChaCha20 32-byte raw key + 16-byte salt representation;
+- encrypted database opening requires an actual read after `PRAGMA key`;
+- the journal-key holder has explicit ownership/destruction boundaries;
+- recovery is architecturally a second portable protection path over the same random journal key rather than a device/account reset mechanism.
 
 ## Recent work log
 
@@ -255,10 +287,22 @@ These are not permission to invent behavior silently. Resolve them through focus
 - Corrected the unreleased schema v1 to persist Monthly Log calendar dates explicitly before any public user data existed.
 - Opened draft PR #7 on `feat/security-foundation` for master-password key hierarchy and encrypted journal validation.
 - Added `docs/SECURITY_FOUNDATION.md` as the focused security implementation/validation contract.
+- Implemented random journal-key material and version-1 Argon2id/XChaCha20-Poly1305 key envelope.
+- Added generic fail-closed unlock/format error boundaries and negative-path envelope tests.
+- Implemented SQLite3MultipleCiphers encrypted journal creation/opening and runtime cipher capability checking.
+- Fixed the Drift lazy-open lifecycle so `createNew()` completes schema initialization before returning; CI #57 validated the wrong-key regression fix.
+- Proved correct-key reopen, wrong-key rejection, unreadability through unkeyed SQLite, absence of representative plaintext content, and schema constraints through encrypted persistence.
+- Added direct Argon2id determinism/salt tests and bounded untrusted KDF metadata.
+- Added `tool/argon2_benchmark.dart` and `docs/ARGON2_BENCHMARK.md` for representative Linux/physical-Android parameter validation.
+- Hardened journal-key ownership to reduce temporary plaintext copies and explicitly destroy owned mutable key/salt buffers where practical.
+- Documented the Dart immutable-string limitation around SQLite3MultipleCiphers raw-key PRAGMA handling instead of claiming guaranteed zeroization.
+- Aligned `SECURITY.md`, `docs/SECURITY_FOUNDATION.md`, and `docs/ARCHITECTURE.md` with the implemented pre-alpha security baseline.
 
 ## Next concrete action
 
-Validate the current crypto and SQLite3MultipleCiphers APIs against the pinned toolchain, then implement the smallest executable key-envelope prototype with failure tests. Do not add biometric/keyring convenience or backup-container scope to PR #7.
+Correct stale README/PR status, obtain green CI on the documentation/security-hardening head, then run and record the Argon2id benchmark on representative Linux and physical Android hardware. Do not freeze the production KDF parameters until both platform measurements are reviewed.
+
+Do not add biometric/keyring convenience, lock UI, journal product screens, sync, or the final backup-container implementation to PR #7.
 
 ## Handoff
 
@@ -266,6 +310,7 @@ If work stops unexpectedly, the next agent should:
 
 1. read `AGENTS.md` and this file;
 2. inspect the current branch and PR rather than trusting stale chat context;
-3. read `SECURITY.md` and `docs/SECURITY_FOUNDATION.md` before changing security code;
-4. continue from the first genuinely actionable unchecked item unless the user sets another priority;
-5. update this file again before stopping.
+3. read `SECURITY.md`, `docs/SECURITY_FOUNDATION.md`, and `docs/ARGON2_BENCHMARK.md` before changing security code;
+4. treat the Argon2id candidate as unfrozen until representative Linux and physical Android measurements exist;
+5. continue from the first genuinely actionable unchecked item unless the user sets another priority;
+6. update this file again before stopping.
