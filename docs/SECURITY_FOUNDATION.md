@@ -4,15 +4,15 @@
 
 This document defines the focused implementation and validation cycle that turns Daymark's security architecture into tested engineering constraints.
 
-`SECURITY.md` remains the authoritative threat model and product security contract. This document is narrower: it records what PR #7 must prove before Daymark treats master-password unlock, encrypted journal persistence, recovery compatibility, and portable key handling as an implementation baseline.
+`SECURITY.md` remains the authoritative threat model and product security contract. This document is narrower: it records what PR #7 proves before Daymark treats master-password unlock, encrypted journal persistence, recovery compatibility, portable key handling, and the initial password-KDF baseline as established engineering constraints.
 
 The goal is not to invent cryptography. The goal is to compose mature primitives correctly, make failure explicit, and keep portable recovery independent from device-local convenience mechanisms.
 
 ## Scope of this cycle
 
-This branch validates, with executable tests where practical:
+PR #7 validates, with executable tests where practical:
 
-1. cryptographically secure generation of a random journal data-encryption key;
+1. cryptographically secure generation of random journal data-encryption key material;
 2. master-password key derivation using Argon2id;
 3. a versioned authenticated key-envelope format outside the encrypted Drift database;
 4. wrapping and unwrapping the journal key without storing the master password;
@@ -21,7 +21,8 @@ This branch validates, with executable tests where practical:
 7. wrong-password and corrupted-envelope failure behavior;
 8. explicit key-material lifecycle boundaries in application code;
 9. an independent offline-recovery architecture at the same portable trust layer as the master password;
-10. benchmark hooks and recorded results needed to choose Argon2id parameters for Linux and Android.
+10. profile-mode KDF benchmarking on representative Linux and physical Android hardware;
+11. deliberate exclusion of Daymark app-private state from Android OS-managed cloud backup and device transfer.
 
 ## Explicitly not in this cycle
 
@@ -31,18 +32,18 @@ This security-foundation PR does not implement:
 - Android Keystore integration;
 - Linux Secret Service integration;
 - automatic locking timers or lifecycle UI;
-- the final backup archive/container format;
+- the final encrypted backup archive/container format;
 - cloud storage;
 - synchronization;
 - journal product screens.
 
 Device-assisted unlock remains a convenience layer and will be connected only after the portable master-password/recovery path works independently.
 
-The encrypted backup container is the next focused security task. This cycle may define reusable envelope primitives for it, but must not quietly expand into a full backup subsystem.
+The encrypted Daymark backup container is the next focused security task. This cycle establishes the security boundaries it must obey but does not quietly expand into a full backup subsystem.
 
 ## Validated implementation baseline
 
-PR #7 currently uses the published Dart `cryptography` package 2.9.0 for application-level cryptography and `package:sqlite3` with SQLite3MultipleCiphers for encrypted persistence.
+PR #7 uses the published Dart `cryptography` package 2.9.0 for application-level cryptography and `package:sqlite3` with SQLite3MultipleCiphers for encrypted persistence.
 
 The implemented hierarchy is:
 
@@ -90,7 +91,7 @@ Top-level fields:
 - `iterations`;
 - `parallelism`;
 - `hashLength`;
-- `salt`: base64url-encoded 16-byte random salt.
+- `salt`: base64url-encoded random 16-byte salt.
 
 `wrap` fields:
 
@@ -116,31 +117,40 @@ Tests prove that:
 - changing password fails authenticated unwrap;
 - unsupported/malformed KDF metadata fails closed before journal data is opened.
 
-### Current candidate parameters
+### Frozen initial production parameters
 
-The current pre-alpha candidate is:
+Frozen on 2026-09-02 after representative profile-mode review:
 
-- memory: 19 MiB;
+- memory: 19 MiB (`19456 KiB`);
 - iterations: 2;
 - parallelism: 1;
-- hash length: 32 bytes.
+- hash length: 32 bytes;
+- KDF salt: random 16 bytes per envelope.
 
-These values are not frozen for `v1.0.0-alpha.1`. Daymark must record representative Linux and physical Android measurements first.
+The reproducible procedure, raw matrix evidence, and decision rationale are in `docs/ARGON2_BENCHMARK.md` and `docs/argon2-results/`.
 
-The reproducible benchmark harness is `tool/argon2_benchmark.dart`; the procedure and release-blocking rule are documented in `docs/ARGON2_BENCHMARK.md`.
+The review used:
+
+- Debian 13 on an Intel Core i5-2400;
+- Samsung SM-A015M / Galaxy A01-class Android hardware;
+- M7 3G PLUS Android 8.1 ARM32 hardware as an intentionally conservative old-device point.
+
+The OWASP-listed lower-memory/higher-iteration tradeoffs were also measured. They produced no meaningful Linux improvement and only modest Android reductions. Daymark therefore retains 19 MiB / 2 rather than lowering memory hardness simply to make the oldest tested device somewhat faster.
+
+The selected values remain explicit envelope metadata. Future Daymark releases may strengthen new envelopes, but published journal compatibility must be handled deliberately.
 
 ### Untrusted metadata bounds
 
-Argon2 parameters are parsed from unauthenticated envelope metadata before authenticated unwrap can occur. They therefore cannot be allowed to request arbitrary memory/work costs.
+Argon2 parameters are parsed from unauthenticated envelope metadata before authenticated unwrap can occur. They cannot be allowed to request arbitrary memory/work costs.
 
-The current defensive ceilings are:
+The defensive ceilings are:
 
 - memory: 64 MiB;
 - iterations: 5;
 - parallelism: 4;
 - hash length: exactly 32 bytes.
 
-These are parser safety ceilings, not production targets. The selected production parameters remain subject to Linux and physical Android benchmarking.
+These are parser safety ceilings, not production targets.
 
 ## Authenticated key wrapping
 
@@ -193,15 +203,38 @@ Executable tests prove that:
 - representative sensitive content does not appear verbatim in the database file;
 - normal Drift schema constraints remain active through encrypted persistence.
 
-The negative path for a build that genuinely lacks SQLite3MultipleCiphers remains enforced by implementation code. Producing that exact missing-library environment inside the normal CI matrix is not required if doing so would introduce a test-only native-library architecture; this must remain a reviewed limitation rather than weakening the runtime check.
+The negative path for a build that genuinely lacks SQLite3MultipleCiphers remains enforced by implementation code. Producing that exact missing-library environment inside the normal CI matrix is not required if doing so would introduce a test-only native-library architecture; the runtime check itself remains mandatory.
+
+## Android OS-backup boundary
+
+Android's default application backup behavior is not an acceptable implicit migration path for Daymark journal state.
+
+The main manifest explicitly sets:
+
+```text
+android:allowBackup="false"
+android:fullBackupContent="@xml/backup_rules"
+android:dataExtractionRules="@xml/data_extraction_rules"
+```
+
+The Android 11-and-earlier backup rules exclude all supported app-data domains. The Android 12+ extraction rules exclude all supported domains from both cloud backup and device transfer.
+
+This has two purposes:
+
+1. keep app-private journal/security state out of opaque OS-managed backup and migration flows;
+2. make Daymark's explicit encrypted portable backup/restore mechanism the intended cross-device path.
+
+The journal remains independently encrypted, so Daymark does not treat these platform flags as a substitute for cryptography.
+
+This boundary was made explicit after physical-device benchmarking exposed Android's default backup behavior: an OS full-backup job included Daymark and terminated the running benchmark process. The interruption was traced to platform backup rather than an Argon2 crash or out-of-memory condition.
 
 ## Recovery direction
 
 Recovery remains optional, offline, and account-independent.
 
-The selected architecture is that a recovery secret independently protects the same random journal key material that the master password protects. It must not depend on the original device, Android Keystore, Linux keyring state, a server account, or a maintainer-controlled secret.
+A recovery secret independently protects the same random journal key material that the master password protects. It must not depend on the original device, Android Keystore, Linux keyring state, a server account, or a maintainer-controlled secret.
 
-The final human representation and recovery UX are deliberately deferred. PR #7 only establishes that the random journal key is independent from the password and can therefore be wrapped by more than one authorized portable credential without changing the encrypted database key.
+The final human representation and recovery UX are deliberately deferred. PR #7 establishes that the random journal key is independent from the password and can therefore be wrapped by more than one authorized portable credential without changing the encrypted database key.
 
 No server reset, maintainer backdoor, or hidden universal recovery mechanism is permitted.
 
@@ -224,7 +257,7 @@ This limitation must not be "fixed" by introducing unsafe FFI without a measured
 
 ## Key/session boundary for later locking
 
-The current `JournalKeyMaterial` object is the narrow owner of unlocked journal key material and exposes an explicit destroy lifecycle.
+`JournalKeyMaterial` is the narrow owner of unlocked journal key material and exposes an explicit destroy lifecycle.
 
 Later manual/automatic lock work must own that object through a session-level abstraction rather than global/static state. Locking must close or invalidate the encrypted database session and drop application references to unlocked key material deterministically as far as the Dart/Flutter runtime permits.
 
@@ -244,19 +277,17 @@ Tests distinguish:
 - missing cipher support;
 - programming/configuration errors.
 
-## Remaining gates before PR #7 review
+## PR #7 completion gates
 
-The implementation baseline is established, but PR #7 is not ready to merge until the remaining evidence is handled deliberately:
+The implementation and physical benchmark evidence are established. Before the PR can be considered for merge:
 
-1. run and record the Argon2id benchmark on representative Linux hardware;
-2. run and record the Argon2id benchmark on a physical Android device;
-3. freeze or revise the initial Argon2id parameters only after both measurements are reviewed;
-4. align `SECURITY.md`, `docs/ARCHITECTURE.md`, `PROJECT.md`, README status, and the PR checklist with the proven implementation;
-5. obtain final green CI on the reviewed head;
-6. user review and explicit merge decision.
+1. keep `SECURITY.md`, `docs/ARCHITECTURE.md`, `docs/ARGON2_BENCHMARK.md`, `PROJECT.md`, README status, and the PR checklist aligned with the frozen initial KDF decision and Android backup boundary;
+2. obtain final green CI on the reviewed head;
+3. complete user review;
+4. merge only after the user explicitly requests it.
 
 ## Review rule
 
 A security-format decision is a compatibility decision.
 
-Once a prerelease containing real user journals is published, changing the key-envelope format, KDF interpretation, database-key representation, or recovery wrapping requires an explicit tested compatibility/migration path. Failure to unlock old data is data loss even when the encrypted database itself remains intact.
+Once a prerelease containing real user journals is published, changing the key-envelope format, KDF interpretation, database-key representation, recovery wrapping, or backup cryptography requires an explicit tested compatibility/migration path. Failure to unlock old data is data loss even when the encrypted database itself remains intact.
