@@ -33,9 +33,15 @@ final class Argon2Parameters {
   );
 
   static const int requiredHashLength = 32;
-  static const int maxMemoryKiB = 256 * 1024;
-  static const int maxIterations = 10;
-  static const int maxParallelism = 8;
+
+  /// Safety ceilings for untrusted envelope metadata, not production targets.
+  ///
+  /// They deliberately cover the practical OWASP/RFC 9106 parameter families
+  /// Daymark may benchmark while preventing hostile envelopes from requesting
+  /// extreme Argon2 allocations or work factors before authentication.
+  static const int maxMemoryKiB = 64 * 1024;
+  static const int maxIterations = 5;
+  static const int maxParallelism = 4;
 
   final int memoryKiB;
   final int iterations;
