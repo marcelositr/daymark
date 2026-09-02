@@ -379,8 +379,10 @@ class _TodayScreenState extends ConsumerState<TodayScreen>
       switch (action) {
         case _TaskAction.complete:
           await dataSource.completeTask(entryId: entry.id);
+          break;
         case _TaskAction.discard:
           await dataSource.discardTask(entryId: entry.id);
+          break;
       }
 
       if (!mounted) {
@@ -447,7 +449,8 @@ String _entrySymbol(DailyLogEntry entry) => switch (entry.type) {
     JournalTaskState.migrated => '>',
     JournalTaskState.scheduled => '<',
     JournalTaskState.discarded => '—',
-    JournalTaskState.open || null => '•',
+    JournalTaskState.open => '•',
+    null => '•',
   },
   JournalEntryType.event => '○',
   JournalEntryType.note => '–',
