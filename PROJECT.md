@@ -223,7 +223,7 @@ The PR was then deliberately converted back to Draft because the user asked whet
 
 This review is intentionally documentation-only after `9bbcecc...`; no production/test/workflow code should change in this final audit.
 
-Updated because PR #18 materially changes their durable truth:
+Updated because PR #18 materially changes their durable truth or because the audit found stale continuation guidance:
 
 - [x] `README.md`: current product line now includes real Task scheduling; `>` remains deferred rather than vaguely “being introduced”
 - [x] `CHANGELOG.md`: release-facing scheduling behavior and immediate-Future refresh fix
@@ -233,13 +233,13 @@ Updated because PR #18 materially changes their durable truth:
 - [x] `AGENTS.md`: durable retained-navigation/cross-surface refresh guardrail
 - [x] `CONTRIBUTING.md`: regression-test requirement for retained destination activation
 - [x] `docs/WORKFLOW.md`: test/manual-validation rule for retained activation and immediate cross-surface freshness
+- [x] `docs/BACKUP_FORMAT.md`: removed stale “future journal/session application service” wording and explicitly points future backup UI at the already-existing `JournalSession` lifecycle instead of inviting a competing session abstraction; backup format/restore semantics are unchanged
 - [x] `PROJECT.md`: this checkpoint and exact validation lineage
 
 Reviewed for PR #18 impact and intentionally unchanged:
 
 - [x] `SECURITY.md`: no threat-model, cipher, KDF, key-lifecycle, logging, or auto-lock contract change
-- [x] `docs/SECURITY_FOUNDATION.md`: no security implementation boundary change
-- [x] `docs/BACKUP_FORMAT.md`: no backup format or restore behavior change
+- [x] `docs/SECURITY_FOUNDATION.md`: historical security-foundation validation remains accurate; no security implementation boundary change from PR #18
 - [x] `docs/DATA_MODEL.md`: schema v1 already models `scheduled` state, Future ownership, and `migrations` lineage; no schema change
 - [x] `docs/ARGON2_BENCHMARK.md`: no KDF parameter or benchmark change
 
