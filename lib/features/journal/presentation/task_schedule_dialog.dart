@@ -34,9 +34,7 @@ Future<String?> showTaskScheduleDialog({
       children: [
         for (final DateTime month in months)
           SimpleDialogOption(
-            key: ValueKey<String>(
-              'schedule-${formatFuturePeriodStart(month)}',
-            ),
+            key: ValueKey<String>('schedule-${formatFuturePeriodStart(month)}'),
             onPressed: () {
               Navigator.of(dialogContext).pop(formatFuturePeriodStart(month));
             },
