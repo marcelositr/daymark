@@ -1,0 +1,35 @@
+name: PR 25 pinned formatter
+
+on:
+  push:
+    branches:
+      - feat/basic-search
+
+permissions:
+  contents: write
+
+jobs:
+  format:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: feat/basic-search
+          fetch-depth: 0
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2
+        with:
+          flutter-version: 3.47.2
+          channel: stable
+          cache: true
+      - name: Apply pinned Dart formatter
+        run: dart format lib test
+      - name: Publish formatted output and remove probe
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/pr25-format.yml
+          git add lib test
+          git diff --check --cached
+          git commit -m "style: format final Search fixes"
+          git push origin HEAD:feat/basic-search
