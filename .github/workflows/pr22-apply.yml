@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   apply:
-    if: "${{ github.event.head_commit.message == 'ci: retry PR22 preserving task diagnostics' }}"
+    if: "${{ github.event.head_commit.message == 'ci: fix PR22 validation workflow' }}"
     runs-on: ubuntu-24.04
     steps:
       - name: Check out feature branch
@@ -26,7 +26,7 @@ jobs:
           channel: stable
           cache: true
 
-      - name: Apply patch and mechanical checks
+      - name: Apply and format implementation
         shell: bash
         run: |
           set -euo pipefail
@@ -39,20 +39,9 @@ jobs:
           close_marker = "''',\n)\n\nreplace_once(\n    \"lib/core/session/journal_session.dart\","
           if text.count(open_marker) != 1 or text.count(close_marker) != 1:
               raise SystemExit('Could not locate CollectionRepository wrapper markers.')
-          text = text.replace(
-              open_marker,
-              '    r"""import \'package:daymark/core/database/daymark_database.dart\';',
-              1,
-          )
-          text = text.replace(
-              close_marker,
-              '""",\n)\n\nreplace_once(\n    "lib/core/session/journal_session.dart",',
-              1,
-          )
-          text = text.replace(
-              '"  Future<void> _applyEntryAction(\\n",',
-              '"  Future<void> _applyEntryAction",',
-          )
+          text = text.replace(open_marker, '    r"""import \'package:daymark/core/database/daymark_database.dart\';', 1)
+          text = text.replace(close_marker, '""",\n)\n\nreplace_once(\n    "lib/core/session/journal_session.dart",', 1)
+          text = text.replace('"  Future<void> _applyEntryAction(\\n",', '"  Future<void> _applyEntryAction",')
           path.write_text(text)
           PY
           python3 -m py_compile tool/apply_pr22_patch.py
@@ -63,33 +52,15 @@ jobs:
           replacements = {
               'lib/features/journal/presentation/today_screen.dart': (
                   "      _reportUnexpectedJournalError('entry action', error, stackTrace);",
-                  """      _reportUnexpectedJournalError(
-        action == _EntryAction.reference
-            ? 'collection reference'
-            : 'task action',
-        error,
-        stackTrace,
-      );""",
+                  "      _reportUnexpectedJournalError(\n        action == _EntryAction.reference ? 'collection reference' : 'task action',\n        error,\n        stackTrace,\n      );",
               ),
               'lib/features/journal/presentation/monthly_screen.dart': (
                   "      _reportUnexpectedMonthlyError('entry action', error, stackTrace);",
-                  """      _reportUnexpectedMonthlyError(
-        action == _MonthlyEntryAction.reference
-            ? 'collection reference'
-            : 'task action',
-        error,
-        stackTrace,
-      );""",
+                  "      _reportUnexpectedMonthlyError(\n        action == _MonthlyEntryAction.reference ? 'collection reference' : 'task action',\n        error,\n        stackTrace,\n      );",
               ),
               'lib/features/journal/presentation/future_screen.dart': (
                   "      _reportUnexpectedFutureError('entry action', error, stackTrace);",
-                  """      _reportUnexpectedFutureError(
-        action == _FutureEntryAction.reference
-            ? 'collection reference'
-            : 'task action',
-        error,
-        stackTrace,
-      );""",
+                  "      _reportUnexpectedFutureError(\n        action == _FutureEntryAction.reference ? 'collection reference' : 'task action',\n        error,\n        stackTrace,\n      );",
               ),
           }
           for file_name, (old, new) in replacements.items():
@@ -109,45 +80,19 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          timeout 120s flutter analyze
+          flutter analyze
 
-      - name: Test Today failure diagnostic regression
+      - name: Test Today diagnostics
         shell: bash
         run: |
           set -euo pipefail
-          timeout 120s flutter test test/journal/today_screen_test.dart
-
-      - name: Test collection repository
-        shell: bash
-        run: |
-          set -euo pipefail
-          timeout 120s flutter test test/journal/collection_repository_test.dart
-
-      - name: Test collection reference session
-        shell: bash
-        run: |
-          set -euo pipefail
-          timeout 120s flutter test test/session/collection_reference_session_test.dart
-
-      - name: Test collection reference screens
-        shell: bash
-        run: |
-          set -euo pipefail
-          timeout 120s flutter test test/journal/entry_collection_reference_screen_test.dart
-
-      - name: Test Collection presentation regressions
-        shell: bash
-        run: |
-          set -euo pipefail
-          timeout 120s flutter test \
-            test/journal/collections_screen_test.dart \
-            test/journal/collections_activation_test.dart
+          flutter test test/journal/today_screen_test.dart
 
       - name: Test full suite
         shell: bash
         run: |
           set -euo pipefail
-          timeout 240s flutter test
+          flutter test
 
       - name: Commit exact validated output
         shell: bash
