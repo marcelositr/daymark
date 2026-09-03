@@ -8,6 +8,7 @@ import 'package:daymark/core/database/encrypted_daymark_database.dart';
 import 'package:daymark/features/journal/application/journal_service.dart';
 import 'package:daymark/features/journal/application/task_action_service.dart';
 import 'package:daymark/features/journal/data/daily_log_repository.dart';
+import 'package:daymark/features/journal/data/future_log_repository.dart';
 import 'package:daymark/features/journal/data/journal_repository.dart';
 import 'package:daymark/features/journal/data/monthly_log_repository.dart';
 import 'package:daymark/features/journal/data/task_action_repository.dart';
@@ -49,6 +50,7 @@ final class JournalSession {
     taskActions = TaskActionService(TaskActionRepository(database));
     dailyLog = DailyLogRepository(database, service);
     monthlyLog = MonthlyLogRepository(database, service);
+    futureLog = FutureLogRepository(database, service);
   }
 
   final DaymarkDatabase database;
@@ -58,6 +60,7 @@ final class JournalSession {
   late final TaskActionService taskActions;
   late final DailyLogRepository dailyLog;
   late final MonthlyLogRepository monthlyLog;
+  late final FutureLogRepository futureLog;
 
   Future<void> _operationTail = Future<void>.value();
   bool _closing = false;
@@ -127,6 +130,20 @@ final class JournalSession {
     required String content,
   }) {
     return run(() => monthlyLog.captureTask(logId: logId, content: content));
+  }
+
+  Future<FutureLogSnapshot> loadFutureLog(String periodStart) {
+    return run(() => futureLog.loadOrCreate(periodStart));
+  }
+
+  Future<void> captureFutureLogEntry({
+    required String logId,
+    required JournalEntryType type,
+    required String content,
+  }) {
+    return run(
+      () => futureLog.capture(logId: logId, type: type, content: content),
+    );
   }
 
   Future<void> completeTask({required String entryId}) {
