@@ -118,7 +118,7 @@ Release candidates are not promoted automatically. Stable `1.0.0` happens only a
 - [`docs/ARGON2_BENCHMARK.md`](docs/ARGON2_BENCHMARK.md): Linux/Android KDF benchmark procedure and evidence
 - [`docs/BACKUP_FORMAT.md`](docs/BACKUP_FORMAT.md): portable authenticated backup format
 - [`docs/WORKFLOW.md`](docs/WORKFLOW.md): branches, PRs, validation, versioning, and releases
-- [`CONTRIBUTING.md`](CONTRIBUTING.md): contribution expectations
+- [`CONTRIBUTING.md`](CONTRIBUTING.md): contribution expectations and local-validation safety rules
 - [`CHANGELOG.md`](CHANGELOG.md): release-facing history
 
 ## License
