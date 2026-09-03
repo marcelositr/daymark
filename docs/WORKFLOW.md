@@ -142,6 +142,8 @@ Tests should match the boundary they claim to validate.
 
 A test that bypasses the production transition responsible for a bug is not a sufficient regression test for that bug.
 
+For retained top-level navigation, a regression test must exercise the **activation transition** when freshness depends on it. `StatefulShellRoute.indexedStack` can keep a destination widget mounted while another section writes data that it displays, so remounting the destination in a test can accidentally hide the real bug.
+
 A widget-test failure must be classified before production changes are made. Off-screen content, ambiguous finders, incorrect scrolling APIs, and invalid fake boundaries are test-harness defects when production behavior is otherwise correct.
 
 ### 4. Diagnose failures before changing behavior
@@ -174,6 +176,8 @@ Before requesting full merge validation, run the applicable local checks in this
 8. manual application flow when lifecycle, persistence, input, rendering, or platform behavior is involved.
 
 For risky lifecycle/persistence work, manual validation should exercise the full user path rather than only the happy-path screen. Examples include create -> capture -> lock -> wrong unlock -> correct unlock -> restart -> persistence verification.
+
+For cross-surface writes, manual validation must also verify **immediate visibility before lock/restart**. A successful database write is not enough if a retained destination section still shows a stale in-memory snapshot until the session is rebuilt.
 
 When an AI agent cannot execute a required local step, it should provide the user a complete copy-paste block with stop conditions, expected success markers, and a clear request for the resulting output. Do not require the user to invent debugging commands.
 
