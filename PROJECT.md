@@ -4,13 +4,15 @@ This is Daymark's canonical living handoff. Read this file and `AGENTS.md` befor
 
 ## Current state
 
-- Phase: pre-alpha, core Bullet Journal chronological flows in active development.
+- Phase: pre-alpha, core Bullet Journal flows in active development.
 - Integration branch: `main` only.
-- Current `main` baseline: PR #18 squash-merged as `03ef4d187845ff13128f28298336b540b3237e9e`.
-- Active product implementation branch/PR: none. The project is between feature slices after PR #18.
-- Current product scope already includes deliberate Task scheduling (`<`) from Today and Monthly into one of the six real Future Log month buckets.
-- Deliberate migration (`>`) is **not** exposed yet. It remains deferred until Daymark has a method-faithful accessible destination such as the next Monthly Log or a Collection.
-- Current focus: choose the next method-faithful product slice from the dependency order below; do not reopen PR #18 work or invent a fake migration destination.
+- Current `main` head before the active feature PR: `bf8018c0e2250566af39e9f90632e5808c780783` (`docs: checkpoint PR 18 merge (#19)`).
+- Current merged product baseline: PR #18 squash-merged as `03ef4d187845ff13128f28298336b540b3237e9e`.
+- Active product implementation branch/PR: `feat/collections` / PR #20, `feat(journal): add basic collections`.
+- PR #20 is Ready for review. Its current implementation provides a real minimal Collections surface without exposing forward migration (`>`), Index, references from chronological logs, planner abstractions, or schema changes.
+- Current merged product scope already includes deliberate Task scheduling (`<`) from Today and Monthly into one of the six real Future Log month buckets.
+- Deliberate migration (`>`) is **not** exposed yet. Collections now provide a real non-Future owning structure in PR #20, but merely having that structure does not justify exposing migration without a deliberate destination-selection flow and lifecycle coverage.
+- Current focus: validate this final documentation-only head with the full Ready CI, perform proportionate manual product validation if needed, then stop for explicit user merge approval.
 - Merge policy: never merge without explicit user approval.
 - Runtime targets: Linux and Android.
 - Pinned toolchain: Flutter 3.47.2 / Dart 3.13.2.
@@ -45,6 +47,7 @@ Daymark is a faithful digital Bullet Journal, not a generic productivity suite.
 - Never weaken security, persistence invariants, tests, or CI to make a check green.
 - Remove temporary probe workflows/diagnostic scaffolding before Ready.
 - User terminal blocks must be safe for an interactive shell: no bare final `exit`, no accidental shell termination, exact branch/head checks when relevant.
+- Do not use the user as a routine CI/formatter runner when repository tooling can perform the work. Ask for local execution only when local hardware/product behavior genuinely matters.
 - Do not invent fake product destinations or temporary domain concepts merely to unblock UI.
 - Do not reimplement repository/service semantics inside widgets or providers.
 
@@ -61,6 +64,8 @@ Therefore:
 - the Future screen uses section activation to reload its six snapshots after Today/Monthly scheduling changes Future data.
 
 This guardrail exists because PR #18 initially persisted scheduled Tasks correctly while Future displayed stale in-memory data until lock/restart. The user found the bug manually. It now has a regression test.
+
+PR #20 does not yet introduce a cross-surface write into Collections. Its Collection screen changes only its own selected/listed state, so an activation refresh hook is not required for this slice. When migration or references can change Collections from another retained section, add the corresponding reactivation regression coverage rather than relying on remount behavior.
 
 ## Stable architecture and security baseline
 
@@ -87,6 +92,8 @@ Durable semantic rules:
 - One owning placement per Entry.
 - Monthly Calendar/Tasks placement/date invariants are enforced.
 - Future is month-addressed, not a second day-level calendar.
+- A Collection is a simple owning content container, not a configurable database/workspace.
+- A Collection reference is distinct from Collection ownership and does not move the Entry.
 - Scheduling targets a Future Log.
 - Deliberate movement creates a **new destination Entry** plus lineage; do not move the source placement in place.
 - The historical source remains visible with terminal state; a scheduled destination Task begins open.
@@ -108,7 +115,7 @@ Current foundation includes:
 - Android OS backup/device-transfer exclusion;
 - portable authenticated encrypted backup with integrity validation and recovery protections.
 
-PR #18 changed no database schema, crypto, key lifecycle, or backup format.
+PR #20 changes no database schema, crypto, key lifecycle, backup format, dependency set, or plaintext boundary. Collection reads/writes remain inside the already encrypted journal database and the serialized unlocked session.
 
 ## Merged product history that matters
 
@@ -183,7 +190,7 @@ Implemented behavior:
 
 Retained-Future refresh fix:
 
-- manual Linux testing found that scheduling persisted correctly while the retained Future tab initially displayed stale snapshots until lock/restart;
+- manual Linux testing found that scheduling persisted correctly while Future displayed stale snapshots until lock/restart;
 - root cause was `StatefulShellRoute.indexedStack` retaining Future, so returning to the tab did not rerun `initState()`;
 - `AppSectionScope` now publishes top-level activation and Future reloads its six snapshots on inactive -> active transition;
 - a widget regression test proves externally changed Future data appears on reactivation without remount, lock, or restart;
@@ -196,17 +203,62 @@ Validation lineage:
 - final full CI #300 on `d14c0796...`: `quality`, Linux build, Android build, dependency review, and `merge-gate` all green;
 - explicit user approval was received; squash merge produced `03ef4d187845ff13128f28298336b540b3237e9e` on `main`.
 
-## Next work after PR #18
+## Active PR #20: basic Collections
 
-Do not automatically assume the next PR should expose `>`.
+Branch: `feat/collections`.
 
-A method-faithful migration UI needs a real destination. The likely dependency order is:
+PR: #20, `feat(journal): add basic collections`.
 
-1. implement enough Collections/Index or next-Monthly access to provide a genuine migration target;
-2. then expose deliberate `>` movement using the existing repository/service lineage semantics;
-3. keep Search, backup UI, exports, OS lock hooks, accessibility/keyboard/Android packaging as later focused slices.
+Scope implemented:
 
-Before designing the next slice, inspect the existing migration repository/service tests and the current product surface. Never create a placeholder destination merely to make `>` clickable.
+- replaces the `/collections` placeholder with a minimal real Collections surface;
+- adds a focused `CollectionRepository` for listing/loading Collections while keeping semantic writes in `JournalService`;
+- exposes list/create/load/capture through the serialized `JournalSession`;
+- lists and creates Collections;
+- opens a Collection and Rapid Logs Task, Event, and Note entries owned by it;
+- open Collection Tasks support Complete and Discard only;
+- adds English, `pt`, and `pt_BR` localization resources for the new UI;
+- repository tests cover ownership, ordering, and no-partial-write failure behavior;
+- widget tests cover create/open/capture and Task complete/discard;
+- session coverage proves Collection entries and Task state persist across lock/unlock;
+- no schema, crypto, backup, dependency, or platform-contract change.
+
+Explicit non-goals remain:
+
+- no forward migration (`>`);
+- no scheduling (`<`) from Collections in this slice;
+- no Collection-reference UI from Today/Monthly;
+- no Index;
+- no reorder/drag-and-drop;
+- no tags/properties/Kanban/planner workspace behavior;
+- no historical/future Monthly browser;
+- no schema v2.
+
+Validation so far:
+
+- CI #308 exposed a mechanical formatter failure in three new files before analyzer ran; it was not a production defect;
+- the pinned Dart 3.13.2 formatter output was recovered exactly and applied, rather than changing behavior to satisfy CI;
+- the first analyzer pass then exposed a test-only `isNull` import collision between Drift and `flutter_test`; the test import was narrowed with `hide isNull`;
+- user-local validation of the resulting code-equivalent tree (before the later session-test-only commit): formatter **59 files / 0 changes**, analyzer **No issues found**, **108 tests passed**, Linux debug build passed;
+- a temporary formatter-probe workflow was used only to recover exact formatter bytes through GitHub, then removed completely before Ready;
+- Draft CI #315 on head `703cc3f61f900d2699d370141c834d84a0785d96`: `dev-check` green, including localization generation, Drift generation/snapshot checks, formatter, and analyzer;
+- Draft CI #317 on head `d44a1d37febb5b84ed1fc9ffa63ee6da693e2ed4`: `dev-check` green after the architecture/handoff reconciliation;
+- full Ready CI #318 on the same head `d44a1d37febb5b84ed1fc9ffa63ee6da693e2ed4`: `quality` including the full test suite, Linux build, Android build, dependency review, and `merge-gate` all green;
+- this checkpoint commit is documentation-only and therefore changes the PR head after #318. The full Ready CI must still validate the final documentation head before merge approval is requested.
+
+## Next work after PR #20
+
+Do not automatically expose `>` merely because Collections now exist.
+
+A method-faithful next slice should stay small and deliberate. Likely choices are:
+
+1. expose deliberate Collection references from chronological entries while preserving original ownership; or
+2. design the explicit destination-selection flow required to migrate an open Task into a real Collection using the existing lineage semantics; or
+3. separately expose next-Monthly accessibility if that produces a clearer method-native migration path.
+
+Index remains a distinct deliberate journal structure and should not be bundled into migration simply because its schema already exists. Search, backup UI, exports, OS lock hooks, accessibility/keyboard work, and packaging remain later focused slices.
+
+Any future cross-surface write into Collections must add retained-tab activation refresh coverage before merge.
 
 ## CI and handoff traps to remember
 

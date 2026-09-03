@@ -7,6 +7,7 @@ import 'package:daymark/core/database/daymark_database.dart';
 import 'package:daymark/core/database/encrypted_daymark_database.dart';
 import 'package:daymark/features/journal/application/journal_service.dart';
 import 'package:daymark/features/journal/application/task_action_service.dart';
+import 'package:daymark/features/journal/data/collection_repository.dart';
 import 'package:daymark/features/journal/data/daily_log_repository.dart';
 import 'package:daymark/features/journal/data/future_log_repository.dart';
 import 'package:daymark/features/journal/data/journal_repository.dart';
@@ -48,6 +49,7 @@ final class JournalSession {
     : repository = JournalRepository(database) {
     service = JournalService(repository);
     taskActions = TaskActionService(TaskActionRepository(database));
+    collections = CollectionRepository(database, service);
     dailyLog = DailyLogRepository(database, service);
     monthlyLog = MonthlyLogRepository(database, service);
     futureLog = FutureLogRepository(database, service);
@@ -58,6 +60,7 @@ final class JournalSession {
   final JournalRepository repository;
   late final JournalService service;
   late final TaskActionService taskActions;
+  late final CollectionRepository collections;
   late final DailyLogRepository dailyLog;
   late final MonthlyLogRepository monthlyLog;
   late final FutureLogRepository futureLog;
@@ -143,6 +146,32 @@ final class JournalSession {
   }) {
     return run(
       () => futureLog.capture(logId: logId, type: type, content: content),
+    );
+  }
+
+  Future<List<CollectionSummary>> listCollections() {
+    return run(collections.list);
+  }
+
+  Future<String> createCollection({required String title}) {
+    return run(() => collections.create(title: title));
+  }
+
+  Future<CollectionSnapshot> loadCollection(String collectionId) {
+    return run(() => collections.load(collectionId));
+  }
+
+  Future<void> captureCollectionEntry({
+    required String collectionId,
+    required JournalEntryType type,
+    required String content,
+  }) {
+    return run(
+      () => collections.capture(
+        collectionId: collectionId,
+        type: type,
+        content: content,
+      ),
     );
   }
 

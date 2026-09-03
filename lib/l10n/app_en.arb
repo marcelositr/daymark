@@ -45,5 +45,14 @@
   "monthlyTaskHint": "Add a task for this month",
   "futureLogLoadFailed": "Could not load the Future Log.",
   "emptyFutureMonth": "Nothing planned for this month.",
-  "futureEntryHint": "Add a future task, event, or note"
+  "futureEntryHint": "Add a future task, event, or note",
+  "collectionsLoadFailed": "Could not load Collections.",
+  "emptyCollections": "No Collections yet.",
+  "collectionTitleHint": "Collection title",
+  "createCollection": "Create Collection",
+  "createCollectionFailed": "Could not create this Collection.",
+  "collectionLoadFailed": "Could not load this Collection.",
+  "emptyCollection": "Nothing logged in this Collection yet.",
+  "collectionEntryHint": "Add a task, event, or note",
+  "backToCollections": "Back to Collections"
 }

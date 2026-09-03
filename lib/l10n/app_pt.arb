@@ -45,5 +45,14 @@
   "monthlyTaskHint": "Adicione uma tarefa para este mês",
   "futureLogLoadFailed": "Não foi possível carregar o Registro Futuro.",
   "emptyFutureMonth": "Nada planejado para este mês.",
-  "futureEntryHint": "Adicione uma tarefa, evento ou nota futura"
+  "futureEntryHint": "Adicione uma tarefa, evento ou nota futura",
+  "collectionsLoadFailed": "Não foi possível carregar as Coleções.",
+  "emptyCollections": "Nenhuma Coleção ainda.",
+  "collectionTitleHint": "Título da Coleção",
+  "createCollection": "Criar Coleção",
+  "createCollectionFailed": "Não foi possível criar esta Coleção.",
+  "collectionLoadFailed": "Não foi possível carregar esta Coleção.",
+  "emptyCollection": "Nada registrado nesta Coleção ainda.",
+  "collectionEntryHint": "Adicione uma tarefa, evento ou nota",
+  "backToCollections": "Voltar às Coleções"
 }

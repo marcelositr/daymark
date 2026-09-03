@@ -1,5 +1,6 @@
 import 'package:go_router/go_router.dart';
 
+import '../features/journal/presentation/collections_screen.dart';
 import '../features/journal/presentation/future_screen.dart';
 import '../features/journal/presentation/journal_gate.dart';
 import '../features/journal/presentation/monthly_screen.dart';
@@ -43,8 +44,7 @@ final GoRouter daymarkRouter = GoRouter(
           routes: [
             GoRoute(
               path: '/collections',
-              builder: (context, state) =>
-                  const PlaceholderScreen(section: DaymarkSection.collections),
+              builder: (context, state) => const CollectionsScreen(),
             ),
           ],
         ),
