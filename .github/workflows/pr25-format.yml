@@ -42,3 +42,5 @@ jobs:
             test/journal/search_screen_test.dart
           git commit -m "chore: format PR25 with pinned Dart"
           git push origin HEAD:feat/basic-search
+
+# trigger formatter after the workflow exists on the branch
