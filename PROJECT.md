@@ -16,7 +16,7 @@ Every agent must read it before meaningful work and update it before handing wor
 - PR #17 product scope: rolling six-month Future Log, beginning with the month after the current month, with Rapid Logging of Task/Event/Note and deliberate complete/discard actions for Future Tasks
 - PR #17 deliberately does **not** expose migrate/schedule UI; that is the next focused slice after Future is merged
 - Merge policy: agents never merge without explicit user approval
-- Current focus: finish documentation/AI-handoff alignment on PR #17, validate the final documented head with the complete local suite and Linux debug build, then promote to Ready for full non-Draft CI
+- Current focus: final validation of the documentation-hardened PR #17 head, then Ready/full CI
 - Initial runtime targets: Linux and Android
 - Pinned toolchain: Flutter 3.47.2 / Dart 3.13.2
 - Initial production Argon2id baseline: **19 MiB / 2 iterations / p=1 / 32-byte output**
@@ -235,19 +235,43 @@ Implementation head `5fea59fb811274393a4ba86dfb9198b8cddeb1a8`:
 - [x] local worktree was clean after focused validation
 - [x] manual Linux product validation passed: six correct future months, Task/Event/Note capture into separate month buckets, complete/discard visuals, no false save snackbar, encrypted lock/unlock persistence, and Today/Monthly regression checks
 
-The later documentation-hardening commits intentionally create a new final PR head. Implementation/manual evidence above remains valid for the implementation head; the final documented head must still receive the final validation required by policy before Ready.
+### Documentation and AI-handoff hardening included in PR #17
+
+The user explicitly requested that this PR also close the documentation gap before the next slice.
+
+Reviewed authoritative documentation and confirmed that the Future implementation does **not** require security, backup-format, or schema changes.
+
+Updated in this PR:
+
+- [x] `AGENTS.md`: incident-derived failure-prevention rules, safe terminal blocks, l10n ordering, pinned formatter behavior, SHA-specific CI evidence, test-harness diagnosis, semantic repository boundaries, temporary-probe cleanup
+- [x] `PROJECT.md`: current #16/#17 state, validation evidence, next-PR plan, historical traps
+- [x] `README.md`: removed stale PR #7 current-status language and refreshed the durable product line
+- [x] `CHANGELOG.md`: Future Log and contributor/workflow hardening
+- [x] `CONTRIBUTING.md`: exact-head checks, testing boundaries, terminal safety, generated localization rules
+- [x] `docs/PRODUCT.md`: current Daily/Monthly/Future product shape and no fake migration destinations
+- [x] `docs/DOMAIN.md`: Daily/Monthly/Future semantics plus migration/scheduling invariants
+- [x] `docs/ARCHITECTURE.md`: implemented `JournalSession`, focused repository boundaries, chronological mapping, current development order
+- [x] `docs/WORKFLOW.md`: incident-derived validation/terminal/formatter/SHA rules
+
+Reviewed without changes because existing contracts already match PR #17:
+
+- `SECURITY.md`
+- `docs/SECURITY_FOUNDATION.md`
+- `docs/BACKUP_FORMAT.md`
+- `docs/DATA_MODEL.md`
+
+The documentation-hardening commits intentionally create a later final PR head. Implementation/manual evidence above remains valid for the implementation head; final documented heads must receive the proportionate final validation required by policy before Ready.
 
 ### Remaining before PR #17 merge eligibility
 
-1. finish documentation/AI-handoff review on this branch;
-2. run final Draft CI on the documented head;
-3. run the complete local Flutter test suite on the exact final documented head;
-4. run Linux debug build on the same head;
-5. update this checkpoint with final head/evidence if needed;
-6. mark PR Ready without changing implementation;
-7. require full non-Draft `quality`, Linux, Android, dependency review, and `merge-gate`;
-8. ask the user for explicit merge approval;
-9. squash merge only after approval.
+1. final Draft CI on the documentation-hardened head;
+2. complete local Flutter test suite on the exact final documentation head used for local validation;
+3. Linux debug build on that same head;
+4. record final validation in PR metadata/checkpoint without changing production code;
+5. mark PR Ready;
+6. require full non-Draft `quality`, Linux, Android, dependency review, and `merge-gate`;
+7. ask the user for explicit merge approval;
+8. squash merge only after approval.
 
 ## Next focused work after PR #17: deliberate migration/scheduling UI
 
