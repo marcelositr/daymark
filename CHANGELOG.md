@@ -20,6 +20,7 @@ This file is for user-visible behavior, data compatibility, security, packaging,
 - Automatic journal lock after five minutes without journal interaction, with pointer/touch, hardware-keyboard, and text-edit activity resetting the deadline and background time continuing to count.
 - Deliberate completion and discard actions for open Tasks in the Today/Daily Log flow.
 - Current-month Monthly Log with Calendar and Tasks sections, dated Event capture, Monthly Task capture, and deliberate complete/discard actions.
+- Read-only historical Monthly browsing, with month-by-month backward navigation, no future-Monthly navigation, and no creation of empty historical Logs merely by viewing a month.
 - Rolling six-month Future Log, beginning with the month after the current month, with Task/Event/Note Rapid Logging and deliberate Future Task complete/discard actions.
 - Deliberate scheduling (`<`) for open Tasks in Today and Monthly into one of the six real Future Log month buckets, preserving source history and creating a fresh open destination Task with movement lineage.
 - Basic Collections surface for creating and opening method-native Collections, Rapid Logging Task/Event/Note entries, and completing or discarding Collection Tasks.
@@ -43,6 +44,7 @@ This file is for user-visible behavior, data compatibility, security, packaging,
 - Task terminal actions preserve the original journal entry and change only its Task state, keeping journal history visible.
 - Future Log is explicitly month-addressed rather than a second day-level calendar, preserving the method-native distinction between Monthly and Future surfaces.
 - Forward migration (`>`) uses an explicitly selected existing Collection as its first exposed non-Future destination; the current Monthly Log remains intentionally unavailable as a shortcut destination, while Collection references use the same source Entry rather than movement lineage.
+- Historical Monthly Logs are retrieval-only in the first history slice: capture and Task actions remain available only in the current month.
 
 ### Fixed
 
