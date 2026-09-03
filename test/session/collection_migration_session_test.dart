@@ -86,4 +86,44 @@ void main() {
       );
     },
   );
+
+  test(
+    'terminal Task migration is rejected without a partial Collection write',
+    () async {
+      final JournalSession session = await manager.create(
+        masterPassword: 'terminal migration journal',
+      );
+      final DailyLogSnapshot daily = await session.loadDailyLog('2026-09-03');
+      await session.captureDailyLogEntry(
+        logId: daily.logId,
+        type: JournalEntryType.task,
+        content: 'Already complete',
+      );
+      final DailyLogSnapshot captured = await session.loadDailyLog(
+        '2026-09-03',
+      );
+      final String entryId = captured.entries.single.id;
+      final String collectionId = await session.createCollection(
+        title: 'Project',
+      );
+      await session.completeTask(entryId: entryId);
+
+      await expectLater(
+        session.migrateTaskToCollection(
+          entryId: entryId,
+          collectionId: collectionId,
+        ),
+        throwsA(isA<JournalInvariantException>()),
+      );
+
+      final DailyLogSnapshot sourceAfter = await session.loadDailyLog(
+        '2026-09-03',
+      );
+      final CollectionSnapshot destinationAfter = await session.loadCollection(
+        collectionId,
+      );
+      expect(sourceAfter.entries.single.taskState, JournalTaskState.completed);
+      expect(destinationAfter.entries, isEmpty);
+    },
+  );
 }
