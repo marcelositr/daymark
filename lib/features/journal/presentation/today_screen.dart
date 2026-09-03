@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'journal_activity_guard.dart';
+import 'task_schedule_dialog.dart';
 
 abstract interface class TodayJournalDataSource {
   Future<DailyLogSnapshot> load(String methodDate);
@@ -20,6 +21,11 @@ abstract interface class TodayJournalDataSource {
   });
 
   Future<void> completeTask({required String entryId});
+
+  Future<void> scheduleTaskToFuture({
+    required String entryId,
+    required String periodStart,
+  });
 
   Future<void> discardTask({required String entryId});
 }
@@ -61,6 +67,17 @@ final class _SessionTodayJournalDataSource implements TodayJournalDataSource {
   @override
   Future<void> completeTask({required String entryId}) {
     return _session.completeTask(entryId: entryId);
+  }
+
+  @override
+  Future<void> scheduleTaskToFuture({
+    required String entryId,
+    required String periodStart,
+  }) {
+    return _session.scheduleTaskToFuture(
+      entryId: entryId,
+      periodStart: periodStart,
+    );
   }
 
   @override
@@ -251,6 +268,10 @@ class _TodayScreenState extends ConsumerState<TodayScreen>
           child: Text(l10n.completeTask),
         ),
         PopupMenuItem<_TaskAction>(
+          value: _TaskAction.schedule,
+          child: Text(l10n.scheduleTask),
+        ),
+        PopupMenuItem<_TaskAction>(
           value: _TaskAction.discard,
           child: Text(l10n.discardTask),
         ),
@@ -371,6 +392,18 @@ class _TodayScreenState extends ConsumerState<TodayScreen>
       return;
     }
 
+    final DateTime actionDate = _today;
+    String? schedulePeriodStart;
+    if (action == _TaskAction.schedule) {
+      schedulePeriodStart = await showTaskScheduleDialog(
+        context: context,
+        anchor: actionDate,
+      );
+      if (!mounted || schedulePeriodStart == null) {
+        return;
+      }
+    }
+
     final AppLocalizations l10n = AppLocalizations.of(context);
     setState(() => _taskActionEntryId = entry.id);
 
@@ -379,6 +412,12 @@ class _TodayScreenState extends ConsumerState<TodayScreen>
       switch (action) {
         case _TaskAction.complete:
           await dataSource.completeTask(entryId: entry.id);
+          break;
+        case _TaskAction.schedule:
+          await dataSource.scheduleTaskToFuture(
+            entryId: entry.id,
+            periodStart: schedulePeriodStart!,
+          );
           break;
         case _TaskAction.discard:
           await dataSource.discardTask(entryId: entry.id);
@@ -439,7 +478,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen>
   }
 }
 
-enum _TaskAction { complete, discard }
+enum _TaskAction { complete, schedule, discard }
 
 DateTime _dateOnly(DateTime date) => DateTime(date.year, date.month, date.day);
 

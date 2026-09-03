@@ -33,6 +33,8 @@
   "addEntry": "Adicionar entrada",
   "taskActions": "Ações da tarefa",
   "completeTask": "Concluir",
+  "scheduleTask": "Agendar",
+  "scheduleTaskTitle": "Agendar tarefa",
   "discardTask": "Descartar",
   "taskActionFailed": "Não foi possível atualizar esta tarefa.",
   "monthlyCalendar": "Calendário",

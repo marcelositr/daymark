@@ -119,6 +119,12 @@ Settings and contextual reflection flows are secondary navigation rather than pe
 
 Route names and persisted domain values remain language-neutral.
 
+The top-level journal shell uses `StatefulShellRoute.indexedStack`, so branch widgets may remain mounted while another section is active. This retained state is intentional for navigation continuity, but it creates a lifecycle requirement: a destination screen must not assume `initState()` runs again when the user returns.
+
+`AppShell` publishes the active top-level section through the presentation-level `AppSectionScope`. Screens that cache journal snapshots and can be changed by another section must observe reactivation and reload the affected presentation state. Cross-surface writes must become visible when the destination section is re-entered without requiring lock, application restart, or widget remount.
+
+Do not solve retained-tab freshness by destroying all branches, polling continuously, or moving journal semantics into the router. Section activation is presentation lifecycle; persistence and movement semantics remain below the UI boundary.
+
 ## Persistence
 
 Drift 2.34.x is the typed relational persistence layer. The schema is declared under `lib/core/database/`, with exported schema snapshots versioned under `drift_schemas/`.
@@ -192,7 +198,17 @@ All journal operations exposed through `JournalSession` are serialized. Once clo
 
 Presentation code reaches journal behavior through focused data-source/provider boundaries backed by the unlocked session. Widgets do not coordinate multi-table persistence themselves.
 
-Focused repositories are responsible for the semantic location they claim to represent. A repository must reject an owner of the wrong log kind rather than assuming every caller is correct. This is especially important for future migration/scheduling UI, where source and destination owners cross product surfaces.
+Focused repositories are responsible for the semantic location they claim to represent. A repository must reject an owner of the wrong log kind rather than assuming every caller is correct. This is especially important when source and destination owners cross product surfaces.
+
+Task scheduling is exposed through the serialized session rather than implemented inside Today/Monthly widgets. `JournalSession.scheduleTaskToFuture(...)` validates that the persisted source is an open Task before resolving/creating the Future destination, then delegates the actual movement and lineage semantics to the existing journal service/repository boundary. Invalid Task-only scheduling must fail before it creates a destination container or partial write.
+
+Scheduling therefore has three distinct responsibilities:
+
+1. presentation chooses a real visible Future month;
+2. the session validates/unifies the unlocked serialized operation and resolves the real destination;
+3. `JournalService` / `JournalRepository` perform the transactional source-state, destination-entry, placement, and lineage write.
+
+Do not duplicate lineage rules in widgets/providers or invent a second movement service merely for UI convenience.
 
 Widget tests use controlled in-memory presentation boundaries. Real filesystem, Argon2, encrypted SQLite, and lock/unlock persistence belong in repository/session/security tests when those boundaries are the subject being validated.
 
@@ -363,6 +379,8 @@ The initial schema has direct invariant tests against in-memory SQLite. Future v
 
 Security-sensitive flows require failure tests as well as success tests, including wrong password, corrupted key envelope, corrupted backup, incompatible schema, and missing encrypted-database support.
 
+Cross-surface presentation behavior must test the actual navigation lifecycle when it is part of the bug. If a retained destination branch can be changed while inactive, a regression test should mutate the relevant data source while that section is inactive and prove it refreshes on reactivation without relying on remount, lock, or restart.
+
 Performance/security parameters are not selected from shared CI runner timing. Future KDF retuning must follow the evidence-first physical-device/profile process.
 
 Do not treat screenshot/golden testing as a substitute for behavioral tests. Add goldens selectively when the visual contract becomes stable enough to justify maintenance cost.
@@ -392,8 +410,10 @@ The current dependency sequence is:
 7. build end-to-end Today/Daily flow;
 8. add deliberate Task actions and lifecycle protection;
 9. build real Monthly and Future destinations;
-10. expose deliberate migration/scheduling UI using those real destinations;
-11. continue Collections, Index, Search, backup UI, exports, platform hooks, accessibility, and packaging in focused slices.
+10. expose deliberate scheduling (`<`) from Today/Monthly Tasks into real Future destinations;
+11. add the next method-native structures needed for forward migration, especially next-Monthly accessibility and/or Collections;
+12. expose deliberate forward migration (`>`) only when a real non-Future destination exists;
+13. continue Index, Search, backup UI, exports, platform hooks, accessibility, and packaging in focused slices.
 
 Do not implement convenience features ahead of the contracts that govern their persistence and security.
 

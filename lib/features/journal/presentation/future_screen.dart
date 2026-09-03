@@ -5,6 +5,7 @@ import 'package:daymark/core/session/journal_session_controller.dart';
 import 'package:daymark/features/journal/data/future_log_repository.dart';
 import 'package:daymark/features/journal/domain/journal_domain.dart';
 import 'package:daymark/l10n/app_localizations.dart';
+import 'package:daymark/presentation/app_section_scope.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -92,6 +93,8 @@ class _FutureScreenState extends ConsumerState<FutureScreen>
   JournalEntryType _entryType = JournalEntryType.task;
   bool _saving = false;
   String? _taskActionEntryId;
+  bool _sectionScopeInitialized = false;
+  bool _wasFutureSectionActive = false;
 
   @override
   void initState() {
@@ -103,6 +106,27 @@ class _FutureScreenState extends ConsumerState<FutureScreen>
     _selectedMonth = _months.first;
     _snapshotsFuture = _loadSnapshots();
     _scheduleHorizonRollover();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final int? currentSectionIndex = AppSectionScope.maybeCurrentIndexOf(
+      context,
+    );
+    if (currentSectionIndex == null) {
+      return;
+    }
+
+    final bool isFutureSectionActive =
+        currentSectionIndex == AppSectionScope.futureSectionIndex;
+    if (_sectionScopeInitialized &&
+        isFutureSectionActive &&
+        !_wasFutureSectionActive) {
+      _snapshotsFuture = _loadSnapshots();
+    }
+    _sectionScopeInitialized = true;
+    _wasFutureSectionActive = isFutureSectionActive;
   }
 
   @override

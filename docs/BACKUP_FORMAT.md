@@ -176,14 +176,14 @@ Dart does not expose a portable directory-fsync transaction primitive across Lin
 
 The backup snapshot may be taken while normal journal persistence exists because SQLite's backup API provides a transactionally consistent snapshot.
 
-Restore replacement is different: any active application session using the destination journal must be closed before commit. The future journal/session application service must:
+Restore replacement is different: any active application session using the destination journal must be closed before commit. The application/session boundary responsible for restore must:
 
 1. lock/close the destination persistence session;
 2. invoke interrupted-restore recovery before opening journal storage;
 3. perform restore;
 4. reopen only from the committed destination pair.
 
-This keeps file replacement out of widget/UI code and avoids keeping a stale open connection to files being replaced.
+This keeps file replacement out of widget/UI code and avoids keeping a stale open connection to files being replaced. `JournalSession` already exists as the unlocked journal-lifetime boundary; future backup UI must integrate with that existing lifecycle rather than creating a second competing session abstraction.
 
 ## Password changes
 

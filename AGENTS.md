@@ -110,6 +110,20 @@ Focused repositories must validate the owner/location semantics they claim to re
 
 Example: a Future Log repository must reject a non-Future Log owner even if the UI would never normally pass one. Boundary tests should prove invalid owners cause no partial write.
 
+### Retained navigation must refresh after cross-surface writes
+
+Daymark's top-level `go_router` shell retains branch widgets with `StatefulShellRoute.indexedStack`. A screen can therefore remain mounted while another section changes data that it displays.
+
+Do not assume `initState()` reruns when the user returns to a retained section. For cross-surface operations such as Today/Monthly scheduling into Future:
+
+- identify whether the destination screen keeps an in-memory snapshot;
+- publish or observe section activation when a retained screen needs refresh;
+- reload the affected presentation state when the section becomes active again;
+- do not require lock, restart, or remount merely to observe a successful write;
+- add a regression test that mutates the underlying presentation boundary while the destination is inactive, then proves the new data appears when that retained section is reactivated.
+
+Persistence success and immediate presentation freshness are separate correctness requirements.
+
 ### User terminal blocks must be safe in an interactive shell
 
 Commands sent to the user are often pasted directly into an existing shell. Therefore:

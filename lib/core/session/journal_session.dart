@@ -146,6 +146,22 @@ final class JournalSession {
     );
   }
 
+  Future<void> scheduleTaskToFuture({
+    required String entryId,
+    required String periodStart,
+  }) {
+    return run(() async {
+      await taskActions.requireOpen(entryId: entryId);
+      final FutureLogSnapshot destination = await futureLog.loadOrCreate(
+        periodStart,
+      );
+      await service.schedule(
+        sourceEntryId: entryId,
+        futureLogOwner: JournalLogOwner(logId: destination.logId),
+      );
+    });
+  }
+
   Future<void> completeTask({required String entryId}) {
     return run(() => taskActions.complete(entryId: entryId));
   }

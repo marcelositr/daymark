@@ -91,6 +91,8 @@ Use the Dart formatter supplied by the pinned Flutter toolchain rather than gues
 
 A failing test must be classified before changing production code. Test-harness problems such as off-screen widgets, ambiguous finders, incorrect scrolling helpers, or invalid fakes are not production defects.
 
+When a feature writes data that another top-level section displays, remember that Daymark's `StatefulShellRoute.indexedStack` retains branch widgets. Regression coverage must prove the destination section refreshes when it becomes active again without relying on lock, restart, or widget remount.
+
 The detailed incident-derived failure-prevention rules are mandatory and live in `AGENTS.md`.
 
 ## Local validation through the user

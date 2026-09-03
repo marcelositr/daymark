@@ -66,6 +66,44 @@ void main() {
     await tester.pumpWidget(const SizedBox.shrink());
   });
 
+  testWidgets('Monthly open Task can be scheduled into a Future month', (
+    tester,
+  ) async {
+    final _MemoryMonthlyJournal dataSource = _MemoryMonthlyJournal(
+      taskEntries: [
+        const MonthlyLogEntry(
+          id: 'task-1',
+          type: JournalEntryType.task,
+          taskState: JournalTaskState.open,
+          content: 'Renew in October',
+          ordinal: 0,
+          section: JournalMonthlySection.tasks,
+          calendarDate: null,
+        ),
+      ],
+    );
+
+    await _pumpMonthly(tester, dataSource);
+    await tester.tap(find.text('Tasks'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('•'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Schedule'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(SimpleDialogOption), findsNWidgets(6));
+    await tester.tap(find.byType(SimpleDialogOption).first);
+    await tester.pumpAndSettle();
+
+    expect(dataSource.scheduledPeriodStart, '2026-10-01');
+    expect(dataSource.taskEntries.single.taskState, JournalTaskState.scheduled);
+    expect(find.text('<'), findsOneWidget);
+    expect(find.byType(SnackBar), findsNothing);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
   testWidgets('Monthly discarded Task remains visible and struck through', (
     tester,
   ) async {
@@ -133,6 +171,7 @@ final class _MemoryMonthlyJournal implements MonthlyJournalDataSource {
 
   final List<MonthlyLogEntry> calendarEntries;
   final List<MonthlyLogEntry> taskEntries;
+  String? scheduledPeriodStart;
 
   @override
   Future<MonthlyLogSnapshot> load(String periodStart) async {
@@ -184,6 +223,15 @@ final class _MemoryMonthlyJournal implements MonthlyJournalDataSource {
   @override
   Future<void> completeTask({required String entryId}) async {
     _transitionTask(entryId, JournalTaskState.completed);
+  }
+
+  @override
+  Future<void> scheduleTaskToFuture({
+    required String entryId,
+    required String periodStart,
+  }) async {
+    scheduledPeriodStart = periodStart;
+    _transitionTask(entryId, JournalTaskState.scheduled);
   }
 
   @override

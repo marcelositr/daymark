@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'journal_activity_guard.dart';
+import 'task_schedule_dialog.dart';
 
 abstract interface class MonthlyJournalDataSource {
   Future<MonthlyLogSnapshot> load(String periodStart);
@@ -22,6 +23,11 @@ abstract interface class MonthlyJournalDataSource {
   Future<void> captureTask({required String logId, required String content});
 
   Future<void> completeTask({required String entryId});
+
+  Future<void> scheduleTaskToFuture({
+    required String entryId,
+    required String periodStart,
+  });
 
   Future<void> discardTask({required String entryId});
 }
@@ -69,6 +75,17 @@ final class _SessionMonthlyJournalDataSource
   @override
   Future<void> completeTask({required String entryId}) {
     return _session.completeTask(entryId: entryId);
+  }
+
+  @override
+  Future<void> scheduleTaskToFuture({
+    required String entryId,
+    required String periodStart,
+  }) {
+    return _session.scheduleTaskToFuture(
+      entryId: entryId,
+      periodStart: periodStart,
+    );
   }
 
   @override
@@ -349,6 +366,10 @@ class _MonthlyScreenState extends ConsumerState<MonthlyScreen>
           child: Text(l10n.completeTask),
         ),
         PopupMenuItem<_MonthlyTaskAction>(
+          value: _MonthlyTaskAction.schedule,
+          child: Text(l10n.scheduleTask),
+        ),
+        PopupMenuItem<_MonthlyTaskAction>(
           value: _MonthlyTaskAction.discard,
           child: Text(l10n.discardTask),
         ),
@@ -474,6 +495,18 @@ class _MonthlyScreenState extends ConsumerState<MonthlyScreen>
       return;
     }
 
+    final DateTime actionMonth = _month;
+    String? schedulePeriodStart;
+    if (action == _MonthlyTaskAction.schedule) {
+      schedulePeriodStart = await showTaskScheduleDialog(
+        context: context,
+        anchor: actionMonth,
+      );
+      if (!mounted || schedulePeriodStart == null) {
+        return;
+      }
+    }
+
     final AppLocalizations l10n = AppLocalizations.of(context);
     setState(() => _taskActionEntryId = entry.id);
 
@@ -482,6 +515,12 @@ class _MonthlyScreenState extends ConsumerState<MonthlyScreen>
       switch (action) {
         case _MonthlyTaskAction.complete:
           await dataSource.completeTask(entryId: entry.id);
+          break;
+        case _MonthlyTaskAction.schedule:
+          await dataSource.scheduleTaskToFuture(
+            entryId: entry.id,
+            periodStart: schedulePeriodStart!,
+          );
           break;
         case _MonthlyTaskAction.discard:
           await dataSource.discardTask(entryId: entry.id);
@@ -546,7 +585,7 @@ class _MonthlyScreenState extends ConsumerState<MonthlyScreen>
   }
 }
 
-enum _MonthlyTaskAction { complete, discard }
+enum _MonthlyTaskAction { complete, schedule, discard }
 
 int _daysInMonth(DateTime month) {
   return DateTime(month.year, month.month + 1, 0).day;

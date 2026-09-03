@@ -71,7 +71,7 @@ The initial Future Log is a rolling overview of **six future months**, beginning
 
 Each month is a month-addressed bucket. Future does not assign entries to a day inside that month and must not become a second day-level calendar.
 
-Rapid Logging may place Task, Event, and Note entries into the selected future month. Scheduling an existing open Task into Future is a separate deliberate migration action, not the same as capturing a new Future entry.
+Rapid Logging may place Task, Event, and Note entries into the selected future month. Scheduling an existing open Task into Future is a separate deliberate movement action, not the same as capturing a new Future entry.
 
 When the current month advances, the visible Future horizon rolls forward. Existing historical data remains persisted in its original month bucket even when that bucket falls outside the six-month overview.
 
@@ -81,7 +81,13 @@ Migration and scheduling must use real method-native destinations.
 
 Do not invent temporary planner buckets, fake destinations, or automatic rollover rules merely to make a migration UI easier to implement.
 
-A scheduling action targets the Future Log. A normal forward migration must use another valid non-Future destination according to the domain rules.
+The current product exposes **scheduling (`<`) for open Tasks in Today and Monthly**. The user deliberately chooses one of the six visible Future months. The historical source stays in place with scheduled state, and the selected Future month receives a fresh open Task with lineage back to the source.
+
+Scheduling must be immediately visible when the user navigates to Future. Retained navigation state is not permission to show stale journal snapshots after a cross-surface write.
+
+A Future destination always uses scheduling semantics. A normal forward migration (`>`) must use another valid non-Future destination according to the method.
+
+Daymark does **not** treat the current Monthly Log as a shortcut destination for a Today Task merely because that container already exists. Forward-migration UI remains deferred until the product exposes a method-faithful destination such as the next Monthly Log or an appropriate Collection.
 
 ## Local-first
 
