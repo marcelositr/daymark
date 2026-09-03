@@ -22,6 +22,13 @@ void main() {
     expect(dataSource.calendarEntries, hasLength(1));
     expect(dataSource.calendarEntries.single.type, JournalEntryType.event);
     expect(dataSource.calendarEntries.single.calendarDate, '2026-09-15');
+
+    await tester.scrollUntilVisible(
+      find.text('○ Dentist'),
+      200,
+      scrollable: find.byType(Scrollable),
+    );
+
     expect(find.text('○ Dentist'), findsOneWidget);
     expect(find.byType(SnackBar), findsNothing);
 
