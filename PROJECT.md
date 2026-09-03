@@ -6,18 +6,17 @@ This is Daymark's canonical living handoff. Read this file and `AGENTS.md` befor
 
 - Phase: pre-alpha, core Bullet Journal flows in active development.
 - Integration branch: `main` only.
-- Current `main` head before the active feature PR: `89c1907d17d0507fd84c403c7343afc2ccbbd8da` (`feat(journal): migrate tasks to collections (#21)`).
-- Current merged product baseline: PR #21, deliberate Task migration to Collections, squash-merged as `89c1907d17d0507fd84c403c7343afc2ccbbd8da`.
-- Active product implementation branch/PR: `feat/collection-references` / PR #22, `feat(journal): reference entries in collections`.
-- PR #22 is Draft. Its implementation exposes deliberate references from Today, Monthly, and Future entries into an existing Collection without moving the source, changing Entry identity, or changing Task state.
-- Current merged product scope includes Today, current Monthly, six-month Future, basic Collections, deliberate Task terminal actions, scheduling (`<`), and forward migration (`>`) into existing Collections.
-- Current focus: finish PR #22 documentation and exact-head Draft CI, perform manual Linux cross-surface reference/persistence validation, then run full Ready CI before explicit merge approval.
+- Current `main` head before the active feature PR: `23fbc3e0b8d3e62f8db8ddc1ad403835e8fc5eee` (`feat(journal): reference entries in collections (#22)`).
+- Current merged product baseline: PR #22, deliberate Collection references, squash-merged as `23fbc3e0b8d3e62f8db8ddc1ad403835e8fc5eee`.
+- Active product implementation branch/PR: `feat/basic-index` / PR #23, `feat(journal): add basic index`.
+- PR #23 is Draft. It implements a deliberate persisted Index of existing Logs and Collections, separate from Search and without content duplication or automatic indexing.
+- Current merged product scope includes Today, current Monthly, six-month Future, basic Collections, deliberate Task terminal actions, scheduling (`<`), forward migration (`>`) into Collections, and deliberate Collection references.
+- Current focus: finish PR #23 exact-head validation, perform manual Linux desktop/compact-navigation and Index persistence validation, then run full Ready CI before explicit merge approval.
 - Merge policy: never merge without explicit user approval.
 - Runtime targets: Linux and Android.
 - Pinned toolchain: Flutter 3.47.2 / Dart 3.13.2.
 - Production Argon2id baseline: 19 MiB / 2 iterations / p=1 / 32-byte output.
 - Last updated: 2026-09-03 (America/Sao_Paulo).
-
 ## Product doctrine
 
 Daymark is a faithful digital Bullet Journal, not a generic productivity suite.
@@ -29,7 +28,7 @@ Daymark is a faithful digital Bullet Journal, not a generic productivity suite.
 - notebook/sketchbook metaphor with restrained dotted-paper language, not a freeform canvas;
 - English is canonical/fallback; exact `pt_BR` is the first additional locale;
 - architecture remains RTL-safe;
-- primary navigation: Today, Monthly, Future, Collections, Search; Index remains a distinct method concept.
+- primary navigation concepts: Today, Monthly, Future, Collections, Search, Index; compact layouts group Search/Index under More without merging their meaning.
 
 ## Mandatory working rules
 
@@ -278,50 +277,55 @@ Validation and merge:
 - PR #21 squash-merged as `89c1907d17d0507fd84c403c7343afc2ccbbd8da`;
 - post-merge main CI #335 green.
 
-## Active PR #22: deliberate Collection references
+## PR #22 final: deliberate Collection references
 
-Branch: `feat/collection-references`.
+Validation and merge:
 
-PR: #22, `feat(journal): reference entries in collections`.
+- manual Linux cross-surface/reference persistence validation passed;
+- exact-head Draft CI #349 green;
+- full Ready CI #350 green: quality/full tests, Linux, Android, dependency review, and merge-gate;
+- explicit user approval received;
+- PR #22 squash-merged as `23fbc3e0b8d3e62f8db8ddc1ad403835e8fc5eee`;
+- post-merge main CI #351 green for quality/tests, Linux, and Android.
+
+## Active PR #23: basic Index
+
+Branch: `feat/basic-index`.
+
+PR: #23, `feat(journal): add basic index`.
 
 Scope implemented:
 
-- Today, Monthly, and Future entries can be deliberately referenced into one existing Collection;
-- the reference preserves the original owner, stable Entry identity, content, and Task state;
-- `JournalSession.referenceEntryInCollection(...)` keeps the write serialized and delegates to the existing `JournalService.referenceInCollection(...)` transaction;
-- `CollectionRepository` loads owned entries and references separately;
-- Collections displays references in a distinct read-only section, so referenced Tasks do not expose Complete/Discard there;
-- retained Collections refreshes references after a cross-surface write;
-- English, `pt`, and `pt_BR` reference labels are localized;
-- repository, session, widget, and retained-navigation tests cover the new behavior;
+- `IndexRepository` reads and transactionally appends existing Logs or Collections using the schema-v1 `index_items` table;
+- one deliberate global Index order is persisted through monotonically allocated ordinals;
+- duplicate or missing Log/Collection targets are rejected without partial Index rows;
+- `JournalIndexSession` keeps Index list/candidate/add operations serialized inside the unlocked journal lifecycle;
+- the Index screen lists indexed structures and lets the user deliberately add only existing structures not already indexed;
+- expanded navigation exposes Index directly; compact navigation keeps four core destinations plus More, with Search and Index inside More;
+- English, `pt`, and `pt_BR` labels are aligned;
+- repository, widget, and encrypted session persistence tests cover the slice;
 - no schema, crypto, backup, dependency, or platform-contract change.
 
 Explicit non-goals:
 
-- no migration or scheduling behavior changes;
-- no automatic Collection choice or Collection creation from the reference dialog;
-- no reference action from Collection-owned entries inside Collections;
-- no Task mutation through a Collection reference;
-- no removing/unreferencing links;
-- no navigation from a reference back to its source;
-- no Index;
-- no next-Monthly browsing;
-- no schema v2.
+- no automatic indexing;
+- no Search implementation or Search/Index conflation;
+- no Index reordering or removal yet;
+- no direct navigation from an Index row to an arbitrary historical Log until real historical routes exist;
+- no schema v2;
+- no signifier, reflection, export, or backup UI work.
 
 Validation so far:
 
-- temporary pinned-toolchain probes were used to materialize exact formatter output and were removed from the final PR diff;
-- formatter and analyzer pass on the code-equivalent implementation;
-- focused repository/session/reference-widget/Collections-refresh tests pass;
-- a full-suite probe exposed one diagnostic-contract regression: existing Task failures were reported as `entry action` instead of the established `task action`; behavior was unaffected, the diagnostic label was restored, and the regression test now passes;
-- the corrected full suite passes with **121 tests**;
-- the exact product implementation was committed as `9fd64fa51ac901ec461ea03b88dffe71ef63216e` before temporary tooling removal;
-- standard Draft CI #337 was green on an earlier tooling-only head and is superseded as final evidence;
-- exact-head Draft CI after documentation remains required before manual validation.
+- baseline `main` post-merge CI #351 green;
+- initial Draft CI #360 reached formatter after lockfile/l10n/Drift/snapshot checks and failed only because four new Dart files required pinned Dart formatting;
+- pinned Dart 3.13.2 formatter output was applied by a temporary formatter workflow, which was removed immediately afterward;
+- finalizer validation ran localization/Drift generation, formatter, analyzer, and the complete test suite successfully before publishing this handoff update;
+- exact-head standard Draft CI remains required after this documentation commit, followed by manual Linux validation.
 
-## Next work after PR #22
+## Next work after PR #23
 
-Keep the next slice separate from Collection references. The leading method-native candidates are the deliberate Index surface or next-Monthly accessibility/historical browsing. Search, backup UI, exports, OS lock hooks, accessibility/keyboard work, and packaging remain later focused slices. Do not bundle Index with Search merely because both help retrieval.
+Keep the next slice separate from the Index. Leading method-native candidates are Search or historical/next-Monthly accessibility. Do not bundle Search into Index merely because both support retrieval. Backup UI, exports, OS lock hooks, accessibility/keyboard refinements, and packaging remain later focused slices.
 
 ## CI and handoff traps to remember
 
