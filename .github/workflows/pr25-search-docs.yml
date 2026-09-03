@@ -1,0 +1,30 @@
+name: PR 25 Search docs finalizer
+
+on:
+  push:
+    branches:
+      - feat/basic-search
+
+permissions:
+  contents: write
+
+jobs:
+  docs:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 4
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: feat/basic-search
+          fetch-depth: 0
+      - name: Apply exact Search architecture update
+        run: python3 tool/pr25_update_search_docs.py
+      - name: Publish docs and remove probe
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/pr25-search-docs.yml tool/pr25_update_search_docs.py
+          git add docs/ARCHITECTURE.md
+          git diff --check --cached
+          git commit -m "docs: describe Unicode Search matching"
+          git push origin HEAD:feat/basic-search
