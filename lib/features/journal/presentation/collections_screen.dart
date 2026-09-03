@@ -28,16 +28,18 @@ abstract interface class CollectionsJournalDataSource {
   Future<void> discardTask({required String entryId});
 }
 
-final Provider<CollectionsJournalDataSource> collectionsJournalDataSourceProvider =
-    Provider<CollectionsJournalDataSource>((ref) {
-      final JournalAccessState access = ref
-          .watch(journalSessionControllerProvider)
-          .requireValue;
-      if (access case JournalUnlocked(:final session)) {
-        return _SessionCollectionsJournalDataSource(session);
-      }
-      throw StateError('Collections requires an unlocked journal session.');
-    });
+final Provider<CollectionsJournalDataSource>
+collectionsJournalDataSourceProvider = Provider<CollectionsJournalDataSource>((
+  ref,
+) {
+  final JournalAccessState access = ref
+      .watch(journalSessionControllerProvider)
+      .requireValue;
+  if (access case JournalUnlocked(:final session)) {
+    return _SessionCollectionsJournalDataSource(session);
+  }
+  throw StateError('Collections requires an unlocked journal session.');
+});
 
 final class _SessionCollectionsJournalDataSource
     implements CollectionsJournalDataSource {
@@ -274,7 +276,8 @@ class _CollectionsScreenState extends ConsumerState<CollectionsScreen> {
               selected: <JournalEntryType>{_entryType},
               onSelectionChanged: _saving
                   ? null
-                  : (selection) => setState(() => _entryType = selection.single),
+                  : (selection) =>
+                        setState(() => _entryType = selection.single),
             ),
             const SizedBox(height: 8),
             Row(
@@ -286,7 +289,8 @@ class _CollectionsScreenState extends ConsumerState<CollectionsScreen> {
                     enabled: !_saving,
                     minLines: 1,
                     maxLines: 4,
-                    onChanged: (_) => JournalActivityGuard.recordActivity(context),
+                    onChanged: (_) =>
+                        JournalActivityGuard.recordActivity(context),
                     decoration: InputDecoration(
                       hintText: l10n.collectionEntryHint,
                       isDense: true,
@@ -313,10 +317,8 @@ class _CollectionsScreenState extends ConsumerState<CollectionsScreen> {
     final Text marker = Text(
       _entrySymbol(entry),
       style: discarded
-          ? Theme.of(context)
-              .textTheme
-              .titleMedium
-              ?.copyWith(decoration: TextDecoration.lineThrough)
+          ? Theme.of(context).textTheme.titleMedium
+                ?.copyWith(decoration: TextDecoration.lineThrough)
           : Theme.of(context).textTheme.titleMedium,
       textAlign: TextAlign.center,
     );
