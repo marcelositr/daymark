@@ -6,12 +6,11 @@ This is Daymark's canonical living handoff. Read this file and `AGENTS.md` befor
 
 - Phase: pre-alpha, core Bullet Journal chronological flows in active development.
 - Integration branch: `main` only.
-- Current `main` baseline: PR #17 squash-merged as `8a9a74bb5158159818822487e71fcc220a0acbf8`.
-- Current working branch: `feat/task-migration-scheduling`.
-- Current pull request: Draft PR #18, `feat(journal): add deliberate task scheduling`.
-- Current product scope: deliberate Task scheduling (`<`) from Today and Monthly into one of the six real Future Log month buckets.
+- Current `main` baseline: PR #18 squash-merged as `03ef4d187845ff13128f28298336b540b3237e9e`.
+- Active product implementation branch/PR: none. The project is between feature slices after PR #18.
+- Current product scope already includes deliberate Task scheduling (`<`) from Today and Monthly into one of the six real Future Log month buckets.
 - Deliberate migration (`>`) is **not** exposed yet. It remains deferred until Daymark has a method-faithful accessible destination such as the next Monthly Log or a Collection.
-- Current focus: finish the documentation-audited PR #18 head, run exact-head Draft/full CI again, then stop for explicit merge approval.
+- Current focus: choose the next method-faithful product slice from the dependency order below; do not reopen PR #18 work or invent a fake migration destination.
 - Merge policy: never merge without explicit user approval.
 - Runtime targets: Linux and Android.
 - Pinned toolchain: Flutter 3.47.2 / Dart 3.13.2.
@@ -109,7 +108,7 @@ Current foundation includes:
 - Android OS backup/device-transfer exclusion;
 - portable authenticated encrypted backup with integrity validation and recovery protections.
 
-PR #18 changes no database schema, crypto, key lifecycle, or backup format.
+PR #18 changed no database schema, crypto, key lifecycle, or backup format.
 
 ## Merged product history that matters
 
@@ -159,104 +158,43 @@ Six-month Future Log. Squash-merged as `8a9a74bb5158159818822487e71fcc220a0acbf8
 - documentation/AI handoff was broadly hardened in this PR;
 - final local suite had 98 tests, Linux build/manual/full CI green before explicit merge approval.
 
-## Current work: PR #18 deliberate Task scheduling
+### PR #18
 
-### Method-fidelity decision
+Deliberate Task scheduling. Squash-merged as `03ef4d187845ff13128f28298336b540b3237e9e` on 2026-09-03.
 
-The branch initially experimented with exposing `>` from Today into the **current** Monthly Log. That implementation was removed during Draft review.
+Method-fidelity decision:
 
-For Daymark's Bullet Journal method:
+- `<` schedules an open Task into a real Future Log month;
+- `>` remains reserved for deliberate forward migration into a method-faithful non-Future destination such as the next Monthly Log or an appropriate Collection;
+- the discarded experiment Today -> current Monthly as `>` was removed before merge and must not be reintroduced.
 
-- `<` = schedule into a Future Log;
-- `>` = migrate forward into the next Monthly Log or an appropriate Collection.
-
-Current Monthly exposes the current month only, and Collections are not yet an implemented movement destination. Therefore shipping Today -> current Monthly as `>` would institutionalize the wrong method semantics.
-
-**Do not reintroduce that shortcut.** Migration UI remains deferred until a real next-Monthly or Collection destination exists.
-
-### Implemented scope
+Implemented behavior:
 
 - Today open Tasks offer Complete / Schedule / Discard.
 - Monthly open Tasks offer Complete / Schedule / Discard.
 - Schedule opens a six-month selector matching the real Future horizon.
-- The source Task remains in Today/Monthly and becomes `scheduled` (`<`).
+- The source Task remains historical and becomes `scheduled` (`<`).
 - A new destination Task is created in the chosen Future month as `open` (`•`).
 - Scheduling reuses `JournalService.schedule` / `JournalRepository` lineage semantics.
-- `JournalSession.scheduleTaskToFuture` keeps resolution + movement inside the serialized session.
+- `JournalSession.scheduleTaskToFuture` keeps destination resolution + movement inside the serialized unlocked session.
 - `TaskActionService` / `TaskActionRepository` expose reusable persisted-source validation for Task-only actions.
-- Event, Note, or already-terminal Task is rejected **before** creating/resolving the Future destination.
-- No in-place owner move, fake Future container, general calendar, historical-month browser, Collection movement, or bulk reflection engine is part of PR #18.
+- Event, Note, or already-terminal Task is rejected before creating/resolving the Future destination.
+- No in-place owner move, fake Future container, general calendar, historical-month browser, Collection movement, or bulk reflection engine was added.
 
-### Retained-Future refresh fix
+Retained-Future refresh fix:
 
-Manual Linux validation found that scheduling persisted correctly but Future did not display the destination immediately when navigating to it. Lock/restart made it appear.
+- manual Linux testing found that scheduling persisted correctly while the retained Future tab initially displayed stale snapshots until lock/restart;
+- root cause was `StatefulShellRoute.indexedStack` retaining Future, so returning to the tab did not rerun `initState()`;
+- `AppSectionScope` now publishes top-level activation and Future reloads its six snapshots on inactive -> active transition;
+- a widget regression test proves externally changed Future data appears on reactivation without remount, lock, or restart;
+- manual Linux retest confirmed immediate visibility.
 
-Root cause: `StatefulShellRoute.indexedStack` retains Future, so its initial `_snapshotsFuture` did not automatically reload when Today/Monthly changed Future data.
+Validation lineage:
 
-Fix:
-
-- added presentation-level `AppSectionScope` backed by the active section index;
-- `AppShell` publishes section activation while preserving retained branches;
-- `FutureScreen.didChangeDependencies` detects inactive -> Future activation and reloads the six snapshots;
-- regression widget test proves external Future data becomes visible on section reactivation without remount, lock, or restart.
-
-The user manually retested the exact scenario and confirmed immediate Future visibility now works.
-
-### Validation completed before the final documentation audit
-
-Code/documentation head `9bbcecc52777a64a86d001b6f311a062146cd678` was fully validated before the user requested one more all-documentation pass:
-
-- Draft CI #286: green;
-- local `flutter gen-l10n`: exit 0;
-- local formatter: 55 files, 0 changes;
-- local analyzer: no issues;
-- local complete suite: **103 tests passed**;
-- local Linux debug build: passed;
-- local worktree: clean;
-- manual Linux scheduling from Today and Monthly: passed;
-- manual retained-Future refresh regression: passed;
-- full non-Draft CI #287: `quality`, Linux, Android, dependency review, and `merge-gate` all green.
-
-The PR was then deliberately converted back to Draft because the user asked whether **all documentation** had been checked and updated. The answer at that moment was no: only `PROJECT.md` and the PR body had been fully refreshed for #18.
-
-### Final documentation audit before merge
-
-This review is intentionally documentation-only after `9bbcecc...`; no production/test/workflow code should change in this final audit.
-
-Updated because PR #18 materially changes their durable truth or because the audit found stale continuation guidance:
-
-- [x] `README.md`: current product line now includes real Task scheduling; `>` remains deferred rather than vaguely “being introduced”
-- [x] `CHANGELOG.md`: release-facing scheduling behavior and immediate-Future refresh fix
-- [x] `docs/PRODUCT.md`: current scheduling UI boundary, historical source/destination semantics, immediate cross-surface visibility, no current-Monthly migration shortcut
-- [x] `docs/DOMAIN.md`: current Task-only scheduling product flow and method-faithful `>` destination rule
-- [x] `docs/ARCHITECTURE.md`: `AppSectionScope`, retained `indexedStack` lifecycle, serialized `scheduleTaskToFuture` boundary, movement ownership, updated development order
-- [x] `AGENTS.md`: durable retained-navigation/cross-surface refresh guardrail
-- [x] `CONTRIBUTING.md`: regression-test requirement for retained destination activation
-- [x] `docs/WORKFLOW.md`: test/manual-validation rule for retained activation and immediate cross-surface freshness
-- [x] `docs/BACKUP_FORMAT.md`: removed stale “future journal/session application service” wording and explicitly points future backup UI at the already-existing `JournalSession` lifecycle instead of inviting a competing session abstraction; backup format/restore semantics are unchanged
-- [x] `PROJECT.md`: this checkpoint and exact validation lineage
-
-Reviewed for PR #18 impact and intentionally unchanged:
-
-- [x] `SECURITY.md`: no threat-model, cipher, KDF, key-lifecycle, logging, or auto-lock contract change
-- [x] `docs/SECURITY_FOUNDATION.md`: historical security-foundation validation remains accurate; no security implementation boundary change from PR #18
-- [x] `docs/DATA_MODEL.md`: schema v1 already models `scheduled` state, Future ownership, and `migrations` lineage; no schema change
-- [x] `docs/ARGON2_BENCHMARK.md`: no KDF parameter or benchmark change
-
-The `docs/argon2-results/` evidence files are benchmark artifacts, not narrative documentation, and PR #18 does not change them.
-
-### Remaining after this documentation audit
-
-1. identify the exact final documentation-audited PR head;
-2. compare `9bbcecc...` to that head and confirm every later changed path is documentation only;
-3. run final Draft `dev-check` on that exact head;
-4. update PR metadata with the audit result without changing the branch head;
-5. mark PR Ready again;
-6. require exact-final-head non-Draft `quality`, Linux, Android, dependency review, and `merge-gate` green;
-7. ask the user for explicit merge approval;
-8. squash merge only after approval.
-
-The 103-test local suite, Linux build, and manual product evidence belong to code-equivalent head `9bbcecc...`. They remain valid for implementation behavior only if step 2 proves that every later change is documentation-only. Exact-final-head CI still must pass after this audit.
+- code-equivalent head `9bbcecc52777a64a86d001b6f311a062146cd678`: Draft CI #286 green; local `flutter gen-l10n` green; formatter 55 files / 0 changes; analyzer clean; **103 tests passed**; Linux debug build passed; worktree clean; manual Today/Monthly scheduling and retained-Future refresh passed; full CI #287 green;
+- final documentation-audited PR head `d14c0796dca442f13a4fda52256762ced4c32d8a`: every change after `9bbcecc...` was documentation-only; README/changelog/product/domain/architecture/agent/contribution/workflow/backup/checkpoint guidance was reconciled; security/data-model/KDF docs were reviewed and intentionally unchanged where their contracts were unaffected;
+- final full CI #300 on `d14c0796...`: `quality`, Linux build, Android build, dependency review, and `merge-gate` all green;
+- explicit user approval was received; squash merge produced `03ef4d187845ff13128f28298336b540b3237e9e` on `main`.
 
 ## Next work after PR #18
 
