@@ -9,6 +9,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   late DaymarkDatabase database;
+  late JournalService service;
   late FutureLogRepository futureLog;
 
   setUp(() {
@@ -19,7 +20,8 @@ void main() {
       ),
     );
     final JournalRepository repository = JournalRepository(database);
-    futureLog = FutureLogRepository(database, JournalService(repository));
+    service = JournalService(repository);
+    futureLog = FutureLogRepository(database, service);
   });
 
   tearDown(() async {
@@ -98,6 +100,27 @@ void main() {
 
     expect(loadedOctober.entries.single.content, 'October event');
     expect(loadedNovember.entries.single.content, 'November task');
+  });
+
+  test('capture rejects a non-Future Log owner', () async {
+    final String dailyLogId = await service.createLog(
+      kind: JournalLogKind.daily,
+      periodStart: '2026-09-03',
+    );
+
+    expect(
+      futureLog.capture(
+        logId: dailyLogId,
+        type: JournalEntryType.task,
+        content: 'Wrong owner',
+      ),
+      throwsA(isA<JournalInvariantException>()),
+    );
+
+    final row = await database
+        .customSelect('SELECT COUNT(*) AS count FROM entries')
+        .getSingle();
+    expect(row.read<int>('count'), 0);
   });
 
   test('Future periods must start on the first day of a month', () async {
