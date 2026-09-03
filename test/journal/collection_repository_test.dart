@@ -3,7 +3,7 @@ import 'package:daymark/features/journal/application/journal_service.dart';
 import 'package:daymark/features/journal/data/collection_repository.dart';
 import 'package:daymark/features/journal/data/journal_repository.dart';
 import 'package:daymark/features/journal/domain/journal_domain.dart';
-import 'package:drift/drift.dart';
+import 'package:drift/drift.dart' hide isNull;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -84,21 +84,24 @@ void main() {
     expect(placementCount.read<int>('count'), 3);
   });
 
-  test('unknown Collection rejects capture without partial entry write', () async {
-    expect(
-      () => collections.capture(
-        collectionId: '00000000-0000-7000-8000-999999999999',
-        type: JournalEntryType.note,
-        content: 'Must not persist',
-      ),
-      throwsA(isA<JournalNotFoundException>()),
-    );
+  test(
+    'unknown Collection rejects capture without partial entry write',
+    () async {
+      expect(
+        () => collections.capture(
+          collectionId: '00000000-0000-7000-8000-999999999999',
+          type: JournalEntryType.note,
+          content: 'Must not persist',
+        ),
+        throwsA(isA<JournalNotFoundException>()),
+      );
 
-    final count = await database
-        .customSelect('SELECT COUNT(*) AS count FROM entries')
-        .getSingle();
-    expect(count.read<int>('count'), 0);
-  });
+      final count = await database
+          .customSelect('SELECT COUNT(*) AS count FROM entries')
+          .getSingle();
+      expect(count.read<int>('count'), 0);
+    },
+  );
 }
 
 final class _IdSequence {
