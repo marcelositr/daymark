@@ -3,7 +3,7 @@ import 'package:daymark/features/journal/application/journal_service.dart';
 import 'package:daymark/features/journal/data/journal_repository.dart';
 import 'package:daymark/features/journal/data/monthly_log_repository.dart';
 import 'package:daymark/features/journal/domain/journal_domain.dart';
-import 'package:drift/drift.dart' hide isNull;
+import 'package:drift/drift.dart' hide isNotNull, isNull;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -42,6 +42,36 @@ void main() {
         )
         .getSingle();
     expect(row.read<int>('count'), 1);
+  });
+
+  test('find does not create a missing historical Monthly Log', () async {
+    final MonthlyLogSnapshot? missing = await monthlyLog.find('2026-08-01');
+
+    expect(missing, isNull);
+    final row = await database
+        .customSelect(
+          "SELECT COUNT(*) AS count FROM logs WHERE kind = 'monthly'",
+        )
+        .getSingle();
+    expect(row.read<int>('count'), 0);
+  });
+
+  test('find loads an existing historical Monthly Log', () async {
+    final MonthlyLogSnapshot created = await monthlyLog.loadOrCreate(
+      '2026-08-01',
+    );
+    await monthlyLog.captureCalendarEvent(
+      logId: created.logId,
+      calendarDate: '2026-08-12',
+      content: 'Historic appointment',
+    );
+
+    final MonthlyLogSnapshot? found = await monthlyLog.find('2026-08-01');
+
+    expect(found, isNotNull);
+    expect(found!.logId, created.logId);
+    expect(found.calendarEntries.single.content, 'Historic appointment');
+    expect(found.calendarEntries.single.calendarDate, '2026-08-12');
   });
 
   test('Calendar events preserve their date and stay out of Tasks', () async {

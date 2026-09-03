@@ -6,17 +6,21 @@ This is Daymark's canonical living handoff. Read this file and `AGENTS.md` befor
 
 - Phase: pre-alpha, core Bullet Journal flows in active development.
 - Integration branch: `main` only.
-- Current `main` head before the active feature PR: `23fbc3e0b8d3e62f8db8ddc1ad403835e8fc5eee` (`feat(journal): reference entries in collections (#22)`).
-- Current merged product baseline: PR #22, deliberate Collection references, squash-merged as `23fbc3e0b8d3e62f8db8ddc1ad403835e8fc5eee`.
-- Active product implementation branch/PR: `feat/basic-index` / PR #23, `feat(journal): add basic index`.
-- PR #23 is Draft. It implements a deliberate persisted Index of existing Logs and Collections, separate from Search and without content duplication or automatic indexing.
-- Current merged product scope includes Today, current Monthly, six-month Future, basic Collections, deliberate Task terminal actions, scheduling (`<`), forward migration (`>`) into Collections, and deliberate Collection references.
-- Current focus: finish PR #23 exact-head validation, perform manual Linux desktop/compact-navigation and Index persistence validation, then run full Ready CI before explicit merge approval.
+- Current `main` head before the active feature PR: `1a05c1cd71c2f442a538d21b2263ed39ed09efbe` (`feat(journal): add basic index (#23)`).
+- Current merged product baseline: PR #23, basic deliberate Index, squash-merged as `1a05c1cd71c2f442a538d21b2263ed39ed09efbe`.
+- Active branch/PR: `feat/monthly-history` / PR #24, `feat(journal): browse monthly history`.
+- PR #24 is Draft while final documentation and exact-head validation are completed.
+- Current merged product scope includes Today, current Monthly, six-month Future, basic Collections, deliberate Task terminal actions, scheduling (`<`), forward migration (`>`) into Collections, deliberate Collection references, and a basic persisted Index.
+- PR #24 adds read-only historical Monthly browsing without creating empty historical Logs merely by navigating.
+- Manual Linux validation of PR #24 passed on code head `a5d22f3602332f66db40b9a8c0e85c52282c4a88`.
+- Draft CI #391 on that same code head is green, including localization generation, Drift generation/snapshot checks, formatter, and analyzer.
+- Documentation-only commits follow that validated code head. The final documented head must receive exact-head Draft CI before Ready.
 - Merge policy: never merge without explicit user approval.
 - Runtime targets: Linux and Android.
 - Pinned toolchain: Flutter 3.47.2 / Dart 3.13.2.
 - Production Argon2id baseline: 19 MiB / 2 iterations / p=1 / 32-byte output.
 - Last updated: 2026-09-03 (America/Sao_Paulo).
+
 ## Product doctrine
 
 Daymark is a faithful digital Bullet Journal, not a generic productivity suite.
@@ -39,7 +43,7 @@ Daymark is a faithful digital Bullet Journal, not a generic productivity suite.
 - Read and obey `AGENTS.md`, `docs/WORKFLOW.md`, architecture/domain/security docs before changing their areas.
 - Keep `PROJECT.md` current. Keep `CHANGELOG.md` release-facing rather than using it as scratchpad.
 - Run `flutter gen-l10n` after ARB changes and before analyzer/tests that compile presentation code.
-- Treat formatter output from the pinned Dart version as authoritative. When applying formatter output through an API, preserve the final newline and revalidate the exact blob/head.
+- Treat formatter output from the pinned Dart version as authoritative.
 - Treat CI evidence as SHA-specific. A green superseded run does not validate a newer head.
 - Distinguish mechanical CI failures and test-harness defects from production defects before changing behavior.
 - Never weaken security, persistence invariants, tests, or CI to make a check green.
@@ -48,28 +52,24 @@ Daymark is a faithful digital Bullet Journal, not a generic productivity suite.
 - Do not use the user as a routine CI/formatter runner when repository tooling can perform the work. Ask for local execution only when local hardware/product behavior genuinely matters.
 - Do not invent fake product destinations or temporary domain concepts merely to unblock UI.
 - Do not reimplement repository/service semantics inside widgets or providers.
+- Repository/API/CI work is assistant-owned. User interaction is reserved for genuine manual product/platform validation or explicit product/merge decisions.
 
 ## Critical UI lifecycle guardrail
 
-The router uses `StatefulShellRoute.indexedStack`. Top-level sections are intentionally retained while another tab is active.
+The router uses `StatefulShellRoute.indexedStack`. Top-level sections are intentionally retained while another section is active.
 
 Therefore:
 
-- **do not assume `initState()` runs again when a user returns to a retained tab**;
+- do not assume `initState()` runs again when a user returns to a retained tab;
 - a screen that displays data which can be changed from another retained section must refresh that stale snapshot when its section becomes active again;
 - do not fix this by destroying every tab, polling the database, or adding an unrelated global cache;
-- `AppSectionScope` is the current presentation-level activation signal for retained top-level sections;
-- the Future screen uses section activation to reload its six snapshots after Today/Monthly scheduling changes Future data.
+- `AppSectionScope` is the current presentation-level activation signal for retained top-level sections.
 
-This guardrail exists because PR #18 initially persisted scheduled Tasks correctly while Future displayed stale in-memory data until lock/restart. The user found the bug manually. It now has a regression test.
+This rule originated from PR #18, where Future persistence was correct but the retained Future screen stayed stale after scheduling. PR #21/22 applied the same rule to Collections after migration/reference writes.
 
-PR #21 introduces the first cross-surface write into Collections. `CollectionsScreen` now reloads its list and selected Collection snapshot on inactive -> active transition through `AppSectionScope`, and a widget regression test proves a migrated Task appears after reactivation without lock, restart, or remount. Future Collection references must follow the same lifecycle rule.
+## Stable domain and persistence baseline
 
-## Stable architecture and security baseline
-
-### Domain / persistence
-
-Schema v1 already contains the structures needed by current work:
+Schema v1 contains:
 
 - `journal_metadata`
 - `logs`
@@ -93,13 +93,15 @@ Durable semantic rules:
 - A Collection is a simple owning content container, not a configurable database/workspace.
 - A Collection reference is distinct from Collection ownership and does not move the Entry.
 - Scheduling targets a Future Log.
-- Deliberate movement creates a **new destination Entry** plus lineage; do not move the source placement in place.
-- The historical source remains visible with terminal state; a scheduled destination Task begins open.
+- Deliberate movement creates a new destination Entry plus lineage; do not move the source placement in place.
+- The historical source remains visible with terminal state; a movement destination Task begins open.
 - One source Entry has at most one direct outgoing movement lineage.
 - Cross-table semantic writes stay transactional through `JournalRepository` / `JournalService`.
 - `JournalSession` serializes unlocked journal operations and owns encrypted persistence/key lifetime.
+- Indexing catalogs an existing Log or Collection. It does not duplicate Entry content or create the target.
+- Historical Monthly lookup is non-mutating. Viewing a missing past month must not create a Log or make it an Index candidate.
 
-### Security / backup
+## Security / backup baseline
 
 Do not casually modify these contracts. Authoritative details live in `SECURITY.md`, `docs/SECURITY_FOUNDATION.md`, `docs/BACKUP_FORMAT.md`, and `docs/ARCHITECTURE.md`.
 
@@ -113,13 +115,9 @@ Current foundation includes:
 - Android OS backup/device-transfer exclusion;
 - portable authenticated encrypted backup with integrity validation and recovery protections.
 
-PR #20 and PR #21 change no database schema, crypto, key lifecycle, backup format, dependency set, or plaintext boundary. Collection reads and movement remain inside the already encrypted journal database and the serialized unlocked session.
+PRs #20 through #24 do not change database schema, crypto, key lifecycle, backup format, dependency set, or platform contracts.
 
 ## Merged product history that matters
-
-### PR #11
-
-Structurally unsound unlock/Daily attempt. Closed without merge and superseded. Do not revive it as a base.
 
 ### PR #13
 
@@ -145,187 +143,101 @@ Visual states established:
 
 Current-month Monthly Log. Squash-merged as `c93b78380f0efdd545d533db49b30ab2f907426b`.
 
-- Calendar: every day + dated Event capture.
-- Tasks: open monthly Tasks + complete/discard.
-- current month only; historical browsing deferred.
-- final local suite had 88 tests; Linux/manual/full CI green before explicit merge approval.
-
 ### PR #17
 
 Six-month Future Log. Squash-merged as `8a9a74bb5158159818822487e71fcc220a0acbf8`.
 
-- six Future buckets beginning next month;
-- current month excluded;
-- Task/Event/Note Rapid Logging;
-- Future Task complete/discard;
-- horizon rolls forward with month change;
-- no schema changes;
-- documentation/AI handoff was broadly hardened in this PR;
-- final local suite had 98 tests, Linux build/manual/full CI green before explicit merge approval.
-
 ### PR #18
 
-Deliberate Task scheduling. Squash-merged as `03ef4d187845ff13128f28298336b540b3237e9e` on 2026-09-03.
+Deliberate scheduling (`<`) from Today/Monthly into real Future month buckets. Squash-merged as `03ef4d187845ff13128f28298336b540b3237e9e`.
 
-Method-fidelity decision:
+Important decision: Today -> current Monthly is not a valid shortcut for `>`. Scheduling uses Future; normal forward migration needs a valid non-Future destination.
 
-- `<` schedules an open Task into a real Future Log month;
-- `>` remains reserved for deliberate forward migration into a method-faithful non-Future destination such as the next Monthly Log or an appropriate Collection;
-- the discarded experiment Today -> current Monthly as `>` was removed before merge and must not be reintroduced.
+### PR #20
+
+Basic Collections. Squash-merged as `08199af85df7d10ba36b226d97b390da3acffbb9`.
+
+### PR #21
+
+Deliberate Task migration (`>`) from Today/Monthly into an explicitly selected existing Collection. Squash-merged as `89c1907d17d0507fd84c403c7343afc2ccbbd8da`.
+
+### PR #22
+
+Deliberate read-only Collection references from chronological entries. Squash-merged as `23fbc3e0b8d3e62f8db8ddc1ad403835e8fc5eee`.
+
+Validation: manual Linux passed; Draft CI #349 green; full Ready CI #350 green; post-merge main CI #351 green.
+
+### PR #23
+
+Basic deliberate Index of existing Logs and Collections. Squash-merged as `1a05c1cd71c2f442a538d21b2263ed39ed09efbe`.
 
 Implemented behavior:
 
-- Today open Tasks offer Complete / Schedule / Discard.
-- Monthly open Tasks offer Complete / Schedule / Discard.
-- Schedule opens a six-month selector matching the real Future horizon.
-- The source Task remains historical and becomes `scheduled` (`<`).
-- A new destination Task is created in the chosen Future month as `open` (`•`).
-- Scheduling reuses `JournalService.schedule` / `JournalRepository` lineage semantics.
-- `JournalSession.scheduleTaskToFuture` keeps destination resolution + movement inside the serialized unlocked session.
-- `TaskActionService` / `TaskActionRepository` expose reusable persisted-source validation for Task-only actions.
-- Event, Note, or already-terminal Task is rejected before creating/resolving the Future destination.
-- No in-place owner move, fake Future container, general calendar, historical-month browser, Collection movement, or bulk reflection engine was added.
+- persisted Index order follows deliberate add order;
+- target must already exist;
+- duplicate targets are rejected;
+- Index does not duplicate content or alter ownership/Task state;
+- compact navigation exposes Search/Index through More; desktop exposes both directly;
+- Index remains distinct from Search.
 
-Retained-Future refresh fix:
+Validation/merge:
 
-- manual Linux testing found that scheduling persisted correctly while Future displayed stale snapshots until lock/restart;
-- root cause was `StatefulShellRoute.indexedStack` retaining Future, so returning to the tab did not rerun `initState()`;
-- `AppSectionScope` now publishes top-level activation and Future reloads its six snapshots on inactive -> active transition;
-- a widget regression test proves externally changed Future data appears on reactivation without remount, lock, or restart;
-- manual Linux retest confirmed immediate visibility.
-
-Validation lineage:
-
-- code-equivalent head `9bbcecc52777a64a86d001b6f311a062146cd678`: Draft CI #286 green; local `flutter gen-l10n` green; formatter 55 files / 0 changes; analyzer clean; **103 tests passed**; Linux debug build passed; worktree clean; manual Today/Monthly scheduling and retained-Future refresh passed; full CI #287 green;
-- final documentation-audited PR head `d14c0796dca442f13a4fda52256762ced4c32d8a`: every change after `9bbcecc...` was documentation-only; README/changelog/product/domain/architecture/agent/contribution/workflow/backup/checkpoint guidance was reconciled; security/data-model/KDF docs were reviewed and intentionally unchanged where their contracts were unaffected;
-- final full CI #300 on `d14c0796...`: `quality`, Linux build, Android build, dependency review, and `merge-gate` all green;
-- explicit user approval was received; squash merge produced `03ef4d187845ff13128f28298336b540b3237e9e` on `main`.
-
-## Merged PR #20: basic Collections
-
-Branch: `feat/collections`.
-
-PR: #20, `feat(journal): add basic collections`.
-
-Scope implemented:
-
-- replaces the `/collections` placeholder with a minimal real Collections surface;
-- adds a focused `CollectionRepository` for listing/loading Collections while keeping semantic writes in `JournalService`;
-- exposes list/create/load/capture through the serialized `JournalSession`;
-- lists and creates Collections;
-- opens a Collection and Rapid Logs Task, Event, and Note entries owned by it;
-- open Collection Tasks support Complete and Discard only;
-- adds English, `pt`, and `pt_BR` localization resources for the new UI;
-- repository tests cover ownership, ordering, and no-partial-write failure behavior;
-- widget tests cover create/open/capture and Task complete/discard;
-- session coverage proves Collection entries and Task state persist across lock/unlock;
-- no schema, crypto, backup, dependency, or platform-contract change.
-
-Explicit non-goals remain:
-
-- no forward migration (`>`);
-- no scheduling (`<`) from Collections in this slice;
-- no Collection-reference UI from Today/Monthly;
-- no Index;
-- no reorder/drag-and-drop;
-- no tags/properties/Kanban/planner workspace behavior;
-- no historical/future Monthly browser;
-- no schema v2.
-
-Validation so far:
-
-- CI #308 exposed a mechanical formatter failure in three new files before analyzer ran; it was not a production defect;
-- the pinned Dart 3.13.2 formatter output was recovered exactly and applied, rather than changing behavior to satisfy CI;
-- the first analyzer pass then exposed a test-only `isNull` import collision between Drift and `flutter_test`; the test import was narrowed with `hide isNull`;
-- user-local validation of the resulting code-equivalent tree (before the later session-test-only commit): formatter **59 files / 0 changes**, analyzer **No issues found**, **108 tests passed**, Linux debug build passed;
-- a temporary formatter-probe workflow was used only to recover exact formatter bytes through GitHub, then removed completely before Ready;
-- Draft CI #315 on head `703cc3f61f900d2699d370141c834d84a0785d96`: `dev-check` green, including localization generation, Drift generation/snapshot checks, formatter, and analyzer;
-- Draft CI #317 on head `d44a1d37febb5b84ed1fc9ffa63ee6da693e2ed4`: `dev-check` green after the architecture/handoff reconciliation;
-- full Ready CI #318 on that head: `quality` including the full test suite, Linux build, Android build, dependency review, and `merge-gate` all green;
-- final Ready CI #319 on exact final PR head `27f4f91ebebc36c94696d171b1e96be37fec8b5a`: all merge-tier jobs green;
-- manual Linux product validation passed create/open/capture, Task complete/discard, lock/unlock, restart persistence, and no false error snackbar;
-- explicit user approval was received and PR #20 squash-merged as `08199af85df7d10ba36b226d97b390da3acffbb9`;
-- post-merge main CI #320: quality, Linux, and Android green.
-
-## Merged PR #21: deliberate Task migration to Collections
-
-Branch: `feat/task-migration-collections`.
-
-PR: #21, `feat(journal): migrate tasks to collections`.
-
-Scope merged:
-
-- Today and Monthly open Tasks gain a deliberate **Migrate** action;
-- the user chooses one existing Collection; migration never auto-selects or creates a destination;
-- `JournalSession.migrateTaskToCollection(...)` validates the source as an open Task before delegating to existing `JournalService.migrate` / repository lineage semantics;
-- the source stays historical as `migrated` (`>`);
-- the chosen Collection receives a fresh open Task with its own identity and lineage;
-- Collections refreshes on retained-tab reactivation after a migration from Today/Monthly;
-- English, `pt`, and `pt_BR` migration labels are localized;
-- session coverage proves source/destination state persists across lock/unlock;
-- widget coverage proves Today/Monthly destination selection and retained-Collections refresh;
-- no schema, crypto, backup, dependency, or platform-contract change.
-
-Validation and merge:
-
-- code-equivalent implementation head `57b171b3d3c1fc223dbdf13b5cd9c55a5f5efdc1` was produced by the pinned Flutter 3.47.2 / Dart 3.13.2 runner;
-- formatter applied to 64 files with 6 changes; analyzer reported **No issues found**; **113 tests passed**;
-- manual Linux migration/persistence validation passed;
-- Draft CI #333 green;
-- full Ready CI #334: quality/test suite, Linux build, Android build, dependency review, and merge-gate all green;
-- explicit user approval was received;
-- PR #21 squash-merged as `89c1907d17d0507fd84c403c7343afc2ccbbd8da`;
-- post-merge main CI #335 green.
-
-## PR #22 final: deliberate Collection references
-
-Validation and merge:
-
-- manual Linux cross-surface/reference persistence validation passed;
-- exact-head Draft CI #349 green;
-- full Ready CI #350 green: quality/full tests, Linux, Android, dependency review, and merge-gate;
+- manual Linux desktop/compact navigation and persistence validation passed;
+- final full Ready CI #382 green on the final content-equivalent head;
 - explicit user approval received;
-- PR #22 squash-merged as `23fbc3e0b8d3e62f8db8ddc1ad403835e8fc5eee`;
-- post-merge main CI #351 green for quality/tests, Linux, and Android.
+- post-merge main CI #383 green.
 
-## Active PR #23: basic Index
+## Active PR #24: read-only Monthly history
 
-Branch: `feat/basic-index`.
+Branch: `feat/monthly-history`.
 
-PR: #23, `feat(journal): add basic index`.
+PR: #24, `feat(journal): browse monthly history`.
 
 Scope implemented:
 
-- `IndexRepository` reads and transactionally appends existing Logs or Collections using the schema-v1 `index_items` table;
-- one deliberate global Index order is persisted through monotonically allocated ordinals;
-- duplicate or missing Log/Collection targets are rejected without partial Index rows;
-- `JournalIndexSession` keeps Index list/candidate/add operations serialized inside the unlocked journal lifecycle;
-- the Index screen lists indexed structures and lets the user deliberately add only existing structures not already indexed;
-- expanded navigation exposes Index directly; compact navigation keeps four core destinations plus More, with Search and Index inside More;
-- English, `pt`, and `pt_BR` labels are aligned;
-- repository, widget, and encrypted session persistence tests cover the slice;
+- previous/next-month controls live inside the Monthly surface;
+- navigation may go backward through historical months but never forward past the current month;
+- current month remains fully interactive;
+- historical months are read-only and hide capture plus Task/entry-action controls;
+- missing historical months render empty without creating a persisted Monthly Log;
+- historical lookup uses a focused non-mutating repository/session path;
+- returning to the current month restores normal interactive behavior;
+- current-month rollover tracking is suspended while the user is intentionally viewing history;
+- English, `pt`, and `pt_BR` labels are included;
+- repository/widget/encrypted-session tests cover history lookup, UI behavior, lock/unlock persistence, and the no-phantom-Index invariant;
 - no schema, crypto, backup, dependency, or platform-contract change.
 
 Explicit non-goals:
 
-- no automatic indexing;
-- no Search implementation or Search/Index conflation;
-- no Index reordering or removal yet;
-- no direct navigation from an Index row to an arbitrary historical Log until real historical routes exist;
-- no schema v2;
-- no signifier, reflection, export, or backup UI work.
+- no editing or Task actions in historical months;
+- no reflection workflow;
+- no future Monthly creation;
+- no direct Index/Search route into arbitrary Monthly history yet;
+- no Search implementation;
+- no schema v2.
 
-Validation so far:
+Validation lineage so far:
 
-- baseline `main` post-merge CI #351 green;
-- initial Draft CI #360 reached formatter after lockfile/l10n/Drift/snapshot checks and failed only because four new Dart files required pinned Dart formatting;
-- pinned Dart 3.13.2 formatter output was applied by a temporary formatter workflow, which was removed immediately afterward;
-- finalizer validation ran localization/Drift generation, formatter, analyzer, and the complete test suite successfully before publishing this handoff update;
-- exact-head standard Draft CI remains required after this documentation commit, followed by manual Linux validation.
+- initial Draft CI #384 reached formatter and exposed two formatter-only files;
+- pinned Dart 3.13.2 formatter output was applied by a temporary workflow and that workflow removed immediately;
+- Draft CI #388 then exposed three analyzer-only test maintenance issues: two existing Monthly data-source fakes needed the new `find()` method and a Drift matcher import needed `isNotNull` hidden;
+- those test-only issues were corrected without changing product semantics;
+- code head `a5d22f3602332f66db40b9a8c0e85c52282c4a88`: Draft CI #391 green;
+- manual Linux validation on that code head passed historical navigation, read-only controls, no future-Monthly navigation, return to current month, lock/unlock, and normal current-month behavior;
+- README, PRODUCT, CHANGELOG, and this checkpoint are documentation-only changes after the manually validated code head;
+- final documented head still requires exact-head Draft CI, then Ready/full CI before any merge decision.
 
-## Next work after PR #23
+## Next work after PR #24
 
-Keep the next slice separate from the Index. Leading method-native candidates are Search or historical/next-Monthly accessibility. Do not bundle Search into Index merely because both support retrieval. Backup UI, exports, OS lock hooks, accessibility/keyboard refinements, and packaging remain later focused slices.
+Keep the next slice separate from Monthly history. Strong candidates are:
+
+1. Search as a real query-driven retrieval surface, still distinct from Index;
+2. real direct navigation from Index rows to structures now that historical Monthly can be represented without mutating persistence;
+3. focused reflection behavior, only after its method semantics are deliberately specified.
+
+Do not bundle Search into Index. Do not add generic planner/history abstractions around Monthly.
+
+Backup UI, exports, OS lock hooks, accessibility/keyboard refinements, and packaging remain later focused slices.
 
 ## CI and handoff traps to remember
 
@@ -334,5 +246,6 @@ Keep the next slice separate from the Index. Leading method-native candidates ar
 - A red formatter after semantic work is not evidence of a production defect. Apply the pinned formatter output exactly.
 - GitHub contents writes can accidentally lose a trailing newline; verify final formatter result/blob rather than repeatedly editing by eye.
 - A temporary workflow probe must not remain in the final PR diff.
+- Commits created by `github-actions[bot]` may produce `action_required` instead of a normal CI run; generate a useful normal commit for exact-head evidence rather than treating that status as a code failure.
 - `StatefulShellRoute.indexedStack` retains screens; section navigation is not a remount lifecycle.
-- Manual product tests remain important for cross-screen freshness, persistence behavior, and false-success/false-error UI that isolated repository tests cannot expose.
+- Manual product tests remain important for lifecycle, persistence behavior, compact/desktop navigation, and false-success/false-error UI that isolated repository tests cannot expose.

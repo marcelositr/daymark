@@ -48,6 +48,15 @@ final class MonthlyLogRepository {
   final DaymarkDatabase _database;
   final JournalService _journalService;
 
+  Future<MonthlyLogSnapshot?> find(String periodStart) async {
+    validateJournalMonthStart(periodStart);
+    final String? logId = await _findMonthlyLogId(periodStart);
+    if (logId == null) {
+      return null;
+    }
+    return _loadSnapshot(logId: logId, periodStart: periodStart);
+  }
+
   Future<MonthlyLogSnapshot> loadOrCreate(String periodStart) async {
     validateJournalMonthStart(periodStart);
 
@@ -66,19 +75,7 @@ final class MonthlyLogRepository {
       }
     }
 
-    final List<MonthlyLogEntry> entries = await _loadEntries(logId);
-    return MonthlyLogSnapshot(
-      logId: logId,
-      periodStart: periodStart,
-      calendarEntries: <MonthlyLogEntry>[
-        for (final MonthlyLogEntry entry in entries)
-          if (entry.section == JournalMonthlySection.calendar) entry,
-      ],
-      taskEntries: <MonthlyLogEntry>[
-        for (final MonthlyLogEntry entry in entries)
-          if (entry.section == JournalMonthlySection.tasks) entry,
-      ],
-    );
+    return _loadSnapshot(logId: logId, periodStart: periodStart);
   }
 
   Future<void> captureCalendarEvent({
@@ -105,6 +102,25 @@ final class MonthlyLogRepository {
         logId: logId,
         monthlySection: JournalMonthlySection.tasks,
       ),
+    );
+  }
+
+  Future<MonthlyLogSnapshot> _loadSnapshot({
+    required String logId,
+    required String periodStart,
+  }) async {
+    final List<MonthlyLogEntry> entries = await _loadEntries(logId);
+    return MonthlyLogSnapshot(
+      logId: logId,
+      periodStart: periodStart,
+      calendarEntries: <MonthlyLogEntry>[
+        for (final MonthlyLogEntry entry in entries)
+          if (entry.section == JournalMonthlySection.calendar) entry,
+      ],
+      taskEntries: <MonthlyLogEntry>[
+        for (final MonthlyLogEntry entry in entries)
+          if (entry.section == JournalMonthlySection.tasks) entry,
+      ],
     );
   }
 
