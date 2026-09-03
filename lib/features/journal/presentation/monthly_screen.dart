@@ -19,10 +19,7 @@ abstract interface class MonthlyJournalDataSource {
     required String content,
   });
 
-  Future<void> captureTask({
-    required String logId,
-    required String content,
-  });
+  Future<void> captureTask({required String logId, required String content});
 
   Future<void> completeTask({required String entryId});
 
@@ -40,7 +37,8 @@ final Provider<MonthlyJournalDataSource> monthlyJournalDataSourceProvider =
       throw StateError('Monthly requires an unlocked journal session.');
     });
 
-final class _SessionMonthlyJournalDataSource implements MonthlyJournalDataSource {
+final class _SessionMonthlyJournalDataSource
+    implements MonthlyJournalDataSource {
   const _SessionMonthlyJournalDataSource(this._session);
 
   final JournalSession _session;
@@ -64,10 +62,7 @@ final class _SessionMonthlyJournalDataSource implements MonthlyJournalDataSource
   }
 
   @override
-  Future<void> captureTask({
-    required String logId,
-    required String content,
-  }) {
+  Future<void> captureTask({required String logId, required String content}) {
     return _session.captureMonthlyTask(logId: logId, content: content);
   }
 
