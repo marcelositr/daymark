@@ -1,3 +1,4 @@
+# Temporary pinned-toolchain formatter probe. Removes itself after success.
 name: PR 24 formatter
 
 on:
