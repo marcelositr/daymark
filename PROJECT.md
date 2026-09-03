@@ -11,6 +11,7 @@ This is Daymark's canonical living handoff. Read this file and `AGENTS.md` befor
 - Current pull request: Draft PR #18, `feat(journal): add deliberate task scheduling`.
 - Current product scope: deliberate Task scheduling (`<`) from Today and Monthly into one of the six real Future Log month buckets.
 - Deliberate migration (`>`) is **not** exposed yet. It remains deferred until Daymark has a method-faithful accessible destination such as the next Monthly Log or a Collection.
+- Current focus: finish the documentation-audited PR #18 head, run exact-head Draft/full CI again, then stop for explicit merge approval.
 - Merge policy: never merge without explicit user approval.
 - Runtime targets: Linux and Android.
 - Pinned toolchain: Flutter 3.47.2 / Dart 3.13.2.
@@ -201,34 +202,61 @@ Fix:
 
 The user manually retested the exact scenario and confirmed immediate Future visibility now works.
 
-### Validation already completed on implementation code
+### Validation completed before the final documentation audit
 
-Implementation/manual baseline before this documentation checkpoint: `2090e47b90387cbbd3e485f6aede68f3d6cf4f2b`.
+Code/documentation head `9bbcecc52777a64a86d001b6f311a062146cd678` was fully validated before the user requested one more all-documentation pass:
 
-- focused analyzer: no issues;
-- focused scheduling tests before the refresh fix: 11 tests passed;
-- manual Linux: Today scheduling, Monthly scheduling, source `<`, destination `•`, correct Future month, lock/unlock persistence, no false error snackbar;
-- manual Linux after refresh fix: destination appears immediately on entering Future, without lock/restart;
-- regression test added for retained Future snapshot refresh;
-- formatter output was taken from pinned Dart 3.13.2; final formatted blobs include the required trailing newline;
-- temporary formatter probe was removed before finalization.
+- Draft CI #286: green;
+- local `flutter gen-l10n`: exit 0;
+- local formatter: 55 files, 0 changes;
+- local analyzer: no issues;
+- local complete suite: **103 tests passed**;
+- local Linux debug build: passed;
+- local worktree: clean;
+- manual Linux scheduling from Today and Monthly: passed;
+- manual retained-Future refresh regression: passed;
+- full non-Draft CI #287: `quality`, Linux, Android, dependency review, and `merge-gate` all green.
 
-Because this documentation commit creates a newer PR head, final CI/local evidence must be collected on the **exact final documented SHA** before Ready.
+The PR was then deliberately converted back to Draft because the user asked whether **all documentation** had been checked and updated. The answer at that moment was no: only `PROJECT.md` and the PR body had been fully refreshed for #18.
 
-### Remaining before PR #18 can become Ready
+### Final documentation audit before merge
 
-1. final Draft `dev-check` green on the documentation-hardened head;
-2. local `flutter gen-l10n` on that same head;
-3. formatter with zero changes on that same head;
-4. analyzer with no issues;
-5. complete local Flutter test suite;
-6. Linux debug build;
-7. clean worktree;
-8. record final evidence in PR metadata without changing the validated head;
-9. mark PR Ready;
-10. require non-Draft `quality`, Linux, Android, dependency review, and `merge-gate` green;
-11. ask the user for explicit merge approval;
-12. squash merge only after approval.
+This review is intentionally documentation-only after `9bbcecc...`; no production/test/workflow code should change in this final audit.
+
+Updated because PR #18 materially changes their durable truth:
+
+- [x] `README.md`: current product line now includes real Task scheduling; `>` remains deferred rather than vaguely “being introduced”
+- [x] `CHANGELOG.md`: release-facing scheduling behavior and immediate-Future refresh fix
+- [x] `docs/PRODUCT.md`: current scheduling UI boundary, historical source/destination semantics, immediate cross-surface visibility, no current-Monthly migration shortcut
+- [x] `docs/DOMAIN.md`: current Task-only scheduling product flow and method-faithful `>` destination rule
+- [x] `docs/ARCHITECTURE.md`: `AppSectionScope`, retained `indexedStack` lifecycle, serialized `scheduleTaskToFuture` boundary, movement ownership, updated development order
+- [x] `AGENTS.md`: durable retained-navigation/cross-surface refresh guardrail
+- [x] `CONTRIBUTING.md`: regression-test requirement for retained destination activation
+- [x] `docs/WORKFLOW.md`: test/manual-validation rule for retained activation and immediate cross-surface freshness
+- [x] `PROJECT.md`: this checkpoint and exact validation lineage
+
+Reviewed for PR #18 impact and intentionally unchanged:
+
+- [x] `SECURITY.md`: no threat-model, cipher, KDF, key-lifecycle, logging, or auto-lock contract change
+- [x] `docs/SECURITY_FOUNDATION.md`: no security implementation boundary change
+- [x] `docs/BACKUP_FORMAT.md`: no backup format or restore behavior change
+- [x] `docs/DATA_MODEL.md`: schema v1 already models `scheduled` state, Future ownership, and `migrations` lineage; no schema change
+- [x] `docs/ARGON2_BENCHMARK.md`: no KDF parameter or benchmark change
+
+The `docs/argon2-results/` evidence files are benchmark artifacts, not narrative documentation, and PR #18 does not change them.
+
+### Remaining after this documentation audit
+
+1. identify the exact final documentation-audited PR head;
+2. compare `9bbcecc...` to that head and confirm every later changed path is documentation only;
+3. run final Draft `dev-check` on that exact head;
+4. update PR metadata with the audit result without changing the branch head;
+5. mark PR Ready again;
+6. require exact-final-head non-Draft `quality`, Linux, Android, dependency review, and `merge-gate` green;
+7. ask the user for explicit merge approval;
+8. squash merge only after approval.
+
+The 103-test local suite, Linux build, and manual product evidence belong to code-equivalent head `9bbcecc...`. They remain valid for implementation behavior only if step 2 proves that every later change is documentation-only. Exact-final-head CI still must pass after this audit.
 
 ## Next work after PR #18
 
