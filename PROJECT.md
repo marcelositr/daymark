@@ -6,13 +6,12 @@ This is Daymark's canonical living handoff. Read this file and `AGENTS.md` befor
 
 - Phase: pre-alpha, core Bullet Journal flows in active development.
 - Integration branch: `main` only.
-- Current `main` head before the active feature PR: `08199af85df7d10ba36b226d97b390da3acffbb9` (`feat(journal): add basic collections (#20)`).
-- Current merged product baseline: PR #20, basic Collections, squash-merged as `08199af85df7d10ba36b226d97b390da3acffbb9`.
-- Active product implementation branch/PR: `feat/task-migration-collections` / PR #21, `feat(journal): migrate tasks to collections`.
-- PR #21 is Draft. Its implementation exposes deliberate forward migration (`>`) for open Tasks from Today and Monthly Tasks into an existing Collection, preserving source history and lineage.
-- Current merged product scope includes deliberate Task scheduling (`<`) from Today and Monthly into one of the six real Future Log month buckets plus the basic Collections surface from PR #20.
-- PR #21 adds the first deliberately exposed non-Future migration destination without inventing next-Monthly browsing, automatic rollover, or planner abstractions.
-- Current focus: finish PR #21 documentation/exact-head CI, perform manual cross-surface migration/persistence validation, then run full Ready CI before explicit merge approval.
+- Current `main` head before the active feature PR: `89c1907d17d0507fd84c403c7343afc2ccbbd8da` (`feat(journal): migrate tasks to collections (#21)`).
+- Current merged product baseline: PR #21, deliberate Task migration to Collections, squash-merged as `89c1907d17d0507fd84c403c7343afc2ccbbd8da`.
+- Active product implementation branch/PR: `feat/collection-references` / PR #22, `feat(journal): reference entries in collections`.
+- PR #22 is Draft. Its implementation exposes deliberate references from Today, Monthly, and Future entries into an existing Collection without moving the source, changing Entry identity, or changing Task state.
+- Current merged product scope includes Today, current Monthly, six-month Future, basic Collections, deliberate Task terminal actions, scheduling (`<`), and forward migration (`>`) into existing Collections.
+- Current focus: finish PR #22 documentation and exact-head Draft CI, perform manual Linux cross-surface reference/persistence validation, then run full Ready CI before explicit merge approval.
 - Merge policy: never merge without explicit user approval.
 - Runtime targets: Linux and Android.
 - Pinned toolchain: Flutter 3.47.2 / Dart 3.13.2.
@@ -249,13 +248,13 @@ Validation so far:
 - explicit user approval was received and PR #20 squash-merged as `08199af85df7d10ba36b226d97b390da3acffbb9`;
 - post-merge main CI #320: quality, Linux, and Android green.
 
-## Active PR #21: deliberate Task migration to Collections
+## Merged PR #21: deliberate Task migration to Collections
 
 Branch: `feat/task-migration-collections`.
 
 PR: #21, `feat(journal): migrate tasks to collections`.
 
-Scope implemented:
+Scope merged:
 
 - Today and Monthly open Tasks gain a deliberate **Migrate** action;
 - the user chooses one existing Collection; migration never auto-selects or creates a destination;
@@ -268,28 +267,61 @@ Scope implemented:
 - widget coverage proves Today/Monthly destination selection and retained-Collections refresh;
 - no schema, crypto, backup, dependency, or platform-contract change.
 
+Validation and merge:
+
+- code-equivalent implementation head `57b171b3d3c1fc223dbdf13b5cd9c55a5f5efdc1` was produced by the pinned Flutter 3.47.2 / Dart 3.13.2 runner;
+- formatter applied to 64 files with 6 changes; analyzer reported **No issues found**; **113 tests passed**;
+- manual Linux migration/persistence validation passed;
+- Draft CI #333 green;
+- full Ready CI #334: quality/test suite, Linux build, Android build, dependency review, and merge-gate all green;
+- explicit user approval was received;
+- PR #21 squash-merged as `89c1907d17d0507fd84c403c7343afc2ccbbd8da`;
+- post-merge main CI #335 green.
+
+## Active PR #22: deliberate Collection references
+
+Branch: `feat/collection-references`.
+
+PR: #22, `feat(journal): reference entries in collections`.
+
+Scope implemented:
+
+- Today, Monthly, and Future entries can be deliberately referenced into one existing Collection;
+- the reference preserves the original owner, stable Entry identity, content, and Task state;
+- `JournalSession.referenceEntryInCollection(...)` keeps the write serialized and delegates to the existing `JournalService.referenceInCollection(...)` transaction;
+- `CollectionRepository` loads owned entries and references separately;
+- Collections displays references in a distinct read-only section, so referenced Tasks do not expose Complete/Discard there;
+- retained Collections refreshes references after a cross-surface write;
+- English, `pt`, and `pt_BR` reference labels are localized;
+- repository, session, widget, and retained-navigation tests cover the new behavior;
+- no schema, crypto, backup, dependency, or platform-contract change.
+
 Explicit non-goals:
 
-- no automatic migration or reflection decision;
-- no Collection creation inside the migration dialog;
-- no migration from Future or Collection-owned entries;
-- no Event/Note migration UI;
-- no Collection references;
+- no migration or scheduling behavior changes;
+- no automatic Collection choice or Collection creation from the reference dialog;
+- no reference action from Collection-owned entries inside Collections;
+- no Task mutation through a Collection reference;
+- no removing/unreferencing links;
+- no navigation from a reference back to its source;
 - no Index;
 - no next-Monthly browsing;
 - no schema v2.
 
 Validation so far:
 
-- code-equivalent implementation head `57b171b3d3c1fc223dbdf13b5cd9c55a5f5efdc1` was produced by the pinned Flutter 3.47.2 / Dart 3.13.2 runner;
-- formatter applied to 64 files with 6 changes; analyzer reported **No issues found**; **113 tests passed**;
-- the suite includes new session migration persistence, Today/Monthly migration UI, and retained-Collections activation tests;
-- temporary patch workflow/script used to materialize exact formatter output were removed immediately afterward and are not part of the intended PR diff;
-- exact-head Draft CI and manual Linux cross-surface validation remain before Ready.
+- temporary pinned-toolchain probes were used to materialize exact formatter output and were removed from the final PR diff;
+- formatter and analyzer pass on the code-equivalent implementation;
+- focused repository/session/reference-widget/Collections-refresh tests pass;
+- a full-suite probe exposed one diagnostic-contract regression: existing Task failures were reported as `entry action` instead of the established `task action`; behavior was unaffected, the diagnostic label was restored, and the regression test now passes;
+- the corrected full suite passes with **121 tests**;
+- the exact product implementation was committed as `9fd64fa51ac901ec461ea03b88dffe71ef63216e` before temporary tooling removal;
+- standard Draft CI #337 was green on an earlier tooling-only head and is superseded as final evidence;
+- exact-head Draft CI after documentation remains required before manual validation.
 
-## Next work after PR #21
+## Next work after PR #22
 
-Keep the next slice separate from migration. Likely method-native choices are deliberate Collection references from chronological entries or next-Monthly accessibility. Index remains a distinct deliberate journal structure and must not be bundled into either merely because schema support exists. Search, backup UI, exports, OS lock hooks, accessibility/keyboard work, and packaging remain later focused slices.
+Keep the next slice separate from Collection references. The leading method-native candidates are the deliberate Index surface or next-Monthly accessibility/historical browsing. Search, backup UI, exports, OS lock hooks, accessibility/keyboard work, and packaging remain later focused slices. Do not bundle Index with Search merely because both help retrieval.
 
 ## CI and handoff traps to remember
 

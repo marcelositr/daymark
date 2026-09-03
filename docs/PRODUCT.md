@@ -166,7 +166,7 @@ Settings are secondary application controls and must not compete with journal na
 
 ## Visual direction
 
-Daymark supports light and dark appearance, with a system-following option where the platform provides one).
+Daymark supports light and dark appearance, with a system-following option where the platform provides one.
 
 The shared visual metaphor is a minimal dotted notebook or sketchbook page:
 
