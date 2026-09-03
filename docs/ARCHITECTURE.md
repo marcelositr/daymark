@@ -190,7 +190,7 @@ The unlocked-session abstraction is implemented and is no longer future architec
 - mutable `JournalKeyMaterial`;
 - `JournalRepository` and `JournalService`;
 - Task action services/repositories;
-- focused Daily, Monthly, and Future repository boundaries.
+- focused Daily, Monthly, Future, and Collection repository boundaries.
 
 All journal operations exposed through `JournalSession` are serialized. Once closing begins, new operations cannot enter the encrypted database; lock waits for queued/in-flight work, closes persistence, then destroys key material.
 
@@ -199,6 +199,8 @@ All journal operations exposed through `JournalSession` are serialized. Once clo
 Presentation code reaches journal behavior through focused data-source/provider boundaries backed by the unlocked session. Widgets do not coordinate multi-table persistence themselves.
 
 Focused repositories are responsible for the semantic location they claim to represent. A repository must reject an owner of the wrong log kind rather than assuming every caller is correct. This is especially important when source and destination owners cross product surfaces.
+
+The Collection boundary follows the same split: `CollectionRepository` owns focused Collection reads and delegates semantic creates/captures to `JournalService`, while `JournalSession` serializes list/create/load/capture operations with the rest of the unlocked journal lifecycle. Collection ownership, Collection references, and migration remain distinct domain operations rather than being collapsed into presentation helpers.
 
 Task scheduling is exposed through the serialized session rather than implemented inside Today/Monthly widgets. `JournalSession.scheduleTaskToFuture(...)` validates that the persisted source is an open Task before resolving/creating the Future destination, then delegates the actual movement and lineage semantics to the existing journal service/repository boundary. Invalid Task-only scheduling must fail before it creates a destination container or partial write.
 
@@ -411,9 +413,9 @@ The current dependency sequence is:
 8. add deliberate Task actions and lifecycle protection;
 9. build real Monthly and Future destinations;
 10. expose deliberate scheduling (`<`) from Today/Monthly Tasks into real Future destinations;
-11. add the next method-native structures needed for forward migration, especially next-Monthly accessibility and/or Collections;
-12. expose deliberate forward migration (`>`) only when a real non-Future destination exists;
-13. continue Index, Search, backup UI, exports, platform hooks, accessibility, and packaging in focused slices.
+11. build a real minimal Collections surface as a non-Future method-native owning structure;
+12. add deliberate Collection references and/or forward migration (`>`) only through explicit method-faithful destination flows with retained-screen lifecycle coverage where cross-surface writes occur;
+13. separately expose next-Monthly accessibility if needed for a clearer migration path, then continue Index, Search, backup UI, exports, platform hooks, accessibility, and packaging in focused slices.
 
 Do not implement convenience features ahead of the contracts that govern their persistence and security.
 
