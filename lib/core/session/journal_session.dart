@@ -9,6 +9,7 @@ import 'package:daymark/features/journal/application/journal_service.dart';
 import 'package:daymark/features/journal/application/task_action_service.dart';
 import 'package:daymark/features/journal/data/daily_log_repository.dart';
 import 'package:daymark/features/journal/data/journal_repository.dart';
+import 'package:daymark/features/journal/data/monthly_log_repository.dart';
 import 'package:daymark/features/journal/data/task_action_repository.dart';
 import 'package:daymark/features/journal/domain/journal_domain.dart';
 
@@ -47,6 +48,7 @@ final class JournalSession {
     service = JournalService(repository);
     taskActions = TaskActionService(TaskActionRepository(database));
     dailyLog = DailyLogRepository(database, service);
+    monthlyLog = MonthlyLogRepository(database, service);
   }
 
   final DaymarkDatabase database;
@@ -55,6 +57,7 @@ final class JournalSession {
   late final JournalService service;
   late final TaskActionService taskActions;
   late final DailyLogRepository dailyLog;
+  late final MonthlyLogRepository monthlyLog;
 
   Future<void> _operationTail = Future<void>.value();
   bool _closing = false;
@@ -99,6 +102,31 @@ final class JournalSession {
     return run(
       () => dailyLog.capture(logId: logId, type: type, content: content),
     );
+  }
+
+  Future<MonthlyLogSnapshot> loadMonthlyLog(String periodStart) {
+    return run(() => monthlyLog.loadOrCreate(periodStart));
+  }
+
+  Future<void> captureMonthlyCalendarEvent({
+    required String logId,
+    required String calendarDate,
+    required String content,
+  }) {
+    return run(
+      () => monthlyLog.captureCalendarEvent(
+        logId: logId,
+        calendarDate: calendarDate,
+        content: content,
+      ),
+    );
+  }
+
+  Future<void> captureMonthlyTask({
+    required String logId,
+    required String content,
+  }) {
+    return run(() => monthlyLog.captureTask(logId: logId, content: content));
   }
 
   Future<void> completeTask({required String entryId}) {

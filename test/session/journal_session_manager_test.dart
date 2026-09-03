@@ -6,6 +6,7 @@ import 'package:daymark/core/crypto/security_exception.dart';
 import 'package:daymark/core/session/journal_files.dart';
 import 'package:daymark/core/session/journal_session.dart';
 import 'package:daymark/features/journal/data/daily_log_repository.dart';
+import 'package:daymark/features/journal/data/monthly_log_repository.dart';
 import 'package:daymark/features/journal/domain/journal_domain.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -86,6 +87,43 @@ void main() {
     ]);
     expect(loaded.entries.first.taskState, JournalTaskState.open);
     expect(loaded.entries.last.taskState, isNull);
+  });
+
+  test('Monthly Log entries persist across lock and unlock', () async {
+    final JournalSession created = await manager.create(
+      masterPassword: 'persistent monthly journal',
+    );
+    final MonthlyLogSnapshot initial = await created.loadMonthlyLog(
+      '2026-09-01',
+    );
+
+    await created.captureMonthlyCalendarEvent(
+      logId: initial.logId,
+      calendarDate: '2026-09-15',
+      content: 'Dentist',
+    );
+    await created.captureMonthlyTask(
+      logId: initial.logId,
+      content: 'Renew documents',
+    );
+
+    final MonthlyLogSnapshot captured = await created.loadMonthlyLog(
+      '2026-09-01',
+    );
+    await created.completeTask(entryId: captured.taskEntries.single.id);
+
+    await manager.lock();
+    final JournalSession reopened = await manager.unlock(
+      masterPassword: 'persistent monthly journal',
+    );
+    final MonthlyLogSnapshot loaded = await reopened.loadMonthlyLog(
+      '2026-09-01',
+    );
+
+    expect(loaded.calendarEntries.single.content, 'Dentist');
+    expect(loaded.calendarEntries.single.calendarDate, '2026-09-15');
+    expect(loaded.taskEntries.single.content, 'Renew documents');
+    expect(loaded.taskEntries.single.taskState, JournalTaskState.completed);
   });
 
   test('Task terminal states persist across lock and unlock', () async {

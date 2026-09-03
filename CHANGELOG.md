@@ -19,6 +19,7 @@ This file is for user-visible behavior, data compatibility, security, packaging,
 - Automatic Today date rollover at midnight and refresh when the application resumes.
 - Automatic journal lock after five minutes without journal interaction, with pointer/touch, hardware-keyboard, and text-edit activity resetting the deadline and background time continuing to count.
 - Deliberate completion and discard actions for open Tasks in the Today/Daily Log flow.
+- Current-month Monthly Log with Calendar and Tasks sections, dated Event capture, Monthly Task capture, and deliberate complete/discard actions.
 
 ### Changed
 
@@ -28,10 +29,10 @@ This file is for user-visible behavior, data compatibility, security, packaging,
 - Journal access now remains behind one stable router/application root instead of replacing the root application when lock state changes.
 - Journal operations and session closing are serialized so manual or automatic lock does not close encrypted persistence underneath an in-flight journal operation.
 - Master-password creation and unlock reject an empty password before cryptographic work begins.
-- Portuguese parent localization resources include the journal-access and Daily Log strings used by the Brazilian Portuguese locale.
-- Human and AI contributors now follow a staged validation workflow: baseline/audit, Draft CI, layer-correct tests, progressive local/manual validation, documentation alignment, full merge CI, and explicit user merge approval.
+- Portuguese parent localization resources include the journal-access, Daily Log, and Monthly Log strings used by the Brazilian Portuguese locale.
+- Human and AI contributors now follow a staged validation workflow: baseline/audit, Draft CI, layer-correct tests, progressive local validation, documentation alignment, full merge CI, and explicit user merge approval.
 - Returning from application background re-evaluates the inactivity deadline immediately instead of trusting a platform timer to have continued firing while suspended.
-- Task terminal actions preserve the original Daily Log entry and change only its Task state, keeping journal history visible.
+- Task terminal actions preserve the original journal entry and change only its Task state, keeping journal history visible.
 
 ### Fixed
 
