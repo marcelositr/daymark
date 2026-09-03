@@ -151,6 +151,7 @@ final class JournalSession {
     required String periodStart,
   }) {
     return run(() async {
+      await taskActions.requireOpen(entryId: entryId);
       final MonthlyLogSnapshot destination = await monthlyLog.loadOrCreate(
         periodStart,
       );
@@ -169,6 +170,7 @@ final class JournalSession {
     required String periodStart,
   }) {
     return run(() async {
+      await taskActions.requireOpen(entryId: entryId);
       final FutureLogSnapshot destination = await futureLog.loadOrCreate(
         periodStart,
       );
