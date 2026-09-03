@@ -97,10 +97,7 @@ final class MonthlyLogRepository {
     );
   }
 
-  Future<void> captureTask({
-    required String logId,
-    required String content,
-  }) {
+  Future<void> captureTask({required String logId, required String content}) {
     return _journalService.capture(
       type: JournalEntryType.task,
       content: content,
