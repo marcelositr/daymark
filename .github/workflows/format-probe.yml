@@ -1,9 +1,9 @@
 name: Format probe
 
 on:
-  push:
+  pull_request:
     branches:
-      - feat/collections
+      - main
 
 permissions:
   contents: read
