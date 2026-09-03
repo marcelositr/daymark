@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'journal_activity_guard.dart';
+import 'task_collection_migration_dialog.dart';
 import 'task_schedule_dialog.dart';
 
 abstract interface class MonthlyJournalDataSource {
@@ -366,6 +367,10 @@ class _MonthlyScreenState extends ConsumerState<MonthlyScreen>
           child: Text(l10n.completeTask),
         ),
         PopupMenuItem<_MonthlyTaskAction>(
+          value: _MonthlyTaskAction.migrate,
+          child: Text(l10n.migrateTask),
+        ),
+        PopupMenuItem<_MonthlyTaskAction>(
           value: _MonthlyTaskAction.schedule,
           child: Text(l10n.scheduleTask),
         ),
@@ -496,6 +501,17 @@ class _MonthlyScreenState extends ConsumerState<MonthlyScreen>
     }
 
     final DateTime actionMonth = _month;
+    String? migrationCollectionId;
+    if (action == _MonthlyTaskAction.migrate) {
+      migrationCollectionId = await showTaskCollectionMigrationDialog(
+        context: context,
+        dataSource: ref.read(taskCollectionMigrationDataSourceProvider),
+      );
+      if (!mounted || migrationCollectionId == null) {
+        return;
+      }
+    }
+
     String? schedulePeriodStart;
     if (action == _MonthlyTaskAction.schedule) {
       schedulePeriodStart = await showTaskScheduleDialog(
@@ -515,6 +531,14 @@ class _MonthlyScreenState extends ConsumerState<MonthlyScreen>
       switch (action) {
         case _MonthlyTaskAction.complete:
           await dataSource.completeTask(entryId: entry.id);
+          break;
+        case _MonthlyTaskAction.migrate:
+          await ref
+              .read(taskCollectionMigrationDataSourceProvider)
+              .migrateTask(
+                entryId: entry.id,
+                collectionId: migrationCollectionId!,
+              );
           break;
         case _MonthlyTaskAction.schedule:
           await dataSource.scheduleTaskToFuture(
@@ -585,7 +609,7 @@ class _MonthlyScreenState extends ConsumerState<MonthlyScreen>
   }
 }
 
-enum _MonthlyTaskAction { complete, schedule, discard }
+enum _MonthlyTaskAction { complete, migrate, schedule, discard }
 
 int _daysInMonth(DateTime month) {
   return DateTime(month.year, month.month + 1, 0).day;

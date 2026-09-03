@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'journal_activity_guard.dart';
+import 'task_collection_migration_dialog.dart';
 import 'task_schedule_dialog.dart';
 
 abstract interface class TodayJournalDataSource {
@@ -268,6 +269,10 @@ class _TodayScreenState extends ConsumerState<TodayScreen>
           child: Text(l10n.completeTask),
         ),
         PopupMenuItem<_TaskAction>(
+          value: _TaskAction.migrate,
+          child: Text(l10n.migrateTask),
+        ),
+        PopupMenuItem<_TaskAction>(
           value: _TaskAction.schedule,
           child: Text(l10n.scheduleTask),
         ),
@@ -393,6 +398,17 @@ class _TodayScreenState extends ConsumerState<TodayScreen>
     }
 
     final DateTime actionDate = _today;
+    String? migrationCollectionId;
+    if (action == _TaskAction.migrate) {
+      migrationCollectionId = await showTaskCollectionMigrationDialog(
+        context: context,
+        dataSource: ref.read(taskCollectionMigrationDataSourceProvider),
+      );
+      if (!mounted || migrationCollectionId == null) {
+        return;
+      }
+    }
+
     String? schedulePeriodStart;
     if (action == _TaskAction.schedule) {
       schedulePeriodStart = await showTaskScheduleDialog(
@@ -412,6 +428,14 @@ class _TodayScreenState extends ConsumerState<TodayScreen>
       switch (action) {
         case _TaskAction.complete:
           await dataSource.completeTask(entryId: entry.id);
+          break;
+        case _TaskAction.migrate:
+          await ref
+              .read(taskCollectionMigrationDataSourceProvider)
+              .migrateTask(
+                entryId: entry.id,
+                collectionId: migrationCollectionId!,
+              );
           break;
         case _TaskAction.schedule:
           await dataSource.scheduleTaskToFuture(
@@ -478,7 +502,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen>
   }
 }
 
-enum _TaskAction { complete, schedule, discard }
+enum _TaskAction { complete, migrate, schedule, discard }
 
 DateTime _dateOnly(DateTime date) => DateTime(date.year, date.month, date.day);
 

@@ -1,30 +1,104 @@
+import 'package:daymark/core/session/journal_session.dart';
+import 'package:daymark/core/session/journal_session_controller.dart';
 import 'package:daymark/features/journal/data/collection_repository.dart';
 import 'package:daymark/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+abstract interface class TaskCollectionMigrationDataSource {
+  Future<List<CollectionSummary>> listCollections();
+
+  Future<void> migrateTask({
+    required String entryId,
+    required String collectionId,
+  });
+}
+
+final Provider<TaskCollectionMigrationDataSource>
+taskCollectionMigrationDataSourceProvider =
+    Provider<TaskCollectionMigrationDataSource>((ref) {
+      final JournalAccessState access = ref
+          .watch(journalSessionControllerProvider)
+          .requireValue;
+      if (access case JournalUnlocked(:final session)) {
+        return _SessionTaskCollectionMigrationDataSource(session);
+      }
+      throw StateError('Task migration requires an unlocked journal session.');
+    });
+
+final class _SessionTaskCollectionMigrationDataSource
+    implements TaskCollectionMigrationDataSource {
+  const _SessionTaskCollectionMigrationDataSource(this._session);
+
+  final JournalSession _session;
+
+  @override
+  Future<List<CollectionSummary>> listCollections() {
+    return _session.listCollections();
+  }
+
+  @override
+  Future<void> migrateTask({
+    required String entryId,
+    required String collectionId,
+  }) {
+    return _session.migrateTaskToCollection(
+      entryId: entryId,
+      collectionId: collectionId,
+    );
+  }
+}
 
 Future<String?> showTaskCollectionMigrationDialog({
   required BuildContext context,
-  required List<CollectionSummary> collections,
+  required TaskCollectionMigrationDataSource dataSource,
 }) {
   final AppLocalizations l10n = AppLocalizations.of(context);
+  final Future<List<CollectionSummary>> collectionsFuture = dataSource
+      .listCollections();
+
   return showDialog<String>(
     context: context,
     builder: (context) => SimpleDialog(
-      title: Text(l10n.collections),
-      children: collections.isEmpty
-          ? [
-              Padding(
+      title: Text(l10n.migrateTaskTitle),
+      children: [
+        FutureBuilder<List<CollectionSummary>>(
+          future: collectionsFuture,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState != ConnectionState.done) {
+              return const Padding(
+                padding: EdgeInsets.all(24),
+                child: Center(child: CircularProgressIndicator()),
+              );
+            }
+            if (snapshot.hasError || !snapshot.hasData) {
+              return Padding(
+                padding: const EdgeInsets.fromLTRB(24, 8, 24, 16),
+                child: Text(l10n.collectionsLoadFailed),
+              );
+            }
+
+            final List<CollectionSummary> collections = snapshot.requireData;
+            if (collections.isEmpty) {
+              return Padding(
                 padding: const EdgeInsets.fromLTRB(24, 8, 24, 16),
                 child: Text(l10n.emptyCollections),
-              ),
-            ]
-          : [
-              for (final CollectionSummary collection in collections)
-                SimpleDialogOption(
-                  onPressed: () => Navigator.of(context).pop(collection.id),
-                  child: Text(collection.title),
-                ),
-            ],
+              );
+            }
+
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                for (final CollectionSummary collection in collections)
+                  SimpleDialogOption(
+                    onPressed: () => Navigator.of(context).pop(collection.id),
+                    child: Text(collection.title),
+                  ),
+              ],
+            );
+          },
+        ),
+      ],
     ),
   );
 }

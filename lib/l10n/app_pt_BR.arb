@@ -33,6 +33,8 @@
   "addEntry": "Adicionar entrada",
   "taskActions": "Ações da tarefa",
   "completeTask": "Concluir",
+  "migrateTask": "Migrar",
+  "migrateTaskTitle": "Migrar tarefa",
   "scheduleTask": "Agendar",
   "scheduleTaskTitle": "Agendar tarefa",
   "discardTask": "Descartar",
