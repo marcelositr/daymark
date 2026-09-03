@@ -111,7 +111,9 @@ class _FutureScreenState extends ConsumerState<FutureScreen>
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    final int? currentSectionIndex = AppSectionScope.maybeCurrentIndexOf(context);
+    final int? currentSectionIndex = AppSectionScope.maybeCurrentIndexOf(
+      context,
+    );
     if (currentSectionIndex == null) {
       return;
     }
