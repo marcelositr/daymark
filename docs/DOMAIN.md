@@ -84,6 +84,22 @@ The product may show a rolling subset of future months, but visibility does not 
 
 Capturing a new entry directly in Future is different from scheduling an existing entry into Future. Scheduling must create deliberate migration lineage.
 
+## Index
+
+The Index is a deliberate ordered set of references to journal structures such as Logs and Collections.
+
+Adding a structure to the Index:
+
+- does not create or duplicate an Entry;
+- does not change ownership of any Entry;
+- does not change Task state;
+- does not create a new Log or Collection;
+- does not happen automatically merely because a structure exists.
+
+A given Log or Collection appears at most once in the Index. Index order records the user's deliberate catalog order rather than being inferred from timestamps, Search relevance, or chronological ownership.
+
+Search is not the Index. Search may derive transient results from journal content, while the Index persists structures that the user intentionally chose to catalog.
+
 ## Migration
 
 Migration is always deliberate.
