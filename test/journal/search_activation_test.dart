@@ -8,51 +8,54 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  testWidgets('Search reruns the last query when its retained section reactivates', (
-    tester,
-  ) async {
-    final _MutableSearchJournal dataSource = _MutableSearchJournal();
-    final ValueNotifier<int> currentSection = ValueNotifier<int>(
-      AppSectionScope.searchSectionIndex,
-    );
-    addTearDown(currentSection.dispose);
+  testWidgets(
+    'Search reruns the last query when its retained section reactivates',
+    (tester) async {
+      final _MutableSearchJournal dataSource = _MutableSearchJournal();
+      final ValueNotifier<int> currentSection = ValueNotifier<int>(
+        AppSectionScope.searchSectionIndex,
+      );
+      addTearDown(currentSection.dispose);
 
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [searchJournalDataSourceProvider.overrideWithValue(dataSource)],
-        child: MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: Scaffold(
-            body: AppSectionScope(
-              currentIndex: currentSection,
-              child: const SearchScreen(),
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            searchJournalDataSourceProvider.overrideWithValue(dataSource),
+          ],
+          child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: AppSectionScope(
+                currentIndex: currentSection,
+                child: const SearchScreen(),
+              ),
             ),
           ),
         ),
-      ),
-    );
-    await tester.pump();
+      );
+      await tester.pump();
 
-    await tester.enterText(find.byType(TextField), 'radio');
-    await tester.testTextInput.receiveAction(TextInputAction.search);
-    await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextField), 'radio');
+      await tester.testTextInput.receiveAction(TextInputAction.search);
+      await tester.pumpAndSettle();
 
-    expect(dataSource.calls, 1);
-    expect(find.text('•'), findsOneWidget);
+      expect(dataSource.calls, 1);
+      expect(find.text('•'), findsOneWidget);
 
-    currentSection.value = 0;
-    await tester.pump();
-    dataSource.completed = true;
+      currentSection.value = 0;
+      await tester.pump();
+      dataSource.completed = true;
 
-    currentSection.value = AppSectionScope.searchSectionIndex;
-    await tester.pump();
-    await tester.pump();
+      currentSection.value = AppSectionScope.searchSectionIndex;
+      await tester.pump();
+      await tester.pump();
 
-    expect(dataSource.calls, 2);
-    expect(find.text('×'), findsOneWidget);
-    expect(find.text('•'), findsNothing);
-  });
+      expect(dataSource.calls, 2);
+      expect(find.text('×'), findsOneWidget);
+      expect(find.text('•'), findsNothing);
+    },
+  );
 }
 
 final class _MutableSearchJournal implements SearchJournalDataSource {

@@ -35,102 +35,110 @@ void main() {
     await database.close();
   });
 
-  test('finds entries across Logs and Collections with owning context', () async {
-    final String dailyId = await service.createLog(
-      kind: JournalLogKind.daily,
-      periodStart: '2026-09-03',
-    );
-    final String monthlyId = await service.createLog(
-      kind: JournalLogKind.monthly,
-      periodStart: '2026-09-01',
-    );
-    final String futureId = await service.createLog(
-      kind: JournalLogKind.future,
-      periodStart: '2026-10-01',
-    );
-    final String collectionId = await service.createCollection(title: 'Radio');
+  test(
+    'finds entries across Logs and Collections with owning context',
+    () async {
+      final String dailyId = await service.createLog(
+        kind: JournalLogKind.daily,
+        periodStart: '2026-09-03',
+      );
+      final String monthlyId = await service.createLog(
+        kind: JournalLogKind.monthly,
+        periodStart: '2026-09-01',
+      );
+      final String futureId = await service.createLog(
+        kind: JournalLogKind.future,
+        periodStart: '2026-10-01',
+      );
+      final String collectionId = await service.createCollection(
+        title: 'Radio',
+      );
 
-    await service.capture(
-      type: JournalEntryType.task,
-      content: 'Radio check',
-      owner: JournalLogOwner(logId: dailyId),
-    );
-    await service.capture(
-      type: JournalEntryType.event,
-      content: 'Radio club meeting',
-      owner: JournalLogOwner(
-        logId: monthlyId,
-        monthlySection: JournalMonthlySection.calendar,
-        monthlyCalendarDate: '2026-09-12',
-      ),
-    );
-    await service.capture(
-      type: JournalEntryType.note,
-      content: 'RADIO trip notes',
-      owner: JournalLogOwner(logId: futureId),
-    );
-    await service.capture(
-      type: JournalEntryType.note,
-      content: 'Radio frequencies',
-      owner: JournalCollectionOwner(collectionId),
-    );
+      await service.capture(
+        type: JournalEntryType.task,
+        content: 'Radio check',
+        owner: JournalLogOwner(logId: dailyId),
+      );
+      await service.capture(
+        type: JournalEntryType.event,
+        content: 'Radio club meeting',
+        owner: JournalLogOwner(
+          logId: monthlyId,
+          monthlySection: JournalMonthlySection.calendar,
+          monthlyCalendarDate: '2026-09-12',
+        ),
+      );
+      await service.capture(
+        type: JournalEntryType.note,
+        content: 'RADIO trip notes',
+        owner: JournalLogOwner(logId: futureId),
+      );
+      await service.capture(
+        type: JournalEntryType.note,
+        content: 'Radio frequencies',
+        owner: JournalCollectionOwner(collectionId),
+      );
 
-    final List<JournalSearchResult> results = await search.search('radio');
+      final List<JournalSearchResult> results = await search.search('radio');
 
-    expect(results, hasLength(4));
+      expect(results, hasLength(4));
 
-    final JournalSearchResult daily = results.singleWhere(
-      (result) => result.content == 'Radio check',
-    );
-    expect(daily.ownerKind, SearchOwnerKind.log);
-    expect(daily.logKind, JournalLogKind.daily);
-    expect(daily.periodStart, '2026-09-03');
-    expect(daily.type, JournalEntryType.task);
-    expect(daily.taskState, JournalTaskState.open);
+      final JournalSearchResult daily = results.singleWhere(
+        (result) => result.content == 'Radio check',
+      );
+      expect(daily.ownerKind, SearchOwnerKind.log);
+      expect(daily.logKind, JournalLogKind.daily);
+      expect(daily.periodStart, '2026-09-03');
+      expect(daily.type, JournalEntryType.task);
+      expect(daily.taskState, JournalTaskState.open);
 
-    final JournalSearchResult monthly = results.singleWhere(
-      (result) => result.content == 'Radio club meeting',
-    );
-    expect(monthly.logKind, JournalLogKind.monthly);
-    expect(monthly.monthlySection, JournalMonthlySection.calendar);
-    expect(monthly.monthlyCalendarDate, '2026-09-12');
+      final JournalSearchResult monthly = results.singleWhere(
+        (result) => result.content == 'Radio club meeting',
+      );
+      expect(monthly.logKind, JournalLogKind.monthly);
+      expect(monthly.monthlySection, JournalMonthlySection.calendar);
+      expect(monthly.monthlyCalendarDate, '2026-09-12');
 
-    final JournalSearchResult future = results.singleWhere(
-      (result) => result.content == 'RADIO trip notes',
-    );
-    expect(future.logKind, JournalLogKind.future);
-    expect(future.periodStart, '2026-10-01');
+      final JournalSearchResult future = results.singleWhere(
+        (result) => result.content == 'RADIO trip notes',
+      );
+      expect(future.logKind, JournalLogKind.future);
+      expect(future.periodStart, '2026-10-01');
 
-    final JournalSearchResult collection = results.singleWhere(
-      (result) => result.content == 'Radio frequencies',
-    );
-    expect(collection.ownerKind, SearchOwnerKind.collection);
-    expect(collection.ownerId, collectionId);
-    expect(collection.collectionTitle, 'Radio');
-  });
+      final JournalSearchResult collection = results.singleWhere(
+        (result) => result.content == 'Radio frequencies',
+      );
+      expect(collection.ownerKind, SearchOwnerKind.collection);
+      expect(collection.ownerId, collectionId);
+      expect(collection.collectionTitle, 'Radio');
+    },
+  );
 
-  test('treats query punctuation literally and ignores blank queries', () async {
-    final String dailyId = await service.createLog(
-      kind: JournalLogKind.daily,
-      periodStart: '2026-09-03',
-    );
-    await service.capture(
-      type: JournalEntryType.note,
-      content: 'Battery at 100%',
-      owner: JournalLogOwner(logId: dailyId),
-    );
-    await service.capture(
-      type: JournalEntryType.note,
-      content: 'Battery at 100 percent',
-      owner: JournalLogOwner(logId: dailyId),
-    );
+  test(
+    'treats query punctuation literally and ignores blank queries',
+    () async {
+      final String dailyId = await service.createLog(
+        kind: JournalLogKind.daily,
+        periodStart: '2026-09-03',
+      );
+      await service.capture(
+        type: JournalEntryType.note,
+        content: 'Battery at 100%',
+        owner: JournalLogOwner(logId: dailyId),
+      );
+      await service.capture(
+        type: JournalEntryType.note,
+        content: 'Battery at 100 percent',
+        owner: JournalLogOwner(logId: dailyId),
+      );
 
-    final List<JournalSearchResult> percent = await search.search('%');
+      final List<JournalSearchResult> percent = await search.search('%');
 
-    expect(percent, hasLength(1));
-    expect(percent.single.content, 'Battery at 100%');
-    expect(await search.search('   '), isEmpty);
-  });
+      expect(percent, hasLength(1));
+      expect(percent.single.content, 'Battery at 100%');
+      expect(await search.search('   '), isEmpty);
+    },
+  );
 }
 
 final class _IdSequence {

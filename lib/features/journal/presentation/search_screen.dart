@@ -212,7 +212,9 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     }
 
     try {
-      final List<JournalSearchResult> results = await _dataSource().search(query);
+      final List<JournalSearchResult> results = await _dataSource().search(
+        query,
+      );
       if (mounted) {
         setState(() {
           _results = results;

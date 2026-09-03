@@ -56,8 +56,9 @@ final class JournalSearchRepository {
       throw ArgumentError.value(limit, 'limit', 'Must be between 1 and 200.');
     }
 
-    final rows = await _database.customSelect(
-      '''
+    final rows = await _database
+        .customSelect(
+          '''
       SELECT
         e.id,
         e.entry_type,
@@ -79,46 +80,51 @@ final class JournalSearchRepository {
       ORDER BY e.updated_at DESC, e.id
       LIMIT ?
       ''',
-      variables: <Variable<Object>>[
-        Variable.withString(query),
-        Variable.withInt(limit),
-      ],
-    ).get();
+          variables: <Variable<Object>>[
+            Variable.withString(query),
+            Variable.withInt(limit),
+          ],
+        )
+        .get();
 
-    return rows.map((row) {
-      final String? logId = row.readNullable<String>('log_id');
-      final String? collectionId = row.readNullable<String>('collection_id');
-      if ((logId == null) == (collectionId == null)) {
-        throw const JournalInvariantException(
-          'Search result Entry must have exactly one owner.',
-        );
-      }
+    return rows
+        .map((row) {
+          final String? logId = row.readNullable<String>('log_id');
+          final String? collectionId = row.readNullable<String>(
+            'collection_id',
+          );
+          if ((logId == null) == (collectionId == null)) {
+            throw const JournalInvariantException(
+              'Search result Entry must have exactly one owner.',
+            );
+          }
 
-      return JournalSearchResult(
-        entryId: row.read<String>('id'),
-        type: _entryTypeFromCode(row.read<String>('entry_type')),
-        taskState: _taskStateFromCode(
-          row.readNullable<String>('task_state'),
-        ),
-        content: row.read<String>('content'),
-        ownerKind: logId != null
-            ? SearchOwnerKind.log
-            : SearchOwnerKind.collection,
-        ownerId: logId ?? collectionId!,
-        updatedAtUtcMicros: row.read<int>('updated_at'),
-        logKind: logId == null
-            ? null
-            : _logKindFromCode(row.read<String>('log_kind')),
-        periodStart: row.readNullable<String>('period_start'),
-        collectionTitle: row.readNullable<String>('collection_title'),
-        monthlySection: _monthlySectionFromCode(
-          row.readNullable<String>('monthly_section'),
-        ),
-        monthlyCalendarDate: row.readNullable<String>(
-          'monthly_calendar_date',
-        ),
-      );
-    }).toList(growable: false);
+          return JournalSearchResult(
+            entryId: row.read<String>('id'),
+            type: _entryTypeFromCode(row.read<String>('entry_type')),
+            taskState: _taskStateFromCode(
+              row.readNullable<String>('task_state'),
+            ),
+            content: row.read<String>('content'),
+            ownerKind: logId != null
+                ? SearchOwnerKind.log
+                : SearchOwnerKind.collection,
+            ownerId: logId ?? collectionId!,
+            updatedAtUtcMicros: row.read<int>('updated_at'),
+            logKind: logId == null
+                ? null
+                : _logKindFromCode(row.read<String>('log_kind')),
+            periodStart: row.readNullable<String>('period_start'),
+            collectionTitle: row.readNullable<String>('collection_title'),
+            monthlySection: _monthlySectionFromCode(
+              row.readNullable<String>('monthly_section'),
+            ),
+            monthlyCalendarDate: row.readNullable<String>(
+              'monthly_calendar_date',
+            ),
+          );
+        })
+        .toList(growable: false);
   }
 }
 
@@ -146,9 +152,10 @@ JournalLogKind _logKindFromCode(String value) => switch (value) {
   _ => throw JournalInvariantException('Unknown log kind: $value.'),
 };
 
-JournalMonthlySection? _monthlySectionFromCode(String? value) => switch (value) {
-  null => null,
-  'calendar' => JournalMonthlySection.calendar,
-  'tasks' => JournalMonthlySection.tasks,
-  _ => throw JournalInvariantException('Unknown Monthly section: $value.'),
-};
+JournalMonthlySection? _monthlySectionFromCode(String? value) =>
+    switch (value) {
+      null => null,
+      'calendar' => JournalMonthlySection.calendar,
+      'tasks' => JournalMonthlySection.tasks,
+      _ => throw JournalInvariantException('Unknown Monthly section: $value.'),
+    };

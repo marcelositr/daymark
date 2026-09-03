@@ -80,7 +80,9 @@ void main() {
     expect(find.byIcon(Icons.more_vert), findsNothing);
   });
 
-  testWidgets('shows a quiet empty state when no entry matches', (tester) async {
+  testWidgets('shows a quiet empty state when no entry matches', (
+    tester,
+  ) async {
     final _MemorySearchJournal dataSource = _MemorySearchJournal();
 
     await _pumpSearch(tester, dataSource);
@@ -100,7 +102,9 @@ Future<void> _pumpSearch(
 ) async {
   await tester.pumpWidget(
     ProviderScope(
-      overrides: [searchJournalDataSourceProvider.overrideWithValue(dataSource)],
+      overrides: [
+        searchJournalDataSourceProvider.overrideWithValue(dataSource),
+      ],
       child: const MaterialApp(
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
