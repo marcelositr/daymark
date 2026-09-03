@@ -214,7 +214,9 @@ class _IndexScreenState extends ConsumerState<IndexScreen> {
     try {
       await dataSource.add(selected);
       if (mounted) {
-        setState(() => _itemsFuture = dataSource.list());
+        setState(() {
+          _itemsFuture = dataSource.list();
+        });
       }
     } catch (error, stackTrace) {
       FlutterError.reportError(
