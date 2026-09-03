@@ -28,30 +28,35 @@ void main() {
     }
   });
 
-  test('historical Monthly lookup is non-creating and survives unlock', () async {
-    final JournalSession created = await manager.create(
-      masterPassword: 'monthly history',
-    );
+  test(
+    'historical Monthly lookup is non-creating and survives unlock',
+    () async {
+      final JournalSession created = await manager.create(
+        masterPassword: 'monthly history',
+      );
 
-    expect(await created.findMonthlyLog('2026-08-01'), isNull);
+      expect(await created.findMonthlyLog('2026-08-01'), isNull);
 
-    final MonthlyLogSnapshot august = await created.loadMonthlyLog('2026-08-01');
-    await created.captureMonthlyCalendarEvent(
-      logId: august.logId,
-      calendarDate: '2026-08-12',
-      content: 'Historic appointment',
-    );
+      final MonthlyLogSnapshot august = await created.loadMonthlyLog(
+        '2026-08-01',
+      );
+      await created.captureMonthlyCalendarEvent(
+        logId: august.logId,
+        calendarDate: '2026-08-12',
+        content: 'Historic appointment',
+      );
 
-    await manager.lock();
-    final JournalSession reopened = await manager.unlock(
-      masterPassword: 'monthly history',
-    );
+      await manager.lock();
+      final JournalSession reopened = await manager.unlock(
+        masterPassword: 'monthly history',
+      );
 
-    final MonthlyLogSnapshot? persisted = await reopened.findMonthlyLog(
-      '2026-08-01',
-    );
-    expect(persisted, isNotNull);
-    expect(persisted!.calendarEntries.single.content, 'Historic appointment');
-    expect(await reopened.findMonthlyLog('2026-07-01'), isNull);
-  });
+      final MonthlyLogSnapshot? persisted = await reopened.findMonthlyLog(
+        '2026-08-01',
+      );
+      expect(persisted, isNotNull);
+      expect(persisted!.calendarEntries.single.content, 'Historic appointment');
+      expect(await reopened.findMonthlyLog('2026-07-01'), isNull);
+    },
+  );
 }

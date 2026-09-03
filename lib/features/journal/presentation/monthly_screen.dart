@@ -139,9 +139,7 @@ class _MonthlyScreenState extends ConsumerState<MonthlyScreen>
         ? currentMonth
         : requestedMonth;
     _followingCurrentMonth = _sameMonth(_month, currentMonth);
-    _selectedDay = _followingCurrentMonth
-        ? _clampDay(now.day, _month)
-        : 1;
+    _selectedDay = _followingCurrentMonth ? _clampDay(now.day, _month) : 1;
     _snapshotFuture = _loadSnapshotFor(
       _month,
       writable: _followingCurrentMonth,
@@ -529,7 +527,9 @@ class _MonthlyScreenState extends ConsumerState<MonthlyScreen>
   }) {
     final String periodStart = formatJournalMonthStart(month);
     final MonthlyJournalDataSource dataSource = _dataSource();
-    return writable ? dataSource.load(periodStart) : dataSource.find(periodStart);
+    return writable
+        ? dataSource.load(periodStart)
+        : dataSource.find(periodStart);
   }
 
   Future<void> _selectMonth(int offset) async {
