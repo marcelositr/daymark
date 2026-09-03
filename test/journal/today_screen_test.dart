@@ -61,6 +61,74 @@ void main() {
     await tester.pumpWidget(const SizedBox.shrink());
   });
 
+  testWidgets('Today migrates an open Task to the current Monthly Log', (
+    tester,
+  ) async {
+    final _MemoryTodayJournal dataSource = _MemoryTodayJournal(
+      entries: [
+        const DailyLogEntry(
+          id: 'task-1',
+          type: JournalEntryType.task,
+          taskState: JournalTaskState.open,
+          content: 'Carry forward deliberately',
+          ordinal: 0,
+        ),
+      ],
+    );
+
+    await _pumpToday(tester, dataSource);
+    final String methodDate = dataSource.lastMethodDate!;
+
+    await tester.tap(find.text('•'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Migrate to Monthly'));
+    await tester.pump();
+    await tester.pump();
+
+    expect(dataSource.entries.single.taskState, JournalTaskState.migrated);
+    expect(dataSource.migratedPeriodStart, '${methodDate.substring(0, 7)}-01');
+    expect(find.text('>'), findsOneWidget);
+    expect(find.byType(SnackBar), findsNothing);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
+  testWidgets('Today schedules an open Task into the Future Log horizon', (
+    tester,
+  ) async {
+    final _MemoryTodayJournal dataSource = _MemoryTodayJournal(
+      entries: [
+        const DailyLogEntry(
+          id: 'task-1',
+          type: JournalEntryType.task,
+          taskState: JournalTaskState.open,
+          content: 'Plan for later',
+          ordinal: 0,
+        ),
+      ],
+    );
+
+    await _pumpToday(tester, dataSource);
+    final DateTime methodDate = DateTime.parse(dataSource.lastMethodDate!);
+
+    await tester.tap(find.text('•'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Schedule'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(SimpleDialogOption), findsNWidgets(6));
+    await tester.tap(find.byType(SimpleDialogOption).first);
+    await tester.pumpAndSettle();
+
+    final DateTime nextMonth = DateTime(methodDate.year, methodDate.month + 1);
+    expect(dataSource.scheduledPeriodStart, _monthStart(nextMonth));
+    expect(dataSource.entries.single.taskState, JournalTaskState.scheduled);
+    expect(find.text('<'), findsOneWidget);
+    expect(find.byType(SnackBar), findsNothing);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
   testWidgets('Today discards an open Task without removing its history', (
     tester,
   ) async {
@@ -165,9 +233,13 @@ final class _MemoryTodayJournal implements TodayJournalDataSource {
 
   final List<DailyLogEntry> entries;
   final bool failTaskActions;
+  String? lastMethodDate;
+  String? migratedPeriodStart;
+  String? scheduledPeriodStart;
 
   @override
   Future<DailyLogSnapshot> load(String methodDate) async {
+    lastMethodDate = methodDate;
     return DailyLogSnapshot(
       logId: 'daily-$methodDate',
       methodDate: methodDate,
@@ -194,18 +266,40 @@ final class _MemoryTodayJournal implements TodayJournalDataSource {
 
   @override
   Future<void> completeTask({required String entryId}) async {
-    if (failTaskActions) {
-      throw StateError('Injected Task action failure.');
-    }
+    _failIfRequested();
     _transitionTask(entryId, JournalTaskState.completed);
   }
 
   @override
+  Future<void> migrateTaskToMonthly({
+    required String entryId,
+    required String periodStart,
+  }) async {
+    _failIfRequested();
+    migratedPeriodStart = periodStart;
+    _transitionTask(entryId, JournalTaskState.migrated);
+  }
+
+  @override
+  Future<void> scheduleTaskToFuture({
+    required String entryId,
+    required String periodStart,
+  }) async {
+    _failIfRequested();
+    scheduledPeriodStart = periodStart;
+    _transitionTask(entryId, JournalTaskState.scheduled);
+  }
+
+  @override
   Future<void> discardTask({required String entryId}) async {
+    _failIfRequested();
+    _transitionTask(entryId, JournalTaskState.discarded);
+  }
+
+  void _failIfRequested() {
     if (failTaskActions) {
       throw StateError('Injected Task action failure.');
     }
-    _transitionTask(entryId, JournalTaskState.discarded);
   }
 
   void _transitionTask(String entryId, JournalTaskState destinationState) {
@@ -228,4 +322,9 @@ final class _MemoryTodayJournal implements TodayJournalDataSource {
       ordinal: source.ordinal,
     );
   }
+}
+
+String _monthStart(DateTime month) {
+  return '${month.year.toString().padLeft(4, '0')}-'
+      '${month.month.toString().padLeft(2, '0')}-01';
 }
