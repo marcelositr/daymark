@@ -1,3 +1,4 @@
+import 'package:daymark/core/session/journal_index_session.dart';
 import 'package:daymark/core/session/journal_session.dart';
 import 'package:daymark/core/session/journal_session_controller.dart';
 import 'package:daymark/features/journal/data/index_repository.dart';
@@ -26,30 +27,26 @@ final Provider<IndexJournalDataSource> indexJournalDataSourceProvider =
     });
 
 final class _SessionIndexJournalDataSource implements IndexJournalDataSource {
-  _SessionIndexJournalDataSource(this._session)
-    : _repository = IndexRepository(_session.database);
+  const _SessionIndexJournalDataSource(this._session);
 
   final JournalSession _session;
-  final IndexRepository _repository;
 
   @override
-  Future<List<IndexItem>> list() => _session.run(_repository.list);
+  Future<List<IndexItem>> list() => _session.listIndexItems();
 
   @override
   Future<List<IndexCandidate>> candidates() {
-    return _session.run(_repository.candidates);
+    return _session.listIndexCandidates();
   }
 
   @override
   Future<void> add(IndexCandidate candidate) {
-    return _session.run(() {
-      return switch (candidate.targetKind) {
-        IndexTargetKind.log => _repository.addLog(candidate.targetId),
-        IndexTargetKind.collection => _repository.addCollection(
-          candidate.targetId,
-        ),
-      };
-    });
+    return switch (candidate.targetKind) {
+      IndexTargetKind.log => _session.addLogToIndex(candidate.targetId),
+      IndexTargetKind.collection => _session.addCollectionToIndex(
+        candidate.targetId,
+      ),
+    };
   }
 }
 
