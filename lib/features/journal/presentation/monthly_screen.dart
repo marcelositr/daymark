@@ -98,6 +98,7 @@ class _MonthlyScreenState extends ConsumerState<MonthlyScreen>
   late DateTime _month;
   late Future<MonthlyLogSnapshot> _snapshotFuture;
   late int _selectedDay;
+  Timer? _monthRolloverTimer;
   JournalMonthlySection _section = JournalMonthlySection.calendar;
   bool _saving = false;
   String? _taskActionEntryId;
@@ -108,8 +109,9 @@ class _MonthlyScreenState extends ConsumerState<MonthlyScreen>
     WidgetsBinding.instance.addObserver(this);
     final DateTime seed = widget.initialMonth ?? DateTime.now();
     _month = DateTime(seed.year, seed.month);
-    _selectedDay = seed.day.clamp(1, _daysInMonth(_month));
+    _selectedDay = _clampDay(seed.day, _month);
     _snapshotFuture = _loadSnapshot();
+    _scheduleMonthRollover();
   }
 
   @override
@@ -122,6 +124,7 @@ class _MonthlyScreenState extends ConsumerState<MonthlyScreen>
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _monthRolloverTimer?.cancel();
     _entryController.dispose();
     super.dispose();
   }
@@ -167,9 +170,12 @@ class _MonthlyScreenState extends ConsumerState<MonthlyScreen>
                   ),
                 ],
                 selected: <JournalMonthlySection>{_section},
-                onSelectionChanged: (selection) {
-                  setState(() => _section = selection.single);
-                },
+                onSelectionChanged: _saving
+                    ? null
+                    : (selection) {
+                        _entryController.clear();
+                        setState(() => _section = selection.single);
+                      },
               ),
             ),
             const SizedBox(height: 16),
@@ -422,17 +428,20 @@ class _MonthlyScreenState extends ConsumerState<MonthlyScreen>
       return;
     }
 
+    final JournalMonthlySection section = _section;
+    final DateTime month = _month;
+    final int selectedDay = _selectedDay;
     final AppLocalizations l10n = AppLocalizations.of(context);
     setState(() => _saving = true);
 
     try {
       final MonthlyJournalDataSource dataSource = _dataSource();
       final MonthlyLogSnapshot snapshot = await _snapshotFuture;
-      if (_section == JournalMonthlySection.calendar) {
+      if (section == JournalMonthlySection.calendar) {
         await dataSource.captureCalendarEvent(
           logId: snapshot.logId,
           calendarDate: _formatMethodDate(
-            DateTime(_month.year, _month.month, _selectedDay),
+            DateTime(month.year, month.month, selectedDay),
           ),
           content: content,
         );
@@ -515,14 +524,30 @@ class _MonthlyScreenState extends ConsumerState<MonthlyScreen>
     final DateTime now = DateTime.now();
     final DateTime currentMonth = DateTime(now.year, now.month);
     if (currentMonth == _month) {
+      _scheduleMonthRollover();
       return;
     }
 
     setState(() {
       _month = currentMonth;
-      _selectedDay = now.day.clamp(1, _daysInMonth(_month));
+      _selectedDay = _clampDay(now.day, _month);
       _snapshotFuture = _loadSnapshot();
     });
+    _scheduleMonthRollover();
+  }
+
+  void _scheduleMonthRollover() {
+    _monthRolloverTimer?.cancel();
+    if (widget.initialMonth != null) {
+      return;
+    }
+
+    final DateTime now = DateTime.now();
+    final DateTime nextMonth = DateTime(now.year, now.month + 1);
+    _monthRolloverTimer = Timer(
+      nextMonth.difference(now) + const Duration(seconds: 1),
+      _refreshMonthIfNeeded,
+    );
   }
 }
 
@@ -530,6 +555,17 @@ enum _MonthlyTaskAction { complete, discard }
 
 int _daysInMonth(DateTime month) {
   return DateTime(month.year, month.month + 1, 0).day;
+}
+
+int _clampDay(int day, DateTime month) {
+  final int lastDay = _daysInMonth(month);
+  if (day < 1) {
+    return 1;
+  }
+  if (day > lastDay) {
+    return lastDay;
+  }
+  return day;
 }
 
 String _formatMethodDate(DateTime date) {
