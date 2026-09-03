@@ -80,7 +80,9 @@ void main() {
     expect(find.byIcon(Icons.more_vert), findsNothing);
   });
 
-  testWidgets('shows a quiet empty state when no entry matches', (tester) async {
+  testWidgets('shows a quiet empty state when no entry matches', (
+    tester,
+  ) async {
     final _MemorySearchJournal dataSource = _MemorySearchJournal();
 
     await _pumpSearch(tester, dataSource);
@@ -114,9 +116,7 @@ Future<void> _pumpSearch(
 }
 
 final class _MemorySearchJournal implements SearchJournalDataSource {
-  _MemorySearchJournal({
-    this._results = const <JournalSearchResult>[],
-  });
+  _MemorySearchJournal({this._results = const <JournalSearchResult>[]});
 
   final List<JournalSearchResult> _results;
   String? lastQuery;

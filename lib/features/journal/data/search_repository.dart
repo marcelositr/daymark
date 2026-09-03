@@ -104,9 +104,7 @@ final class JournalSearchRepository {
         }
 
         final String? logId = row.readNullable<String>('log_id');
-        final String? collectionId = row.readNullable<String>(
-          'collection_id',
-        );
+        final String? collectionId = row.readNullable<String>('collection_id');
         if ((logId == null) == (collectionId == null)) {
           throw const JournalInvariantException(
             'Search result Entry must have exactly one owner.',
