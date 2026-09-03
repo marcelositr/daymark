@@ -88,6 +88,8 @@ Capturing a new entry directly in Future is different from scheduling an existin
 
 The Index is a deliberate ordered set of references to journal structures such as Logs and Collections.
 
+An Index item targets a Log or Collection as a structure. It does not target an individual Entry directly in the current model.
+
 Adding a structure to the Index:
 
 - does not create or duplicate an Entry;
