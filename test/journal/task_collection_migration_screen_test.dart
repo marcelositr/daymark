@@ -194,6 +194,9 @@ final class _MonthlyJournal implements MonthlyJournalDataSource {
       );
 
   @override
+  Future<MonthlyLogSnapshot?> find(String periodStart) => load(periodStart);
+
+  @override
   Future<void> captureCalendarEvent({
     required String logId,
     required String calendarDate,
