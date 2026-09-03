@@ -114,6 +114,25 @@ void main() {
     },
   );
 
+  test('matches Unicode case changes while keeping accents literal', () async {
+    final String dailyId = await service.createLog(
+      kind: JournalLogKind.daily,
+      periodStart: '2026-09-03',
+    );
+    await service.capture(
+      type: JournalEntryType.note,
+      content: 'Revisar RÁDIO portátil',
+      owner: JournalLogOwner(logId: dailyId),
+    );
+
+    final List<JournalSearchResult> lower = await search.search('rádio');
+    final List<JournalSearchResult> upper = await search.search('RÁDIO');
+
+    expect(lower.single.content, 'Revisar RÁDIO portátil');
+    expect(upper.single.content, 'Revisar RÁDIO portátil');
+    expect(await search.search('radio'), isEmpty);
+  });
+
   test(
     'treats query punctuation literally and ignores blank queries',
     () async {
