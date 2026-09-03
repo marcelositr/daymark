@@ -12,6 +12,8 @@ final class AppSectionScope extends InheritedNotifier<ValueNotifier<int>> {
     super.key,
   }) : super(notifier: currentIndex);
 
+  static const int futureSectionIndex = 2;
+
   static int? maybeCurrentIndexOf(BuildContext context) {
     return context
         .dependOnInheritedWidgetOfExactType<AppSectionScope>()
