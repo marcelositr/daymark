@@ -34,7 +34,8 @@ final class FutureLogSnapshot {
 /// Focused read/write boundary for one Future Log month bucket.
 ///
 /// Reads query encrypted storage directly. Mutations continue through the
-/// semantic [JournalService], which owns Future Log placement invariants.
+/// semantic [JournalService], while this boundary verifies the supplied owner
+/// really is a Future Log before capture.
 final class FutureLogRepository {
   const FutureLogRepository(this._database, this._journalService);
 
@@ -70,8 +71,9 @@ final class FutureLogRepository {
     required String logId,
     required JournalEntryType type,
     required String content,
-  }) {
-    return _journalService.capture(
+  }) async {
+    await _requireFutureLog(logId);
+    await _journalService.capture(
       type: type,
       content: content,
       owner: JournalLogOwner(logId: logId),
@@ -90,6 +92,23 @@ final class FutureLogRepository {
         )
         .getSingleOrNull();
     return row?.read<String>('id');
+  }
+
+  Future<void> _requireFutureLog(String logId) async {
+    final row = await _database
+        .customSelect(
+          'SELECT kind FROM logs WHERE id = ?',
+          variables: <Variable<Object>>[Variable.withString(logId)],
+        )
+        .getSingleOrNull();
+    if (row == null) {
+      throw JournalNotFoundException('Log', logId);
+    }
+    if (row.read<String>('kind') != JournalLogKind.future.code) {
+      throw const JournalInvariantException(
+        'Future Log capture requires a Future Log owner.',
+      );
+    }
   }
 
   Future<List<FutureLogEntry>> _loadEntries(String logId) async {
