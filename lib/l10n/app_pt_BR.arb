@@ -40,5 +40,8 @@
   "monthlyLogLoadFailed": "Não foi possível carregar este Registro Mensal.",
   "emptyMonthlyTasks": "Nenhuma tarefa mensal ainda.",
   "monthlyEventHint": "Adicione um evento para este dia",
-  "monthlyTaskHint": "Adicione uma tarefa para este mês"
+  "monthlyTaskHint": "Adicione uma tarefa para este mês",
+  "futureLogLoadFailed": "Não foi possível carregar o Registro Futuro.",
+  "emptyFutureMonth": "Nada planejado para este mês.",
+  "futureEntryHint": "Adicione uma tarefa, evento ou nota futura"
 }
