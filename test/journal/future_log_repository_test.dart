@@ -43,7 +43,9 @@ void main() {
   });
 
   test('Future entries preserve type, task state, and order', () async {
-    final FutureLogSnapshot initial = await futureLog.loadOrCreate('2026-10-01');
+    final FutureLogSnapshot initial = await futureLog.loadOrCreate(
+      '2026-10-01',
+    );
 
     await futureLog.capture(
       logId: initial.logId,
@@ -77,8 +79,12 @@ void main() {
   });
 
   test('different Future months remain separate buckets', () async {
-    final FutureLogSnapshot october = await futureLog.loadOrCreate('2026-10-01');
-    final FutureLogSnapshot november = await futureLog.loadOrCreate('2026-11-01');
+    final FutureLogSnapshot october = await futureLog.loadOrCreate(
+      '2026-10-01',
+    );
+    final FutureLogSnapshot november = await futureLog.loadOrCreate(
+      '2026-11-01',
+    );
 
     await futureLog.capture(
       logId: october.logId,

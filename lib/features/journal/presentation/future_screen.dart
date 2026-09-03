@@ -184,7 +184,9 @@ class _FutureScreenState extends ConsumerState<FutureScreen>
 
         return Padding(
           key: ValueKey<String>('future-$periodStart'),
-          padding: EdgeInsets.only(bottom: index == _months.length - 1 ? 0 : 20),
+          padding: EdgeInsets.only(
+            bottom: index == _months.length - 1 ? 0 : 20,
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -223,10 +225,7 @@ class _FutureScreenState extends ConsumerState<FutureScreen>
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SizedBox(
-            width: 28,
-            child: _buildEntryMarker(context, l10n, entry),
-          ),
+          SizedBox(width: 28, child: _buildEntryMarker(context, l10n, entry)),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
@@ -314,7 +313,8 @@ class _FutureScreenState extends ConsumerState<FutureScreen>
                       DropdownMenuItem<DateTime>(
                         value: month,
                         child: Text(
-                          MaterialLocalizations.of(context).formatMonthYear(month),
+                          MaterialLocalizations.of(context)
+                              .formatMonthYear(month),
                         ),
                       ),
                   ],
@@ -510,7 +510,9 @@ class _FutureScreenState extends ConsumerState<FutureScreen>
     setState(() {
       _anchorMonth = currentMonth;
       _months = months;
-      _selectedMonth = selectedIndex >= 0 ? months[selectedIndex] : months.first;
+      _selectedMonth = selectedIndex >= 0
+          ? months[selectedIndex]
+          : months.first;
       _snapshotsFuture = _loadSnapshots();
     });
     _scheduleHorizonRollover();

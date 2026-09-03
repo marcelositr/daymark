@@ -136,7 +136,9 @@ Future<void> _pumpFuture(
 ) async {
   await tester.pumpWidget(
     ProviderScope(
-      overrides: [futureJournalDataSourceProvider.overrideWithValue(dataSource)],
+      overrides: [
+        futureJournalDataSourceProvider.overrideWithValue(dataSource),
+      ],
       child: MaterialApp(
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
@@ -155,10 +157,7 @@ final class _MemoryFutureJournal implements FutureJournalDataSource {
   final List<String> loadedPeriods = <String>[];
 
   List<FutureLogEntry> entriesFor(String periodStart) {
-    return _entriesByPeriod.putIfAbsent(
-      periodStart,
-      () => <FutureLogEntry>[],
-    );
+    return _entriesByPeriod.putIfAbsent(periodStart, () => <FutureLogEntry>[]);
   }
 
   @override
