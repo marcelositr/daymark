@@ -56,14 +56,18 @@ The date changes automatically at the method-day boundary, but unresolved entrie
 
 ### Monthly Log
 
-The first Monthly implementation represents the **current month** only.
-
-It preserves the method's two different areas:
+Monthly preserves the method's two different areas:
 
 - **Calendar**: one row per date, with dated Event entries;
-- **Tasks**: an open monthly Task list.
+- **Tasks**: a monthly Task list.
 
-Historical month browsing may be added later, but it must not change the meaning of the current-month Monthly Log or turn it into a generic agenda.
+The **current month** remains the active Monthly Log and supports capture plus deliberate Task actions.
+
+Earlier Monthly Logs may be browsed month by month in **read-only historical mode**. Historical browsing must not create a missing Monthly Log merely because the user navigated to that month, must not expose capture or Task actions, and must not allow navigation forward past the current month into a future Monthly Log.
+
+A historical month that has never existed therefore appears empty without becoming persisted state or an Index candidate. Returning to the current month restores the normal interactive Monthly behavior.
+
+This history surface is retrieval, not a reflection engine or generic agenda. Future editing of historical Monthly Logs, direct Index/Search navigation to an arbitrary historical month, and richer Monthly reflection remain separate product decisions.
 
 ### Future Log
 
