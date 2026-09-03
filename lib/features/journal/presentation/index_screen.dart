@@ -172,23 +172,26 @@ class _IndexScreenState extends ConsumerState<IndexScreen> {
       builder: (dialogContext) {
         return AlertDialog(
           title: Text(l10n.addIndexItem),
-          content: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 440, maxHeight: 420),
-            child: ListView.separated(
-              shrinkWrap: true,
-              itemCount: candidates.length,
-              separatorBuilder: (context, index) => const Divider(height: 1),
-              itemBuilder: (context, index) {
-                final IndexCandidate candidate = candidates[index];
-                return ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: Icon(
-                    _iconFor(candidate.targetKind, candidate.logKind),
-                  ),
-                  title: Text(_labelForCandidate(candidate, l10n)),
-                  onTap: () => Navigator.of(dialogContext).pop(candidate),
-                );
-              },
+          content: SizedBox(
+            width: 440,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxHeight: 420),
+              child: ListView.separated(
+                shrinkWrap: true,
+                itemCount: candidates.length,
+                separatorBuilder: (context, index) => const Divider(height: 1),
+                itemBuilder: (context, index) {
+                  final IndexCandidate candidate = candidates[index];
+                  return ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: Icon(
+                      _iconFor(candidate.targetKind, candidate.logKind),
+                    ),
+                    title: Text(_labelForCandidate(candidate, l10n)),
+                    onTap: () => Navigator.of(dialogContext).pop(candidate),
+                  );
+                },
+              ),
             ),
           ),
           actions: [
