@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   apply:
-    if: "${{ github.event.head_commit.message == 'ci: retry PR 22 patch after script syntax fix' }}"
+    if: "${{ github.event.head_commit.message == 'ci: retry PR 22 patch after marker fix' }}"
     runs-on: ubuntu-24.04
     steps:
       - name: Check out feature branch
@@ -48,6 +48,10 @@ jobs:
               close_marker,
               '""",\n)\n\nreplace_once(\n    "lib/core/session/journal_session.dart",',
               1,
+          )
+          text = text.replace(
+              '"  Future<void> _applyEntryAction(\\n",',
+              '"  Future<void> _applyEntryAction",',
           )
           path.write_text(text)
           PY
