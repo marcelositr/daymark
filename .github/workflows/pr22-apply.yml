@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   apply:
-    if: "${{ github.event.head_commit.message == 'ci: retry PR 22 patch after marker fix' }}"
+    if: "${{ github.event.head_commit.message == 'ci: split PR 22 validation probes' }}"
     runs-on: ubuntu-24.04
     steps:
       - name: Check out feature branch
@@ -26,7 +26,7 @@ jobs:
           channel: stable
           cache: true
 
-      - name: Apply and validate implementation
+      - name: Apply patch and mechanical checks
         shell: bash
         run: |
           set -euo pipefail
@@ -62,8 +62,44 @@ jobs:
           dart format lib test
           dart format --output=none --set-exit-if-changed lib test
           git diff --check
-          flutter analyze
-          flutter test
+
+      - name: Analyze
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout 120s flutter analyze
+
+      - name: Test collection repository
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout 120s flutter test test/journal/collection_repository_test.dart
+
+      - name: Test collection reference session
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout 120s flutter test test/session/collection_reference_session_test.dart
+
+      - name: Test collection reference screens
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout 120s flutter test test/journal/entry_collection_reference_screen_test.dart
+
+      - name: Test Collection presentation regressions
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout 120s flutter test \
+            test/journal/collections_screen_test.dart \
+            test/journal/collections_activation_test.dart
+
+      - name: Test full suite
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout 240s flutter test
 
       - name: Commit exact validated output
         shell: bash
