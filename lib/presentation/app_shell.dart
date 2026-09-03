@@ -43,6 +43,9 @@ class _AppShellState extends State<AppShell> {
   Widget build(BuildContext context) {
     final AppLocalizations l10n = AppLocalizations.of(context);
     final StatefulNavigationShell navigationShell = widget.navigationShell;
+    final int bottomSelectedIndex = navigationShell.currentIndex < 4
+        ? navigationShell.currentIndex
+        : 4;
     final List<NavigationDestination> bottomDestinations = [
       NavigationDestination(
         icon: const Icon(Icons.today_outlined),
@@ -60,7 +63,10 @@ class _AppShellState extends State<AppShell> {
         icon: const Icon(Icons.book_outlined),
         label: l10n.collections,
       ),
-      NavigationDestination(icon: const Icon(Icons.search), label: l10n.search),
+      NavigationDestination(
+        icon: const Icon(Icons.more_horiz),
+        label: l10n.more,
+      ),
     ];
 
     return AppSectionScope(
@@ -96,6 +102,10 @@ class _AppShellState extends State<AppShell> {
                         icon: const Icon(Icons.search),
                         label: Text(l10n.search),
                       ),
+                      NavigationRailDestination(
+                        icon: const Icon(Icons.format_list_numbered),
+                        label: Text(l10n.index),
+                      ),
                     ],
                   ),
                   const VerticalDivider(width: 1),
@@ -108,14 +118,49 @@ class _AppShellState extends State<AppShell> {
           return Scaffold(
             body: navigationShell,
             bottomNavigationBar: NavigationBar(
-              selectedIndex: navigationShell.currentIndex,
-              onDestinationSelected: _goToBranch,
+              selectedIndex: bottomSelectedIndex,
+              onDestinationSelected: (index) {
+                if (index < 4) {
+                  _goToBranch(index);
+                  return;
+                }
+                _showMore(context, l10n);
+              },
               destinations: bottomDestinations,
             ),
           );
         },
       ),
     );
+  }
+
+  Future<void> _showMore(BuildContext context, AppLocalizations l10n) async {
+    final int? branchIndex = await showModalBottomSheet<int>(
+      context: context,
+      useSafeArea: true,
+      builder: (sheetContext) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.search),
+                title: Text(l10n.search),
+                onTap: () => Navigator.of(sheetContext).pop(4),
+              ),
+              ListTile(
+                leading: const Icon(Icons.format_list_numbered),
+                title: Text(l10n.index),
+                onTap: () => Navigator.of(sheetContext).pop(5),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+    if (branchIndex != null && mounted) {
+      _goToBranch(branchIndex);
+    }
   }
 
   void _goToBranch(int index) {

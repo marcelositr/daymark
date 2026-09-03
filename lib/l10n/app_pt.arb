@@ -2,10 +2,13 @@
   "@@locale": "pt",
   "appName": "Daymark",
   "today": "Hoje",
+  "daily": "Diário",
   "monthly": "Mensal",
   "future": "Futuro",
   "collections": "Coleções",
   "search": "Buscar",
+  "index": "Índice",
+  "more": "Mais",
   "foundationMessage": "A fundação do Daymark está pronta.",
   "placeholderMessage": "Esta área será implementada em uma mudança própria e focada.",
   "createJournalTitle": "Crie seu diário",
@@ -61,5 +64,11 @@
   "referenceEntry": "Referenciar",
   "referenceEntryTitle": "Referenciar em Coleção",
   "referenceEntryFailed": "Não foi possível adicionar esta referência à Coleção.",
-  "collectionReferences": "Referências"
+  "collectionReferences": "Referências",
+  "indexLoadFailed": "Não foi possível carregar o Índice.",
+  "emptyIndex": "Nada indexado ainda.",
+  "addIndexItem": "Adicionar ao Índice",
+  "indexCandidatesLoadFailed": "Não foi possível carregar as estruturas disponíveis para o Índice.",
+  "noIndexCandidates": "Todas as estruturas disponíveis do diário já estão no Índice.",
+  "indexAddFailed": "Não foi possível adicionar esta estrutura ao Índice."
 }

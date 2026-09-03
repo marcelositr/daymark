@@ -111,9 +111,10 @@ Monthly
 Future
 Collections
 Search
+Index
 ```
 
-Index remains a distinct method structure even when its entry point differs between compact and expanded layouts.
+Index remains a distinct method structure even when its entry point differs between compact and expanded layouts. Expanded layouts expose Search and Index directly in the navigation rail. Compact layouts keep Today, Monthly, Future, and Collections as direct bottom destinations and expose Search and Index through a minimal More sheet rather than crowding six bottom items.
 
 Settings and contextual reflection flows are secondary navigation rather than permanent top-level destinations.
 
@@ -190,7 +191,7 @@ The unlocked-session abstraction is implemented and is no longer future architec
 - mutable `JournalKeyMaterial`;
 - `JournalRepository` and `JournalService`;
 - Task action services/repositories;
-- focused Daily, Monthly, Future, and Collection repository boundaries.
+- focused Daily, Monthly, Future, Collection, and Index repository/session boundaries.
 
 All journal operations exposed through `JournalSession` are serialized. Once closing begins, new operations cannot enter the encrypted database; lock waits for queued/in-flight work, closes persistence, then destroys key material.
 
@@ -201,6 +202,8 @@ Presentation code reaches journal behavior through focused data-source/provider 
 Focused repositories are responsible for the semantic location they claim to represent. A repository must reject an owner of the wrong log kind rather than assuming every caller is correct. This is especially important when source and destination owners cross product surfaces.
 
 The Collection boundary follows the same split: `CollectionRepository` owns focused Collection reads for both owned entries and references, and delegates semantic create/capture/reference writes to `JournalService`, while `JournalSession` serializes list/create/load/capture/reference operations with the rest of the unlocked journal lifecycle. Collection ownership, Collection references, and migration remain distinct domain operations rather than being collapsed into presentation helpers.
+
+The Index uses a focused `IndexRepository` over the existing encrypted `index_items` schema. Presentation reaches it through `JournalIndexSession` extension methods, which serialize list/candidate/add operations with `JournalSession.run(...)` so Index I/O cannot escape the unlocked session lifetime. The repository owns target existence, duplicate prevention, and global ordinal allocation; the widget only presents existing candidates and the user's deliberate choice.
 
 Forward Task migration to a Collection is exposed through `JournalSession.migrateTaskToCollection(...)`. The session first validates the persisted source as an open Task, then delegates to `JournalService.migrate(...)` with a `JournalCollectionOwner`. The presentation layer only lists existing Collections and records the user's deliberate choice; it does not create a destination or reproduce lineage rules.
 
