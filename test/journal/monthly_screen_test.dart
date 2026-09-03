@@ -139,6 +139,99 @@ void main() {
 
     await tester.pumpWidget(const SizedBox.shrink());
   });
+
+  testWidgets('Monthly browses a historical month without creating it', (
+    tester,
+  ) async {
+    final _MemoryMonthlyJournal dataSource = _MemoryMonthlyJournal(
+      historicalSnapshots: {
+        '2026-08-01': MonthlyLogSnapshot(
+          logId: 'monthly-2026-08-01',
+          periodStart: '2026-08-01',
+          calendarEntries: const [
+            MonthlyLogEntry(
+              id: 'event-august',
+              type: JournalEntryType.event,
+              taskState: null,
+              content: 'Historic meeting',
+              ordinal: 0,
+              section: JournalMonthlySection.calendar,
+              calendarDate: '2026-08-12',
+            ),
+          ],
+          taskEntries: const [],
+        ),
+      },
+    );
+
+    await _pumpMonthly(tester, dataSource);
+    final IconButton currentNext = tester.widget<IconButton>(
+      find.byTooltip('Next month'),
+    );
+    expect(currentNext.onPressed, isNull);
+
+    await tester.tap(find.byTooltip('Previous month'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('August 2026'), findsOneWidget);
+    expect(find.text('Historical Monthly Logs are read-only.'), findsOneWidget);
+    expect(find.text('○ Historic meeting'), findsOneWidget);
+    expect(find.byType(TextField), findsNothing);
+    expect(dataSource.loadPeriods, ['2026-09-01']);
+    expect(dataSource.findPeriods, ['2026-08-01']);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
+  testWidgets('historical Monthly Tasks are read-only and can return current', (
+    tester,
+  ) async {
+    final _MemoryMonthlyJournal dataSource = _MemoryMonthlyJournal(
+      historicalSnapshots: {
+        '2026-08-01': MonthlyLogSnapshot(
+          logId: 'monthly-2026-08-01',
+          periodStart: '2026-08-01',
+          calendarEntries: const [],
+          taskEntries: const [
+            MonthlyLogEntry(
+              id: 'task-august',
+              type: JournalEntryType.task,
+              taskState: JournalTaskState.open,
+              content: 'Historic task',
+              ordinal: 0,
+              section: JournalMonthlySection.tasks,
+              calendarDate: null,
+            ),
+          ],
+        ),
+      },
+    );
+
+    await _pumpMonthly(tester, dataSource);
+    await tester.tap(find.byTooltip('Previous month'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Tasks'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Historic task'), findsOneWidget);
+    expect(find.text('•'), findsOneWidget);
+    expect(find.byTooltip('Entry actions'), findsNothing);
+    expect(find.byType(TextField), findsNothing);
+
+    final IconButton historicalNext = tester.widget<IconButton>(
+      find.byTooltip('Next month'),
+    );
+    expect(historicalNext.onPressed, isNotNull);
+
+    await tester.tap(find.byTooltip('Next month'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('September 2026'), findsOneWidget);
+    expect(find.byType(TextField), findsOneWidget);
+    expect(dataSource.loadPeriods, ['2026-09-01', '2026-09-01']);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
 }
 
 Future<void> _pumpMonthly(
@@ -154,7 +247,10 @@ Future<void> _pumpMonthly(
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(
-          body: MonthlyScreen(initialMonth: DateTime(2026, 9, 15)),
+          body: MonthlyScreen(
+            initialMonth: DateTime(2026, 9, 15),
+            now: () => DateTime(2026, 9, 15),
+          ),
         ),
       ),
     ),
@@ -166,21 +262,35 @@ final class _MemoryMonthlyJournal implements MonthlyJournalDataSource {
   _MemoryMonthlyJournal({
     List<MonthlyLogEntry>? calendarEntries,
     List<MonthlyLogEntry>? taskEntries,
+    Map<String, MonthlyLogSnapshot?> historicalSnapshots = const {},
   }) : calendarEntries = calendarEntries ?? <MonthlyLogEntry>[],
-       taskEntries = taskEntries ?? <MonthlyLogEntry>[];
+       taskEntries = taskEntries ?? <MonthlyLogEntry>[],
+       historicalSnapshots = Map<String, MonthlyLogSnapshot?>.from(
+         historicalSnapshots,
+       );
 
   final List<MonthlyLogEntry> calendarEntries;
   final List<MonthlyLogEntry> taskEntries;
+  final Map<String, MonthlyLogSnapshot?> historicalSnapshots;
+  final List<String> loadPeriods = <String>[];
+  final List<String> findPeriods = <String>[];
   String? scheduledPeriodStart;
 
   @override
   Future<MonthlyLogSnapshot> load(String periodStart) async {
+    loadPeriods.add(periodStart);
     return MonthlyLogSnapshot(
       logId: 'monthly-$periodStart',
       periodStart: periodStart,
       calendarEntries: calendarEntries,
       taskEntries: taskEntries,
     );
+  }
+
+  @override
+  Future<MonthlyLogSnapshot?> find(String periodStart) async {
+    findPeriods.add(periodStart);
+    return historicalSnapshots[periodStart];
   }
 
   @override
