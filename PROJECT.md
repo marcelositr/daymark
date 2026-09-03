@@ -9,10 +9,10 @@ This is Daymark's canonical living handoff. Read this file and `AGENTS.md` befor
 - Current `main` head before the active feature PR: `bf8018c0e2250566af39e9f90632e5808c780783` (`docs: checkpoint PR 18 merge (#19)`).
 - Current merged product baseline: PR #18 squash-merged as `03ef4d187845ff13128f28298336b540b3237e9e`.
 - Active product implementation branch/PR: `feat/collections` / PR #20, `feat(journal): add basic collections`.
-- PR #20 is still Draft. Its current implementation provides a real minimal Collections surface without exposing forward migration (`>`), Index, references from chronological logs, planner abstractions, or schema changes.
+- PR #20 is Ready for review. Its current implementation provides a real minimal Collections surface without exposing forward migration (`>`), Index, references from chronological logs, planner abstractions, or schema changes.
 - Current merged product scope already includes deliberate Task scheduling (`<`) from Today and Monthly into one of the six real Future Log month buckets.
 - Deliberate migration (`>`) is **not** exposed yet. Collections now provide a real non-Future owning structure in PR #20, but merely having that structure does not justify exposing migration without a deliberate destination-selection flow and lifecycle coverage.
-- Current focus: finish PR #20 validation/documentation, run full Ready CI, perform proportionate manual product validation if needed, then stop for explicit user merge approval.
+- Current focus: validate this final documentation-only head with the full Ready CI, perform proportionate manual product validation if needed, then stop for explicit user merge approval.
 - Merge policy: never merge without explicit user approval.
 - Runtime targets: Linux and Android.
 - Pinned toolchain: Flutter 3.47.2 / Dart 3.13.2.
@@ -190,7 +190,7 @@ Implemented behavior:
 
 Retained-Future refresh fix:
 
-- manual Linux testing found that scheduling persisted correctly while the retained Future tab initially displayed stale snapshots until lock/restart;
+- manual Linux testing found that scheduling persisted correctly while Future displayed stale snapshots until lock/restart;
 - root cause was `StatefulShellRoute.indexedStack` retaining Future, so returning to the tab did not rerun `initState()`;
 - `AppSectionScope` now publishes top-level activation and Future reloads its six snapshots on inactive -> active transition;
 - a widget regression test proves externally changed Future data appears on reactivation without remount, lock, or restart;
@@ -242,7 +242,9 @@ Validation so far:
 - user-local validation of the resulting code-equivalent tree (before the later session-test-only commit): formatter **59 files / 0 changes**, analyzer **No issues found**, **108 tests passed**, Linux debug build passed;
 - a temporary formatter-probe workflow was used only to recover exact formatter bytes through GitHub, then removed completely before Ready;
 - Draft CI #315 on head `703cc3f61f900d2699d370141c834d84a0785d96`: `dev-check` green, including localization generation, Drift generation/snapshot checks, formatter, and analyzer;
-- the final documentation commit after this checkpoint changes the PR head, so #315 is not final-head merge evidence. Full Ready CI must validate the final head.
+- Draft CI #317 on head `d44a1d37febb5b84ed1fc9ffa63ee6da693e2ed4`: `dev-check` green after the architecture/handoff reconciliation;
+- full Ready CI #318 on the same head `d44a1d37febb5b84ed1fc9ffa63ee6da693e2ed4`: `quality` including the full test suite, Linux build, Android build, dependency review, and `merge-gate` all green;
+- this checkpoint commit is documentation-only and therefore changes the PR head after #318. The full Ready CI must still validate the final documentation head before merge approval is requested.
 
 ## Next work after PR #20
 
