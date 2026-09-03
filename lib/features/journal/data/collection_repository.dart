@@ -105,7 +105,9 @@ final class CollectionRepository {
           CollectionEntry(
             id: row.read<String>('id'),
             type: _entryTypeFromCode(row.read<String>('entry_type')),
-            taskState: _taskStateFromCode(row.readNullable<String>('task_state')),
+            taskState: _taskStateFromCode(
+              row.readNullable<String>('task_state'),
+            ),
             content: row.read<String>('content'),
             ordinal: row.read<int>('ordinal'),
           ),
