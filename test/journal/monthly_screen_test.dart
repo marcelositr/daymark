@@ -166,7 +166,7 @@ void main() {
 
     await _pumpMonthly(tester, dataSource);
     final IconButton currentNext = tester.widget<IconButton>(
-      find.byTooltip('Next month'),
+      find.widgetWithIcon(IconButton, Icons.chevron_right),
     );
     expect(currentNext.onPressed, isNull);
 
@@ -219,7 +219,7 @@ void main() {
     expect(find.byType(TextField), findsNothing);
 
     final IconButton historicalNext = tester.widget<IconButton>(
-      find.byTooltip('Next month'),
+      find.widgetWithIcon(IconButton, Icons.chevron_right),
     );
     expect(historicalNext.onPressed, isNotNull);
 
