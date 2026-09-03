@@ -38,60 +38,63 @@ void main() {
     await tester.pumpWidget(const SizedBox.shrink());
   });
 
-  testWidgets('Future refreshes retained snapshots when its section activates', (
-    tester,
-  ) async {
-    final _MemoryFutureJournal dataSource = _MemoryFutureJournal();
-    final ValueNotifier<int> currentSection = ValueNotifier<int>(
-      AppSectionScope.futureSectionIndex,
-    );
-    addTearDown(currentSection.dispose);
+  testWidgets(
+    'Future refreshes retained snapshots when its section activates',
+    (tester) async {
+      final _MemoryFutureJournal dataSource = _MemoryFutureJournal();
+      final ValueNotifier<int> currentSection = ValueNotifier<int>(
+        AppSectionScope.futureSectionIndex,
+      );
+      addTearDown(currentSection.dispose);
 
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          futureJournalDataSourceProvider.overrideWithValue(dataSource),
-        ],
-        child: AppSectionScope(
-          currentIndex: currentSection,
-          child: MaterialApp(
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
-            home: Scaffold(
-              body: FutureScreen(initialDate: DateTime(2026, 9, 2)),
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            futureJournalDataSourceProvider.overrideWithValue(dataSource),
+          ],
+          child: AppSectionScope(
+            currentIndex: currentSection,
+            child: MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: Scaffold(
+                body: FutureScreen(initialDate: DateTime(2026, 9, 2)),
+              ),
             ),
           ),
         ),
-      ),
-    );
-    await tester.pumpAndSettle();
+      );
+      await tester.pumpAndSettle();
 
-    expect(find.text('Scheduled elsewhere'), findsNothing);
-    dataSource.entriesFor('2026-10-01').add(
-      const FutureLogEntry(
-        id: 'scheduled-1',
-        type: JournalEntryType.task,
-        taskState: JournalTaskState.open,
-        content: 'Scheduled elsewhere',
-        ordinal: 0,
-      ),
-    );
+      expect(find.text('Scheduled elsewhere'), findsNothing);
+      dataSource
+          .entriesFor('2026-10-01')
+          .add(
+            const FutureLogEntry(
+              id: 'scheduled-1',
+              type: JournalEntryType.task,
+              taskState: JournalTaskState.open,
+              content: 'Scheduled elsewhere',
+              ordinal: 0,
+            ),
+          );
 
-    currentSection.value = 0;
-    await tester.pump();
-    expect(find.text('Scheduled elsewhere'), findsNothing);
+      currentSection.value = 0;
+      await tester.pump();
+      expect(find.text('Scheduled elsewhere'), findsNothing);
 
-    currentSection.value = AppSectionScope.futureSectionIndex;
-    await tester.pumpAndSettle();
+      currentSection.value = AppSectionScope.futureSectionIndex;
+      await tester.pumpAndSettle();
 
-    expect(find.text('Scheduled elsewhere'), findsOneWidget);
-    expect(
-      dataSource.loadedPeriods.where((period) => period == '2026-10-01'),
-      hasLength(2),
-    );
+      expect(find.text('Scheduled elsewhere'), findsOneWidget);
+      expect(
+        dataSource.loadedPeriods.where((period) => period == '2026-10-01'),
+        hasLength(2),
+      );
 
-    await tester.pumpWidget(const SizedBox.shrink());
-  });
+      await tester.pumpWidget(const SizedBox.shrink());
+    },
+  );
 
   testWidgets('Future captures an Event with Rapid Logging semantics', (
     tester,
