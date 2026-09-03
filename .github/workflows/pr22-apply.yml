@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   apply:
-    if: "${{ github.event.head_commit.message == 'ci: split PR 22 validation probes' }}"
+    if: "${{ github.event.head_commit.message == 'ci: retry PR22 preserving task diagnostics' }}"
     runs-on: ubuntu-24.04
     steps:
       - name: Check out feature branch
@@ -57,6 +57,48 @@ jobs:
           PY
           python3 -m py_compile tool/apply_pr22_patch.py
           python3 tool/apply_pr22_patch.py
+          python3 - <<'PY'
+          from pathlib import Path
+
+          replacements = {
+              'lib/features/journal/presentation/today_screen.dart': (
+                  "      _reportUnexpectedJournalError('entry action', error, stackTrace);",
+                  """      _reportUnexpectedJournalError(
+        action == _EntryAction.reference
+            ? 'collection reference'
+            : 'task action',
+        error,
+        stackTrace,
+      );""",
+              ),
+              'lib/features/journal/presentation/monthly_screen.dart': (
+                  "      _reportUnexpectedMonthlyError('entry action', error, stackTrace);",
+                  """      _reportUnexpectedMonthlyError(
+        action == _MonthlyEntryAction.reference
+            ? 'collection reference'
+            : 'task action',
+        error,
+        stackTrace,
+      );""",
+              ),
+              'lib/features/journal/presentation/future_screen.dart': (
+                  "      _reportUnexpectedFutureError('entry action', error, stackTrace);",
+                  """      _reportUnexpectedFutureError(
+        action == _FutureEntryAction.reference
+            ? 'collection reference'
+            : 'task action',
+        error,
+        stackTrace,
+      );""",
+              ),
+          }
+          for file_name, (old, new) in replacements.items():
+              path = Path(file_name)
+              text = path.read_text()
+              if text.count(old) != 1:
+                  raise SystemExit(f'{file_name}: expected one diagnostic call')
+              path.write_text(text.replace(old, new, 1))
+          PY
           flutter pub get --enforce-lockfile
           flutter gen-l10n
           dart format lib test
@@ -68,6 +110,12 @@ jobs:
         run: |
           set -euo pipefail
           timeout 120s flutter analyze
+
+      - name: Test Today failure diagnostic regression
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout 120s flutter test test/journal/today_screen_test.dart
 
       - name: Test collection repository
         shell: bash
