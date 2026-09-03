@@ -6,16 +6,16 @@ Every agent must read it before meaningful work and update it before handing wor
 
 ## Current state
 
-- Phase: pre-alpha, deliberate Task actions in development
+- Phase: pre-alpha, Monthly Log in development
 - Public release status: no release yet
 - Intended first public release stage: `v1.0.0-alpha.1`
 - Integration branch: `main`
-- Current `main` baseline: PR #14 merged as `d93563184c01ef406398619212410c540d00712a`
-- Current working branch: `feat/deliberate-task-actions`
-- Current pull request: Draft PR #15, `feat(journal): add deliberate task completion and discard`
-- PR #15 scope: complete/discard open Tasks in Today while preserving history; migration/scheduling UI remains deferred until real Monthly/Future destinations exist
+- Current `main` baseline: PR #15 squash-merged as `b3af861dc00b81402d27cbdec39e3c99212c6590`
+- Current working branch: `feat/monthly-log`
+- Current pull request: Draft PR #16, `feat(journal): add Monthly Log flow`
+- PR #16 scope: current-month Monthly Log with Calendar and Tasks, dated Events, Monthly Tasks, and complete/discard actions; month browsing, Future Log, and migration/scheduling destination UI remain deferred
 - Merge policy: agents never merge without explicit user approval
-- Current focus: run the complete local suite and Linux debug build on the final documented head, then promote PR #15 for full non-Draft CI
+- Current focus: validate the final documented PR #16 head with the complete local suite and Linux debug build, then promote to Ready for full non-Draft CI
 - Initial runtime targets: Linux and Android
 - Pinned toolchain: Flutter 3.47.2 / Dart 3.13.2
 - Initial production Argon2id baseline: **19 MiB / 2 iterations / p=1 / 32-byte output**
@@ -30,7 +30,7 @@ Every agent must read it before meaningful work and update it before handing wor
 - The user makes the merge decision. AI agents do not merge implicitly or through auto-merge.
 - Keep `PROJECT.md` current before handing work off.
 - Keep `CHANGELOG.md` release-facing rather than using it as a development scratchpad.
-- Follow the staged engineering/validation ladder in `AGENTS.md` and `docs/WORKFLOW.md`: trustworthy baseline -> audit when needed -> Draft CI -> layer-correct tests -> progressive local validation -> documentation alignment -> full non-Draft CI -> explicit merge approval.
+- Follow the staged engineering/validation ladder in `AGENTS.md` and `docs/WORKFLOW.md`: trustworthy baseline -> audit when needed -> Draft CI -> layer-correct tests -> progressive local validation -> documentation alignment -> full non-Draft CI -> explicit user merge approval.
 - When local-only evidence is required, agents provide complete safe command blocks with stop conditions and interpret the returned output rather than asking the user to improvise debugging.
 - Command blocks intended for an interactive user shell must not terminate that shell as a side effect; report exit codes instead of calling a bare final `exit`.
 - When GitHub/API data is delayed, missing, or contradictory, do not guess state; continue independent work or stop at the exact blocked boundary and request the smallest missing reference.
@@ -158,65 +158,86 @@ Merged in PR #14 as `d93563184c01ef406398619212410c540d00712a`.
 
 Platform-specific immediate lock from Linux desktop-session lock or Android device-lock remains a separate future integration.
 
+### Deliberate Task completion/discard
+
+Merged in PR #15 as `b3af861dc00b81402d27cbdec39e3c99212c6590`.
+
+- [x] focused Task action repository/service validates persisted type and open state before terminal mutation
+- [x] open Tasks can deliberately become completed or discarded
+- [x] Events/Notes reject Task-only actions
+- [x] terminal Tasks reject repeated or contradictory terminal transitions
+- [x] original placement and content remain intact
+- [x] completed Task uses `×`
+- [x] discarded Task preserves the original `•` and strikes through bullet/content
+- [x] task actions share the serialized session path with capture and lock
+- [x] terminal state persists across encrypted lock/unlock
+- [x] local 80-test suite, Linux debug build, manual Linux validation, Draft CI #204, full CI #205, and `merge-gate` all passed before explicit user-authorized squash merge
+
+Migration/scheduling remain semantically implemented in `JournalService`/`JournalRepository`; product UI stays deferred until real destination screens exist.
+
 ## Historical decisions
 
 - PR #11 (`feat/unlock-daily-log`) was audited, closed, and intentionally not merged after structural UI/session-test problems were found.
 - PR #13 rebuilt that vertical slice from clean audited `main` and established the current staged AI/human workflow.
 - Do not revive PR #11 implementation history as a base for new work.
 
-## Current work: PR #15 deliberate Task completion/discard
+## Current work: PR #16 Monthly Log
 
-Goal: add the first visible Task lifecycle actions without creating a temporary migration/scheduling UX before destination screens exist.
+Goal: replace the Monthly placeholder with the first real Monthly Log while preserving Bullet Journal semantics and avoiding a generic planner/calendar product shape.
 
 ### Scope decision
 
-PR #15 handles only terminal in-place Task actions:
+PR #16 handles only the **current month**:
 
-- complete: `open -> completed`;
-- discard: `open -> discarded`.
+- Calendar section renders the dates of the month and accepts dated Event entries;
+- Tasks section accepts open Task entries;
+- Monthly Tasks can be completed/discarded through the same deliberate terminal-action semantics already used in Today;
+- all Monthly reads/writes remain behind the unlocked serialized journal session;
+- month browsing, Future Log, and migration/scheduling destination UI remain outside this PR.
 
-Migration/scheduling remain semantically implemented in `JournalService`/`JournalRepository`, but their UI is deferred until real Monthly/Future destinations are available. Do not invent a temporary destination picker just to expose those operations early.
+### Implemented on `feat/monthly-log`
 
-### Implemented on `feat/deliberate-task-actions`
-
-- [x] focused `TaskActionRepository` validates persisted entry type/state before mutation
-- [x] focused `TaskActionService` exposes completion/discard application operations
-- [x] Event/Note entries reject Task-only terminal actions
-- [x] terminal Tasks reject repeated or contradictory terminal transitions
-- [x] original entry placement/content remain intact when a Task is completed/discarded
-- [x] `JournalSession` serializes Task actions with capture and lock operations
-- [x] real encrypted session test covers completion/discard persistence across lock -> unlock
-- [x] Today data-source boundary exposes completion/discard without filesystem/crypto work in widget tests
-- [x] open Task marker exposes a minimal action menu
-- [x] completed Task uses `×`
-- [x] discarded Task remains in journal history with the original `•` marker and content struck through
-- [x] Task-action failure leaves the Task open and reports a generic UI error
-- [x] English, pt, and pt_BR strings added for Task actions/failure
-- [x] final Draft CI #203 passed generation, Drift snapshot/artifact checks, formatting, and analyzer on implementation head `9a296c8047fe48457f5776bfe2afb19d3637c155`
-- [x] focused local validation passed on that head: formatter clean, analyzer clean, and 17 focused tests passed across Task actions, Today, and encrypted session lifecycle
-- [ ] complete local suite and Linux debug build
-- [x] manual Linux behavior validation: complete/discard menus behaved correctly, completed Tasks persisted as `×`, discarded Tasks remained struck through in history, Event/Note exposed no Task actions, and states survived lock -> unlock
+- [x] focused `MonthlyLogRepository` loads/creates one Monthly Log per month without schema changes
+- [x] Monthly reads split Calendar and Tasks sections from encrypted persistence
+- [x] Calendar capture delegates to `JournalService` with Monthly Calendar placement/date invariants
+- [x] Tasks capture delegates to `JournalService` with Monthly Tasks placement invariants
+- [x] `JournalSession` serializes Monthly load/capture with all other journal operations
+- [x] Monthly Task completion/discard reuses the existing `TaskActionService`
+- [x] `/monthly` route now renders a real Monthly screen instead of a placeholder
+- [x] current month rolls over on resume and via a month-boundary timer while the app remains open
+- [x] Calendar/Tasks section selection is captured before asynchronous saves so switching sections cannot redirect an in-flight entry
+- [x] English, pt, and pt_BR Monthly strings are present
+- [x] real repository tests cover one log per month, dated Calendar Events, Tasks separation, and invalid date/month behavior
+- [x] pure widget tests cover dated Event capture, Task capture/completion, and discarded Task history without real filesystem/crypto work
+- [x] real encrypted session test proves Monthly Event/Task state survives lock -> unlock
+- [x] local focused validation passed on implementation head `63f4a672bbd3ef5e8289b24798a4811ce255d688`: repository tests green, 3 Monthly widget tests green, encrypted session tests green, analyzer clean after l10n generation
+- [x] manual Linux behavior validation passed on implementation head: current-month Calendar/Tasks UI, dated Event capture, Task completion/discard, persistence across lock/unlock, and Today regression check all behaved correctly
+- [x] Draft CI #221 passed generation, Drift snapshot/artifact checks, formatting, and analyzer on implementation head `63f4a672bbd3ef5e8289b24798a4811ce255d688`
+- [ ] complete local suite and Linux debug build on the final documented head
+- [ ] final Draft CI on the documented head
 - [ ] full non-Draft CI and `merge-gate`
 - [ ] explicit user merge approval
 
-### Validation policy for PR #15
+### Validation policy for PR #16
 
 Before merge eligibility:
 
-1. repository/application tests must prove only open Tasks can complete/discard and historical placement remains intact;
-2. real session tests must prove terminal state persists across encrypted lock/unlock;
-3. pure Today widget tests must prove success and fail-closed UI behavior without real filesystem/Argon2/SQLite work;
-4. final Draft CI must pass generation, Drift snapshot/artifact checks, formatting, and analyzer;
-5. focused local tests must pass on the exact final implementation HEAD;
-6. full local suite and Linux debug build must pass before promotion from Draft;
-7. manual Linux review must confirm completion/discard behavior and persistence without breaking auto-lock or capture;
-8. non-Draft CI must pass `quality`, Linux build, Android build, dependency review, and `merge-gate`;
-9. merge remains an explicit user decision.
+1. repository tests must prove one Monthly Log per month and correct Calendar/Tasks placement semantics;
+2. real session tests must prove Monthly data/state persists across encrypted lock/unlock;
+3. pure Monthly widget tests must validate capture and Task terminal actions without real filesystem/Argon2/SQLite work;
+4. Draft CI must pass generation, Drift snapshot/artifact checks, formatting, and analyzer;
+5. focused local tests must pass on the exact implementation HEAD;
+6. manual Linux review must confirm Calendar/Tasks behavior, persistence, and no obvious Today regression;
+7. documentation must reflect the merged PR #15 baseline and current PR #16 evidence;
+8. full local suite and Linux debug build must pass on the final documented HEAD before promotion from Draft;
+9. non-Draft CI must pass `quality`, Linux build, Android build, dependency review, and `merge-gate`;
+10. merge remains an explicit user decision.
 
-### Explicitly outside PR #15
+### Explicitly outside PR #16
 
+- browsing previous/next months;
+- Future Log product screen;
 - migration/scheduling destination UI;
-- Monthly Log and Future Log product screens;
 - Collections/Index/Search product UI;
 - configurable automatic-lock timeout;
 - platform-specific immediate OS lock hooks;
@@ -242,10 +263,10 @@ Target: `v1.0.0-alpha.1` as an end-to-end but intentionally incomplete product.
 
 - [x] Daily Log and Rapid Logging
 - [x] Task/Event/Note capture UI
-- [ ] Task completion and discard UI (PR #15)
+- [x] Task completion and discard UI
 - [x] Migration/scheduling semantic persistence and lineage
 - [ ] Migration/scheduling UI
-- [ ] Monthly Log
+- [ ] Monthly Log (PR #16)
 - [ ] Future Log
 - [ ] Collections
 - [ ] Index
@@ -266,11 +287,11 @@ Target: `v1.0.0-alpha.1` as an end-to-end but intentionally incomplete product.
 - [ ] no known unresolved data-loss bug
 - [ ] no known unresolved high-severity security issue
 
-## Next work after PR #15
+## Next work after PR #16
 
-Do not start these until PR #15 is merged or deliberately abandoned.
+Do not start these until PR #16 is merged or deliberately abandoned.
 
-1. Build Monthly Log and Future Log product flows from the existing semantic model.
+1. Build the Future Log product flow from the existing semantic model.
 2. Expose deliberate migrate/schedule Task actions using real Monthly/Future destinations.
 3. Build Collections and deliberate Index behavior.
 4. Add encrypted Search over journal storage with no plaintext side index.
@@ -289,6 +310,7 @@ Do not start these until PR #15 is merged or deliberately abandoned.
 6. Packaging/distribution formats for Linux and Android.
 7. Filesystem permission hardening for Linux journal files beyond the encrypted-at-rest guarantee.
 8. Physical-device Android validation of the normal journal-access flow.
+9. Whether historical month browsing belongs before the first alpha or can follow the first current-month implementation.
 
 ## Recent work
 
@@ -301,5 +323,6 @@ Do not start these until PR #15 is merged or deliberately abandoned.
 - Audited and abandoned PR #11 rather than weakening tests or patching around structural problems.
 - Rebuilt encrypted access + Today/Daily Log cleanly in PR #13 and merged after staged local/manual/full-CI validation.
 - Implemented and validated automatic five-minute inactivity locking in PR #14; full CI #177 passed and the PR was squash-merged as `d93563184c01ef406398619212410c540d00712a` after explicit user approval.
-- Opened Draft PR #15 from merged `main` for deliberate Task completion/discard, keeping migration/scheduling UI deferred until Monthly/Future destinations exist.
-- PR #15 Draft CI #203 passed on implementation head `9a296c8047fe48457f5776bfe2afb19d3637c155`; focused local validation and manual Linux behavior validation also passed before the final documentation checkpoint.
+- Implemented and validated deliberate Task completion/discard in PR #15; local 80-test suite, Linux build, manual validation, Draft CI #204, full CI #205, and `merge-gate` passed before squash merge as `b3af861dc00b81402d27cbdec39e3c99212c6590` after explicit user approval.
+- Opened Draft PR #16 from merged `main` for the current-month Monthly Log.
+- PR #16 implementation head `63f4a672bbd3ef5e8289b24798a4811ce255d688` passed focused repository/widget/session validation, manual Linux behavior validation, and Draft CI #221 before this documentation checkpoint.
