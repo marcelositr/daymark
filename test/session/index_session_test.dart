@@ -4,8 +4,8 @@ import 'package:daymark/core/crypto/key_envelope.dart';
 import 'package:daymark/core/session/journal_files.dart';
 import 'package:daymark/core/session/journal_index_session.dart';
 import 'package:daymark/core/session/journal_session.dart';
-import 'package:daymark/features/journal/data/index_repository.dart';
 import 'package:daymark/features/journal/data/daily_log_repository.dart';
+import 'package:daymark/features/journal/data/index_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
