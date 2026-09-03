@@ -43,3 +43,5 @@ jobs:
           git rm .github/workflows/pr25-test.yml
           git commit -m "chore: remove PR25 validation probe"
           git push origin HEAD:feat/basic-search
+
+# workflow exists before this triggering push
