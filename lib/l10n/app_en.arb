@@ -2,10 +2,13 @@
   "@@locale": "en",
   "appName": "Daymark",
   "today": "Today",
+  "daily": "Daily",
   "monthly": "Monthly",
   "future": "Future",
   "collections": "Collections",
   "search": "Search",
+  "index": "Index",
+  "more": "More",
   "foundationMessage": "Daymark foundation is ready.",
   "placeholderMessage": "This area will be implemented in its own focused change.",
   "createJournalTitle": "Create your journal",
@@ -61,5 +64,11 @@
   "referenceEntry": "Reference",
   "referenceEntryTitle": "Reference in Collection",
   "referenceEntryFailed": "Could not add this Collection reference.",
-  "collectionReferences": "References"
+  "collectionReferences": "References",
+  "indexLoadFailed": "Could not load the Index.",
+  "emptyIndex": "Nothing indexed yet.",
+  "addIndexItem": "Add to Index",
+  "indexCandidatesLoadFailed": "Could not load structures available for the Index.",
+  "noIndexCandidates": "Every available journal structure is already indexed.",
+  "indexAddFailed": "Could not add this structure to the Index."
 }
