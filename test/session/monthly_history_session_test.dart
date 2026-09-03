@@ -2,8 +2,10 @@ import 'dart:io';
 
 import 'package:daymark/core/crypto/key_envelope.dart';
 import 'package:daymark/core/session/journal_files.dart';
+import 'package:daymark/core/session/journal_index_session.dart';
 import 'package:daymark/core/session/journal_monthly_history_session.dart';
 import 'package:daymark/core/session/journal_session.dart';
+import 'package:daymark/features/journal/data/index_repository.dart';
 import 'package:daymark/features/journal/data/monthly_log_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -36,6 +38,14 @@ void main() {
       );
 
       expect(await created.findMonthlyLog('2026-08-01'), isNull);
+      final List<IndexCandidate> candidatesAfterLookup = await created
+          .listIndexCandidates();
+      expect(
+        candidatesAfterLookup.any(
+          (candidate) => candidate.periodStart == '2026-08-01',
+        ),
+        isFalse,
+      );
 
       final MonthlyLogSnapshot august = await created.loadMonthlyLog(
         '2026-08-01',
