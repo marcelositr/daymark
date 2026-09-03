@@ -1,0 +1,45 @@
+name: PR 25 full validation
+
+on:
+  push:
+    branches:
+      - feat/basic-search
+
+permissions:
+  contents: write
+
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: feat/basic-search
+          fetch-depth: 0
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2
+        with:
+          flutter-version: 3.47.2
+          channel: stable
+          cache: true
+      - name: Resolve and generate
+        run: |
+          flutter pub get --enforce-lockfile
+          flutter gen-l10n
+          dart run build_runner build
+      - name: Validate Search focused tests
+        run: |
+          flutter test \
+            test/journal/search_repository_test.dart \
+            test/journal/search_screen_test.dart \
+            test/journal/search_activation_test.dart \
+            test/session/search_session_test.dart
+      - name: Validate complete suite
+        run: flutter test
+      - name: Remove temporary workflow
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/pr25-test.yml
+          git commit -m "chore: remove PR25 validation probe"
+          git push origin HEAD:feat/basic-search
