@@ -7,7 +7,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  testWidgets('adds an existing journal structure to the Index', (tester) async {
+  testWidgets('adds an existing journal structure to the Index', (
+    tester,
+  ) async {
     final _MemoryIndexJournal dataSource = _MemoryIndexJournal(
       candidates: <IndexCandidate>[
         const IndexCandidate(

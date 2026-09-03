@@ -165,9 +165,8 @@ class _IndexScreenState extends ConsumerState<IndexScreen> {
       return;
     }
     if (candidates.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.noIndexCandidates)),
-      );
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(l10n.noIndexCandidates)));
       return;
     }
 
@@ -268,7 +267,8 @@ class _IndexScreenState extends ConsumerState<IndexScreen> {
     final DateTime date = DateTime.parse(periodStart);
     final MaterialLocalizations material = MaterialLocalizations.of(context);
     return switch (kind) {
-      JournalLogKind.daily => '${l10n.daily}: ${material.formatMediumDate(date)}',
+      JournalLogKind.daily =>
+        '${l10n.daily}: ${material.formatMediumDate(date)}',
       JournalLogKind.monthly =>
         '${l10n.monthly}: ${material.formatMonthYear(date)}',
       JournalLogKind.future =>

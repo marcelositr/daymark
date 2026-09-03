@@ -73,32 +73,36 @@ final class IndexRepository {
       ORDER BY i.ordinal, i.id
       ''').get();
 
-    return rows.map((row) {
-      final String? logId = row.readNullable<String>('log_id');
-      final String? collectionId = row.readNullable<String>('collection_id');
-      if (logId != null) {
-        return IndexItem(
-          id: row.read<String>('id'),
-          ordinal: row.read<int>('ordinal'),
-          targetKind: IndexTargetKind.log,
-          targetId: logId,
-          logKind: _logKindFromCode(row.read<String>('log_kind')),
-          periodStart: row.read<String>('period_start'),
-        );
-      }
-      if (collectionId != null) {
-        return IndexItem(
-          id: row.read<String>('id'),
-          ordinal: row.read<int>('ordinal'),
-          targetKind: IndexTargetKind.collection,
-          targetId: collectionId,
-          collectionTitle: row.read<String>('collection_title'),
-        );
-      }
-      throw const JournalInvariantException(
-        'Index item does not reference a Log or Collection.',
-      );
-    }).toList(growable: false);
+    return rows
+        .map((row) {
+          final String? logId = row.readNullable<String>('log_id');
+          final String? collectionId = row.readNullable<String>(
+            'collection_id',
+          );
+          if (logId != null) {
+            return IndexItem(
+              id: row.read<String>('id'),
+              ordinal: row.read<int>('ordinal'),
+              targetKind: IndexTargetKind.log,
+              targetId: logId,
+              logKind: _logKindFromCode(row.read<String>('log_kind')),
+              periodStart: row.read<String>('period_start'),
+            );
+          }
+          if (collectionId != null) {
+            return IndexItem(
+              id: row.read<String>('id'),
+              ordinal: row.read<int>('ordinal'),
+              targetKind: IndexTargetKind.collection,
+              targetId: collectionId,
+              collectionTitle: row.read<String>('collection_title'),
+            );
+          }
+          throw const JournalInvariantException(
+            'Index item does not reference a Log or Collection.',
+          );
+        })
+        .toList(growable: false);
   }
 
   Future<List<IndexCandidate>> candidates() async {
