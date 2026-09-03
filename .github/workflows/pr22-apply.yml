@@ -1,0 +1,65 @@
+name: PR 22 patch
+
+on:
+  push:
+    branches:
+      - feat/collection-references
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: "${{ github.event.head_commit.message == 'ci: apply PR 22 patch in pinned toolchain' }}"
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out feature branch
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: feat/collection-references
+          fetch-depth: 0
+
+      - name: Set up Flutter 3.47.2
+        uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2
+        with:
+          flutter-version: 3.47.2
+          channel: stable
+          cache: true
+
+      - name: Apply and validate implementation
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tool/apply_pr22_patch.py
+          flutter pub get --enforce-lockfile
+          flutter gen-l10n
+          dart format lib test
+          dart format --output=none --set-exit-if-changed lib test
+          git diff --check
+          flutter analyze
+          flutter test
+
+      - name: Commit exact validated output
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add \
+            lib/core/session/journal_session.dart \
+            lib/features/journal/data/collection_repository.dart \
+            lib/features/journal/presentation/entry_collection_reference_dialog.dart \
+            lib/features/journal/presentation/today_screen.dart \
+            lib/features/journal/presentation/monthly_screen.dart \
+            lib/features/journal/presentation/future_screen.dart \
+            lib/features/journal/presentation/collections_screen.dart \
+            lib/l10n/app_en.arb \
+            lib/l10n/app_pt.arb \
+            lib/l10n/app_pt_BR.arb \
+            test/journal/collection_repository_test.dart \
+            test/journal/collections_screen_test.dart \
+            test/journal/collections_activation_test.dart \
+            test/journal/entry_collection_reference_screen_test.dart \
+            test/session/collection_reference_session_test.dart
+          git commit -m 'feat(journal): wire collection references'
+          git push origin HEAD:feat/collection-references
