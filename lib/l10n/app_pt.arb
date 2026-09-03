@@ -9,8 +9,6 @@
   "search": "Buscar",
   "index": "Índice",
   "more": "Mais",
-  "foundationMessage": "A fundação do Daymark está pronta.",
-  "placeholderMessage": "Esta área será implementada em uma mudança própria e focada.",
   "createJournalTitle": "Crie seu diário",
   "createJournalMessage": "Escolha uma senha mestra. O Daymark mantém este diário criptografado neste dispositivo.",
   "unlockJournalTitle": "Desbloquear Daymark",
