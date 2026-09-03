@@ -6,15 +6,23 @@ Daymark is a minimal, local-first Bullet Journal application for Linux and Andro
 
 ## Project status
 
-Daymark is in foundation / pre-alpha development. The product, domain, security, data, workflow, and toolchain constraints are established before journal features become the main development focus.
+Daymark is in pre-alpha development.
 
-The Flutter scaffold and relational schema v1 are integrated on `main`. The current development cycle is PR #7, which is validating the master-password key hierarchy and encrypted journal persistence. The pinned toolchain is Flutter 3.47.2 with Dart 3.13.2, targeting Linux and Android.
+The core product, domain, security, data, workflow, and toolchain constraints are established. The active product line now includes:
 
-PR #7 has an implemented and tested pre-alpha security baseline using Argon2id + XChaCha20-Poly1305 for portable journal-key protection and SQLite3MultipleCiphers ChaCha20-Poly1305 for encrypted journal storage. Representative Linux and physical Android profile-mode measurements are recorded, and the initial Argon2id production baseline is frozen at 19 MiB memory, 2 iterations, parallelism 1, and 32-byte output. Android OS-managed app-data backup/device transfer is explicitly excluded so portable migration remains an intentional Daymark encrypted-backup boundary.
+- encrypted journal creation, unlock, manual lock, and automatic inactivity lock;
+- Today / Daily Log with Rapid Logging for Task, Event, and Note;
+- deliberate Task completion and discard;
+- a current-month Monthly Log with Calendar and Tasks sections;
+- a rolling six-month Future Log on the active development line;
+- encrypted portable backup/restore foundations;
+- semantic migration/scheduling persistence and lineage, with product UI still being introduced in focused slices.
 
-The canonical live development checkpoint is [`PROJECT.md`](PROJECT.md).
+The pinned toolchain is Flutter 3.47.2 with Dart 3.13.2, targeting Linux and Android.
 
-Any human or AI contributor should read [`AGENTS.md`](AGENTS.md) before continuing work. The repository is designed so development can be resumed across chat limits, CLI restarts, API quotas, and different agents without depending on hidden conversation context.
+The canonical live development checkpoint is [`PROJECT.md`](PROJECT.md). It records the exact current branch, PR, validation evidence, blockers, and next intended slice.
+
+Any human or AI contributor should read [`AGENTS.md`](AGENTS.md) before continuing work. The repository is intentionally structured so development can resume across chat limits, CLI restarts, API quotas, and different agents without relying on hidden conversation context.
 
 ## Product principles
 
@@ -28,9 +36,20 @@ Any human or AI contributor should read [`AGENTS.md`](AGENTS.md) before continui
 - No advertising, engagement loops, streaks, productivity scoring, or attention-seeking UI.
 - Automation must not remove deliberate reflection or migration decisions from the method.
 
+## Current method shape
+
+Daymark deliberately avoids turning Bullet Journal concepts into a generic planner.
+
+- **Today / Daily Log** captures Task, Event, and Note entries for the current method date.
+- **Monthly Log** currently represents the current month only, with a dated Calendar section and a separate Tasks section.
+- **Future Log** is a rolling overview of six future month buckets beginning with the month after the current month. It is month-addressed, not a second day-level calendar.
+- **Migration and scheduling** remain deliberate actions. They preserve lineage rather than silently moving or rewriting historical entries.
+
+Historical month browsing, richer reflection flows, Collections, Index, Search, backup UI, and exports continue as focused pre-alpha work.
+
 ## Technology direction
 
-The current reviewed baseline is documented in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md), with the relational persistence contract in [`docs/DATA_MODEL.md`](docs/DATA_MODEL.md) and the active security validation contract in [`docs/SECURITY_FOUNDATION.md`](docs/SECURITY_FOUNDATION.md).
+The reviewed baseline is documented in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md), with the relational persistence contract in [`docs/DATA_MODEL.md`](docs/DATA_MODEL.md) and security contracts in [`SECURITY.md`](SECURITY.md) and [`docs/SECURITY_FOUNDATION.md`](docs/SECURITY_FOUNDATION.md).
 
 At a glance:
 
@@ -73,6 +92,8 @@ Development uses one permanent integration branch (`main`), short-lived task bra
 
 See [`docs/WORKFLOW.md`](docs/WORKFLOW.md).
 
+AI-assisted work follows a staged validation ladder: trustworthy baseline, Draft CI, layer-correct focused tests, complete local validation, manual platform validation when needed, documentation alignment, full non-Draft CI, and explicit user merge approval.
+
 The first public release train progresses deliberately through:
 
 ```text
@@ -86,16 +107,17 @@ Release candidates are not promoted automatically. Stable `1.0.0` happens only a
 
 ## Documentation map
 
-- [`PROJECT.md`](PROJECT.md): live checklist, current state, blockers, next steps, and handoff log
-- [`AGENTS.md`](AGENTS.md): mandatory operating contract for AI-assisted development
+- [`PROJECT.md`](PROJECT.md): canonical live checkpoint, exact current state, validation evidence, blockers, next steps, and handoff log
+- [`AGENTS.md`](AGENTS.md): mandatory operating contract and failure-prevention rules for AI-assisted development
 - [`docs/PRODUCT.md`](docs/PRODUCT.md): product boundaries and principles
 - [`docs/DOMAIN.md`](docs/DOMAIN.md): Bullet Journal semantics
 - [`docs/DATA_MODEL.md`](docs/DATA_MODEL.md): relational schema, persistence invariants, and migration policy
 - [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md): technical architecture and technology baseline
 - [`SECURITY.md`](SECURITY.md): threat model and security constraints
-- [`docs/SECURITY_FOUNDATION.md`](docs/SECURITY_FOUNDATION.md): current security implementation/validation contract
-- [`docs/ARGON2_BENCHMARK.md`](docs/ARGON2_BENCHMARK.md): Linux/Android KDF benchmark procedure, evidence, and initial parameter decision
-- [`docs/WORKFLOW.md`](docs/WORKFLOW.md): branches, PRs, versioning, and releases
+- [`docs/SECURITY_FOUNDATION.md`](docs/SECURITY_FOUNDATION.md): security implementation/validation contract
+- [`docs/ARGON2_BENCHMARK.md`](docs/ARGON2_BENCHMARK.md): Linux/Android KDF benchmark procedure and evidence
+- [`docs/BACKUP_FORMAT.md`](docs/BACKUP_FORMAT.md): portable authenticated backup format
+- [`docs/WORKFLOW.md`](docs/WORKFLOW.md): branches, PRs, validation, versioning, and releases
 - [`CONTRIBUTING.md`](CONTRIBUTING.md): contribution expectations
 - [`CHANGELOG.md`](CHANGELOG.md): release-facing history
 
