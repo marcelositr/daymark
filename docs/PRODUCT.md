@@ -75,6 +75,19 @@ Rapid Logging may place Task, Event, and Note entries into the selected future m
 
 When the current month advances, the visible Future horizon rolls forward. Existing historical data remains persisted in its original month bucket even when that bucket falls outside the six-month overview.
 
+### Collections
+
+Collections are deliberate topic/project-oriented journal containers, not generic configurable workspaces.
+
+The first Collection surface supports:
+
+- listing and creating Collections;
+- opening one Collection;
+- Rapid Logging Task, Event, and Note entries owned by that Collection;
+- completing or discarding open Tasks inside that Collection.
+
+Collections deliberately do not gain Kanban fields, arbitrary properties, dashboards, or planner abstractions. Collection references and migration remain distinct domain operations. The first Collection UI does not yet expose references from chronological logs or deliberate forward migration (`>`).
+
 ### Migration and scheduling
 
 Migration and scheduling must use real method-native destinations.
@@ -87,7 +100,7 @@ Scheduling must be immediately visible when the user navigates to Future. Retain
 
 A Future destination always uses scheduling semantics. A normal forward migration (`>`) must use another valid non-Future destination according to the method.
 
-Daymark does **not** treat the current Monthly Log as a shortcut destination for a Today Task merely because that container already exists. Forward-migration UI remains deferred until the product exposes a method-faithful destination such as the next Monthly Log or an appropriate Collection.
+Daymark does **not** treat the current Monthly Log as a shortcut destination for a Today Task merely because that container already exists. Forward-migration UI remains deferred until a method-faithful destination is intentionally exposed for migration. Collections now provide a real owning structure, but simply existing is not enough to expose `>` without a deliberate destination-selection flow and corresponding lifecycle tests.
 
 ## Local-first
 
