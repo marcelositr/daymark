@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:daymark/core/session/journal_session.dart';
 import 'package:daymark/core/session/journal_session_controller.dart';
 import 'package:daymark/features/journal/data/daily_log_repository.dart';
-import 'package:daymark/features/journal/data/monthly_log_repository.dart';
 import 'package:daymark/features/journal/domain/journal_domain.dart';
 import 'package:daymark/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
@@ -22,11 +21,6 @@ abstract interface class TodayJournalDataSource {
   });
 
   Future<void> completeTask({required String entryId});
-
-  Future<void> migrateTaskToMonthly({
-    required String entryId,
-    required String periodStart,
-  });
 
   Future<void> scheduleTaskToFuture({
     required String entryId,
@@ -73,17 +67,6 @@ final class _SessionTodayJournalDataSource implements TodayJournalDataSource {
   @override
   Future<void> completeTask({required String entryId}) {
     return _session.completeTask(entryId: entryId);
-  }
-
-  @override
-  Future<void> migrateTaskToMonthly({
-    required String entryId,
-    required String periodStart,
-  }) {
-    return _session.migrateTaskToMonthly(
-      entryId: entryId,
-      periodStart: periodStart,
-    );
   }
 
   @override
@@ -285,10 +268,6 @@ class _TodayScreenState extends ConsumerState<TodayScreen>
           child: Text(l10n.completeTask),
         ),
         PopupMenuItem<_TaskAction>(
-          value: _TaskAction.migrateToMonthly,
-          child: Text(l10n.migrateTaskToMonthly),
-        ),
-        PopupMenuItem<_TaskAction>(
           value: _TaskAction.schedule,
           child: Text(l10n.scheduleTask),
         ),
@@ -434,12 +413,6 @@ class _TodayScreenState extends ConsumerState<TodayScreen>
         case _TaskAction.complete:
           await dataSource.completeTask(entryId: entry.id);
           break;
-        case _TaskAction.migrateToMonthly:
-          await dataSource.migrateTaskToMonthly(
-            entryId: entry.id,
-            periodStart: formatJournalMonthStart(actionDate),
-          );
-          break;
         case _TaskAction.schedule:
           await dataSource.scheduleTaskToFuture(
             entryId: entry.id,
@@ -505,7 +478,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen>
   }
 }
 
-enum _TaskAction { complete, migrateToMonthly, schedule, discard }
+enum _TaskAction { complete, schedule, discard }
 
 DateTime _dateOnly(DateTime date) => DateTime(date.year, date.month, date.day);
 
