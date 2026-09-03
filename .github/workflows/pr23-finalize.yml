@@ -1,0 +1,203 @@
+name: PR 23 finalizer
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/pr23-finalize.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  finalize:
+    if: github.event.pull_request.head.ref == 'feat/basic-index'
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out PR branch
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: feat/basic-index
+          fetch-depth: 0
+      - name: Set up Flutter 3.47.2
+        uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2
+        with:
+          flutter-version: '3.47.2'
+          channel: stable
+          cache: true
+      - name: Resolve and generate
+        run: |
+          set -euo pipefail
+          flutter pub get --enforce-lockfile
+          flutter gen-l10n
+          dart run build_runner build
+          dart run drift_dev make-migrations
+          git diff --exit-code -- lib/core/database/daymark_database.g.dart drift_schemas
+      - name: Format and analyze
+        run: |
+          set -euo pipefail
+          dart format lib test
+          flutter analyze
+      - name: Run full test suite
+        run: |
+          set -euo pipefail
+          flutter test
+      - name: Align architecture and handoff docs
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          architecture = Path('docs/ARCHITECTURE.md')
+          text = architecture.read_text()
+          old_nav = '''Primary navigation:
+
+          ```text
+          Today
+          Monthly
+          Future
+          Collections
+          Search
+          ```
+
+          Index remains a distinct method structure even when its entry point differs between compact and expanded layouts.
+          '''
+          new_nav = '''Primary navigation:
+
+          ```text
+          Today
+          Monthly
+          Future
+          Collections
+          Search
+          Index
+          ```
+
+          Index remains a distinct method structure even when its entry point differs between compact and expanded layouts. Expanded layouts expose Search and Index directly in the navigation rail. Compact layouts keep Today, Monthly, Future, and Collections as direct bottom destinations and expose Search and Index through a minimal More sheet rather than crowding six bottom items.
+          '''
+          if old_nav not in text:
+              raise SystemExit('Architecture navigation marker not found.')
+          text = text.replace(old_nav, new_nav, 1)
+          old_repo = '- focused Daily, Monthly, Future, and Collection repository boundaries.'
+          new_repo = '- focused Daily, Monthly, Future, Collection, and Index repository/session boundaries.'
+          if old_repo not in text:
+              raise SystemExit('Architecture repository marker not found.')
+          text = text.replace(old_repo, new_repo, 1)
+          marker = 'Forward Task migration to a Collection is exposed through `JournalSession.migrateTaskToCollection(...)`.'
+          index_boundary = '''The Index uses a focused `IndexRepository` over the existing encrypted `index_items` schema. Presentation reaches it through `JournalIndexSession` extension methods, which serialize list/candidate/add operations with `JournalSession.run(...)` so Index I/O cannot escape the unlocked session lifetime. The repository owns target existence, duplicate prevention, and global ordinal allocation; the widget only presents existing candidates and the user\'s deliberate choice.
+
+          '''
+          if marker not in text:
+              raise SystemExit('Architecture session marker not found.')
+          text = text.replace(marker, index_boundary + marker, 1)
+          architecture.write_text(text)
+
+          changelog = Path('CHANGELOG.md')
+          text = changelog.read_text()
+          reference_line = '- Deliberate Collection references from Today, Monthly, and Future entries into an existing Collection without changing source ownership, entry identity, or Task state; references appear separately and read-only in the Collection.\n'
+          index_line = '- Basic deliberate Index of existing Daily, Monthly, and Future Logs and Collections, preserving user-chosen Index order without duplicating journal content or deriving persistent items from Search.\n'
+          if reference_line not in text:
+              raise SystemExit('Changelog reference marker not found.')
+          text = text.replace(reference_line, reference_line + index_line, 1)
+          old_l10n = '- Portuguese parent localization resources include the journal-access, Daily Log, Monthly Log, Future Log, Collection, migration, and reference strings used by the Brazilian Portuguese locale.\n'
+          new_l10n = '- Portuguese parent localization resources include the journal-access, Daily Log, Monthly Log, Future Log, Collection, migration, reference, and Index strings used by the Brazilian Portuguese locale.\n'
+          if old_l10n not in text:
+              raise SystemExit('Changelog localization marker not found.')
+          text = text.replace(old_l10n, new_l10n, 1)
+          navigation_line = '- Compact navigation keeps four core journal destinations directly visible and groups Search and Index under a minimal More sheet, while expanded desktop navigation exposes both directly.\n'
+          text = text.replace(new_l10n, new_l10n + navigation_line, 1)
+          changelog.write_text(text)
+
+          project = Path('PROJECT.md')
+          text = project.read_text()
+          start = text.index('## Current state\n')
+          end = text.index('\n## Product doctrine', start)
+          current_state = '''## Current state
+
+          - Phase: pre-alpha, core Bullet Journal flows in active development.
+          - Integration branch: `main` only.
+          - Current `main` head before the active feature PR: `23fbc3e0b8d3e62f8db8ddc1ad403835e8fc5eee` (`feat(journal): reference entries in collections (#22)`).
+          - Current merged product baseline: PR #22, deliberate Collection references, squash-merged as `23fbc3e0b8d3e62f8db8ddc1ad403835e8fc5eee`.
+          - Active product implementation branch/PR: `feat/basic-index` / PR #23, `feat(journal): add basic index`.
+          - PR #23 is Draft. It implements a deliberate persisted Index of existing Logs and Collections, separate from Search and without content duplication or automatic indexing.
+          - Current merged product scope includes Today, current Monthly, six-month Future, basic Collections, deliberate Task terminal actions, scheduling (`<`), forward migration (`>`) into Collections, and deliberate Collection references.
+          - Current focus: finish PR #23 exact-head validation, perform manual Linux desktop/compact-navigation and Index persistence validation, then run full Ready CI before explicit merge approval.
+          - Merge policy: never merge without explicit user approval.
+          - Runtime targets: Linux and Android.
+          - Pinned toolchain: Flutter 3.47.2 / Dart 3.13.2.
+          - Production Argon2id baseline: 19 MiB / 2 iterations / p=1 / 32-byte output.
+          - Last updated: 2026-09-03 (America/Sao_Paulo).
+          '''
+          text = text[:start] + current_state.rstrip() + text[end:]
+          old_nav_line = '- primary navigation: Today, Monthly, Future, Collections, Search; Index remains a distinct method concept.'
+          new_nav_line = '- primary navigation concepts: Today, Monthly, Future, Collections, Search, Index; compact layouts group Search/Index under More without merging their meaning.'
+          if old_nav_line not in text:
+              raise SystemExit('Project navigation marker not found.')
+          text = text.replace(old_nav_line, new_nav_line, 1)
+
+          active = text.index('## Active PR #22: deliberate Collection references')
+          traps = text.index('## CI and handoff traps to remember', active)
+          replacement = '''## PR #22 final: deliberate Collection references
+
+          Validation and merge:
+
+          - manual Linux cross-surface/reference persistence validation passed;
+          - exact-head Draft CI #349 green;
+          - full Ready CI #350 green: quality/full tests, Linux, Android, dependency review, and merge-gate;
+          - explicit user approval received;
+          - PR #22 squash-merged as `23fbc3e0b8d3e62f8db8ddc1ad403835e8fc5eee`;
+          - post-merge main CI #351 green for quality/tests, Linux, and Android.
+
+          ## Active PR #23: basic Index
+
+          Branch: `feat/basic-index`.
+
+          PR: #23, `feat(journal): add basic index`.
+
+          Scope implemented:
+
+          - `IndexRepository` reads and transactionally appends existing Logs or Collections using the schema-v1 `index_items` table;
+          - one deliberate global Index order is persisted through monotonically allocated ordinals;
+          - duplicate or missing Log/Collection targets are rejected without partial Index rows;
+          - `JournalIndexSession` keeps Index list/candidate/add operations serialized inside the unlocked journal lifecycle;
+          - the Index screen lists indexed structures and lets the user deliberately add only existing structures not already indexed;
+          - expanded navigation exposes Index directly; compact navigation keeps four core destinations plus More, with Search and Index inside More;
+          - English, `pt`, and `pt_BR` labels are aligned;
+          - repository, widget, and encrypted session persistence tests cover the slice;
+          - no schema, crypto, backup, dependency, or platform-contract change.
+
+          Explicit non-goals:
+
+          - no automatic indexing;
+          - no Search implementation or Search/Index conflation;
+          - no Index reordering or removal yet;
+          - no direct navigation from an Index row to an arbitrary historical Log until real historical routes exist;
+          - no schema v2;
+          - no signifier, reflection, export, or backup UI work.
+
+          Validation so far:
+
+          - baseline `main` post-merge CI #351 green;
+          - initial Draft CI #360 reached formatter after lockfile/l10n/Drift/snapshot checks and failed only because four new Dart files required pinned Dart formatting;
+          - pinned Dart 3.13.2 formatter output was applied by a temporary formatter workflow, which was removed immediately afterward;
+          - finalizer validation ran localization/Drift generation, formatter, analyzer, and the complete test suite successfully before publishing this handoff update;
+          - exact-head standard Draft CI remains required after this documentation commit, followed by manual Linux validation.
+
+          ## Next work after PR #23
+
+          Keep the next slice separate from the Index. Leading method-native candidates are Search or historical/next-Monthly accessibility. Do not bundle Search into Index merely because both support retrieval. Backup UI, exports, OS lock hooks, accessibility/keyboard refinements, and packaging remain later focused slices.
+
+          '''
+          text = text[:active] + replacement + text[traps:]
+          project.write_text(text)
+          PY
+      - name: Verify and publish final head
+        run: |
+          set -euo pipefail
+          git diff --check
+          git rm .github/workflows/pr23-finalize.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add lib test docs/ARCHITECTURE.md CHANGELOG.md PROJECT.md
+          git commit -m 'docs: align basic index handoff'
+          git push origin HEAD:feat/basic-index
