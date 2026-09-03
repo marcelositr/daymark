@@ -1,4 +1,4 @@
-import 'package:daymark/core/database/daymark_database.dart';
+import 'package:daymark/core/database/daymark_database.dart' hide IndexItem;
 import 'package:daymark/features/journal/application/journal_service.dart';
 import 'package:daymark/features/journal/data/index_repository.dart';
 import 'package:daymark/features/journal/data/journal_repository.dart';
