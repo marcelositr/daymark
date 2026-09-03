@@ -37,7 +37,9 @@ void main() {
     expect(second.logId, first.logId);
 
     final row = await database
-        .customSelect("SELECT COUNT(*) AS count FROM logs WHERE kind = 'monthly'")
+        .customSelect(
+          "SELECT COUNT(*) AS count FROM logs WHERE kind = 'monthly'",
+        )
         .getSingle();
     expect(row.read<int>('count'), 1);
   });
