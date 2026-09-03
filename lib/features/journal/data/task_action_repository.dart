@@ -69,9 +69,7 @@ final class TaskActionRepository {
     final String entryType = row.read<String>('entry_type');
     final String? taskState = row.readNullable<String>('task_state');
     if (entryType != JournalEntryType.task.code) {
-      throw const JournalInvariantException(
-        'This action requires a Task.',
-      );
+      throw const JournalInvariantException('This action requires a Task.');
     }
     if (taskState != JournalTaskState.open.code) {
       throw const JournalInvariantException(
