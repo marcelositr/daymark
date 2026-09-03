@@ -73,5 +73,10 @@
   "addIndexItem": "Add to Index",
   "indexCandidatesLoadFailed": "Could not load structures available for the Index.",
   "noIndexCandidates": "Every available journal structure is already indexed.",
-  "indexAddFailed": "Could not add this structure to the Index."
+  "indexAddFailed": "Could not add this structure to the Index.",
+  "searchHint": "Search journal entries",
+  "searchAction": "Search",
+  "searchPrompt": "Enter text to search your journal.",
+  "searchNoResults": "No matching entries.",
+  "searchFailed": "Could not search the journal."
 }
