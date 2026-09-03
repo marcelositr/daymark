@@ -28,4 +28,4 @@ jobs:
           git commit -m "docs: align Search contracts"
           git push origin HEAD:feat/basic-search
 
-# trigger after workflow exists on branch
+# retry with patcher present on current branch head
