@@ -10,6 +10,7 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   late DaymarkDatabase database;
   late CollectionRepository collections;
+  late JournalService service;
   late _IdSequence ids;
 
   setUp(() {
@@ -20,7 +21,7 @@ void main() {
       ),
     );
     ids = _IdSequence();
-    final JournalService service = JournalService(
+    service = JournalService(
       JournalRepository(
         database,
         idGenerator: ids.next,
@@ -83,6 +84,40 @@ void main() {
         .getSingle();
     expect(placementCount.read<int>('count'), 3);
   });
+
+  test(
+    'loads references separately without changing source ownership',
+    () async {
+      final String collectionId = await collections.create(title: 'Reading');
+      final String dailyLogId = await service.createLog(
+        kind: JournalLogKind.daily,
+        periodStart: '2026-09-03',
+      );
+      final String entryId = await service.capture(
+        type: JournalEntryType.task,
+        content: 'Read linked article',
+        owner: JournalLogOwner(logId: dailyLogId),
+      );
+
+      await collections.reference(collectionId: collectionId, entryId: entryId);
+
+      final CollectionSnapshot snapshot = await collections.load(collectionId);
+      expect(snapshot.entries, isEmpty);
+      expect(snapshot.references, hasLength(1));
+      expect(snapshot.references.single.id, entryId);
+      expect(snapshot.references.single.taskState, JournalTaskState.open);
+      expect(snapshot.references.single.content, 'Read linked article');
+
+      final placement = await database
+          .customSelect(
+            'SELECT log_id, collection_id FROM entry_placements WHERE entry_id = ?',
+            variables: <Variable<Object>>[Variable.withString(entryId)],
+          )
+          .getSingle();
+      expect(placement.read<String>('log_id'), dailyLogId);
+      expect(placement.readNullable<String>('collection_id'), isNull);
+    },
+  );
 
   test(
     'unknown Collection rejects capture without partial entry write',

@@ -9,6 +9,7 @@ import 'package:daymark/presentation/app_section_scope.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'entry_collection_reference_dialog.dart';
 import 'journal_activity_guard.dart';
 
 abstract interface class FutureJournalDataSource {
@@ -92,7 +93,7 @@ class _FutureScreenState extends ConsumerState<FutureScreen>
   Timer? _horizonRolloverTimer;
   JournalEntryType _entryType = JournalEntryType.task;
   bool _saving = false;
-  String? _taskActionEntryId;
+  String? _entryActionId;
   bool _sectionScopeInitialized = false;
   bool _wasFutureSectionActive = false;
 
@@ -269,7 +270,7 @@ class _FutureScreenState extends ConsumerState<FutureScreen>
     AppLocalizations l10n,
     FutureLogEntry entry,
   ) {
-    if (_taskActionEntryId == entry.id) {
+    if (_entryActionId == entry.id) {
       return const Center(
         child: SizedBox.square(
           dimension: 16,
@@ -286,28 +287,32 @@ class _FutureScreenState extends ConsumerState<FutureScreen>
           ? markerStyle?.copyWith(decoration: TextDecoration.lineThrough)
           : markerStyle,
     );
+    final bool openTask =
+        entry.type == JournalEntryType.task &&
+        entry.taskState == JournalTaskState.open;
 
-    if (entry.type != JournalEntryType.task ||
-        entry.taskState != JournalTaskState.open) {
-      return marker;
-    }
-
-    return PopupMenuButton<_FutureTaskAction>(
-      enabled: _taskActionEntryId == null,
-      tooltip: l10n.taskActions,
+    return PopupMenuButton<_FutureEntryAction>(
+      enabled: _entryActionId == null,
+      tooltip: l10n.entryActions,
       padding: EdgeInsets.zero,
       onSelected: (action) {
-        unawaited(_applyTaskAction(entry, action));
+        unawaited(_applyEntryAction(entry, action));
       },
       itemBuilder: (context) => [
-        PopupMenuItem<_FutureTaskAction>(
-          value: _FutureTaskAction.complete,
-          child: Text(l10n.completeTask),
+        if (openTask)
+          PopupMenuItem<_FutureEntryAction>(
+            value: _FutureEntryAction.complete,
+            child: Text(l10n.completeTask),
+          ),
+        PopupMenuItem<_FutureEntryAction>(
+          value: _FutureEntryAction.reference,
+          child: Text(l10n.referenceEntry),
         ),
-        PopupMenuItem<_FutureTaskAction>(
-          value: _FutureTaskAction.discard,
-          child: Text(l10n.discardTask),
-        ),
+        if (openTask)
+          PopupMenuItem<_FutureEntryAction>(
+            value: _FutureEntryAction.discard,
+            child: Text(l10n.discardTask),
+          ),
       ],
       child: marker,
     );
@@ -466,26 +471,49 @@ class _FutureScreenState extends ConsumerState<FutureScreen>
     }
   }
 
-  Future<void> _applyTaskAction(
+  Future<void> _applyEntryAction(
     FutureLogEntry entry,
-    _FutureTaskAction action,
+    _FutureEntryAction action,
   ) async {
-    if (_taskActionEntryId != null ||
-        entry.type != JournalEntryType.task ||
-        entry.taskState != JournalTaskState.open) {
+    if (_entryActionId != null) {
+      return;
+    }
+    final bool openTask =
+        entry.type == JournalEntryType.task &&
+        entry.taskState == JournalTaskState.open;
+    if (action != _FutureEntryAction.reference && !openTask) {
       return;
     }
 
+    String? referenceCollectionId;
+    if (action == _FutureEntryAction.reference) {
+      referenceCollectionId = await showEntryCollectionReferenceDialog(
+        context: context,
+        dataSource: ref.read(entryCollectionReferenceDataSourceProvider),
+      );
+      if (!mounted || referenceCollectionId == null) {
+        return;
+      }
+    }
+
     final AppLocalizations l10n = AppLocalizations.of(context);
-    setState(() => _taskActionEntryId = entry.id);
+    setState(() => _entryActionId = entry.id);
 
     try {
       final FutureJournalDataSource dataSource = _dataSource();
       switch (action) {
-        case _FutureTaskAction.complete:
+        case _FutureEntryAction.complete:
           await dataSource.completeTask(entryId: entry.id);
           break;
-        case _FutureTaskAction.discard:
+        case _FutureEntryAction.reference:
+          await ref
+              .read(entryCollectionReferenceDataSourceProvider)
+              .referenceEntry(
+                entryId: entry.id,
+                collectionId: referenceCollectionId!,
+              );
+          break;
+        case _FutureEntryAction.discard:
           await dataSource.discardTask(entryId: entry.id);
           break;
       }
@@ -496,16 +524,25 @@ class _FutureScreenState extends ConsumerState<FutureScreen>
 
       setState(() {
         _snapshotsFuture = _loadSnapshots();
-        _taskActionEntryId = null;
+        _entryActionId = null;
       });
     } catch (error, stackTrace) {
-      _reportUnexpectedFutureError('task action', error, stackTrace);
+      _reportUnexpectedFutureError(
+        action == _FutureEntryAction.reference
+            ? 'collection reference'
+            : 'task action',
+        error,
+        stackTrace,
+      );
       if (!mounted) {
         return;
       }
+      final String message = action == _FutureEntryAction.reference
+          ? l10n.referenceEntryFailed
+          : l10n.taskActionFailed;
       ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(l10n.taskActionFailed)));
-      setState(() => _taskActionEntryId = null);
+          .showSnackBar(SnackBar(content: Text(message)));
+      setState(() => _entryActionId = null);
     }
   }
 
@@ -564,7 +601,7 @@ class _FutureScreenState extends ConsumerState<FutureScreen>
   }
 }
 
-enum _FutureTaskAction { complete, discard }
+enum _FutureEntryAction { complete, reference, discard }
 
 String _entrySymbol(FutureLogEntry entry) => switch (entry.type) {
   JournalEntryType.task => switch (entry.taskState) {

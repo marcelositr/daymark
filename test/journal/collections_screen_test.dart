@@ -35,6 +35,33 @@ void main() {
     expect(find.byType(SnackBar), findsNothing);
   });
 
+  testWidgets('Collection shows references separately as read-only', (
+    tester,
+  ) async {
+    final _MemoryCollectionsJournal dataSource = _MemoryCollectionsJournal(
+      seedReferences: <CollectionReferenceEntry>[
+        const CollectionReferenceEntry(
+          id: 'daily-note',
+          type: JournalEntryType.note,
+          taskState: null,
+          content: 'Linked note',
+          ordinal: 0,
+        ),
+      ],
+    );
+    await _pumpCollections(tester, dataSource);
+    await tester.tap(find.text('Work'));
+    await tester.pump();
+    await tester.pump();
+
+    expect(find.text('References'), findsOneWidget);
+    expect(find.text('Linked note'), findsOneWidget);
+    expect(find.text('–'), findsOneWidget);
+    await tester.tap(find.text('–'));
+    await tester.pumpAndSettle();
+    expect(find.byType(PopupMenuItem<Object>), findsNothing);
+  });
+
   testWidgets('Collection open Task can complete or discard', (tester) async {
     final _MemoryCollectionsJournal dataSource = _MemoryCollectionsJournal(
       seedEntries: <CollectionEntry>[
@@ -97,16 +124,24 @@ Future<void> _pumpCollections(
 }
 
 final class _MemoryCollectionsJournal implements CollectionsJournalDataSource {
-  _MemoryCollectionsJournal({List<CollectionEntry>? seedEntries}) {
-    if (seedEntries != null) {
+  _MemoryCollectionsJournal({
+    List<CollectionEntry>? seedEntries,
+    List<CollectionReferenceEntry>? seedReferences,
+  }) {
+    if (seedEntries != null || seedReferences != null) {
       _collections.add(const CollectionSummary(id: 'work', title: 'Work'));
-      _entries['work'] = List<CollectionEntry>.from(seedEntries);
+      _entries['work'] = List<CollectionEntry>.from(seedEntries ?? const []);
+      _references['work'] = List<CollectionReferenceEntry>.from(
+        seedReferences ?? const [],
+      );
     }
   }
 
   final List<CollectionSummary> _collections = <CollectionSummary>[];
   final Map<String, List<CollectionEntry>> _entries =
       <String, List<CollectionEntry>>{};
+  final Map<String, List<CollectionReferenceEntry>> _references =
+      <String, List<CollectionReferenceEntry>>{};
 
   @override
   Future<List<CollectionSummary>> list() async =>
@@ -117,6 +152,7 @@ final class _MemoryCollectionsJournal implements CollectionsJournalDataSource {
     final String id = 'collection-${_collections.length + 1}';
     _collections.add(CollectionSummary(id: id, title: title));
     _entries[id] = <CollectionEntry>[];
+    _references[id] = <CollectionReferenceEntry>[];
     return id;
   }
 
@@ -129,6 +165,7 @@ final class _MemoryCollectionsJournal implements CollectionsJournalDataSource {
       id: collection.id,
       title: collection.title,
       entries: _entries[collectionId]!,
+      references: _references[collectionId] ?? const [],
     );
   }
 

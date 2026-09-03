@@ -270,20 +270,7 @@ class _CollectionsScreenState extends ConsumerState<CollectionsScreen> {
               ],
             ),
             const SizedBox(height: 16),
-            Expanded(
-              child: collection.entries.isEmpty
-                  ? Align(
-                      alignment: AlignmentDirectional.topStart,
-                      child: Text(l10n.emptyCollection),
-                    )
-                  : ListView.separated(
-                      itemCount: collection.entries.length,
-                      separatorBuilder: (context, index) =>
-                          const SizedBox(height: 6),
-                      itemBuilder: (context, index) =>
-                          _buildEntry(l10n, collection.entries[index]),
-                    ),
-            ),
+            Expanded(child: _buildCollectionContent(l10n, collection)),
             const SizedBox(height: 12),
             SegmentedButton<JournalEntryType>(
               showSelectedIcon: false,
@@ -339,11 +326,80 @@ class _CollectionsScreenState extends ConsumerState<CollectionsScreen> {
     );
   }
 
+  Widget _buildCollectionContent(
+    AppLocalizations l10n,
+    CollectionSnapshot collection,
+  ) {
+    if (collection.entries.isEmpty && collection.references.isEmpty) {
+      return Align(
+        alignment: AlignmentDirectional.topStart,
+        child: Text(l10n.emptyCollection),
+      );
+    }
+
+    return ListView(
+      children: [
+        for (int index = 0; index < collection.entries.length; index++)
+          Padding(
+            padding: EdgeInsets.only(
+              bottom: index == collection.entries.length - 1 ? 0 : 6,
+            ),
+            child: _buildEntry(l10n, collection.entries[index]),
+          ),
+        if (collection.references.isNotEmpty) ...[
+          if (collection.entries.isNotEmpty) const SizedBox(height: 20),
+          Text(
+            l10n.collectionReferences,
+            style: Theme.of(context).textTheme.titleSmall,
+          ),
+          const SizedBox(height: 8),
+          for (int index = 0; index < collection.references.length; index++)
+            Padding(
+              padding: EdgeInsets.only(
+                bottom: index == collection.references.length - 1 ? 0 : 6,
+              ),
+              child: _buildReference(collection.references[index]),
+            ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildReference(CollectionReferenceEntry entry) {
+    final bool discarded = entry.taskState == JournalTaskState.discarded;
+    final TextStyle? contentStyle = Theme.of(context).textTheme.bodyLarge;
+    final TextStyle? markerStyle = Theme.of(context).textTheme.titleMedium;
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(
+          width: 28,
+          child: Text(
+            _entrySymbol(entry.type, entry.taskState),
+            textAlign: TextAlign.center,
+            style: discarded
+                ? markerStyle?.copyWith(decoration: TextDecoration.lineThrough)
+                : markerStyle,
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            entry.content,
+            style: discarded
+                ? contentStyle?.copyWith(decoration: TextDecoration.lineThrough)
+                : contentStyle,
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildEntry(AppLocalizations l10n, CollectionEntry entry) {
     final TextStyle? style = Theme.of(context).textTheme.bodyLarge;
     final bool discarded = entry.taskState == JournalTaskState.discarded;
     final Text marker = Text(
-      _entrySymbol(entry),
+      _entrySymbol(entry.type, entry.taskState),
       style: discarded
           ? Theme.of(context).textTheme.titleMedium
                 ?.copyWith(decoration: TextDecoration.lineThrough)
@@ -500,18 +556,19 @@ class _CollectionsScreenState extends ConsumerState<CollectionsScreen> {
 
 enum _CollectionTaskAction { complete, discard }
 
-String _entrySymbol(CollectionEntry entry) => switch (entry.type) {
-  JournalEntryType.task => switch (entry.taskState) {
-    JournalTaskState.completed => '×',
-    JournalTaskState.migrated => '>',
-    JournalTaskState.scheduled => '<',
-    JournalTaskState.discarded => '•',
-    JournalTaskState.open => '•',
-    null => '•',
-  },
-  JournalEntryType.event => '○',
-  JournalEntryType.note => '–',
-};
+String _entrySymbol(JournalEntryType type, JournalTaskState? taskState) =>
+    switch (type) {
+      JournalEntryType.task => switch (taskState) {
+        JournalTaskState.completed => '×',
+        JournalTaskState.migrated => '>',
+        JournalTaskState.scheduled => '<',
+        JournalTaskState.discarded => '•',
+        JournalTaskState.open => '•',
+        null => '•',
+      },
+      JournalEntryType.event => '○',
+      JournalEntryType.note => '–',
+    };
 
 void _reportUnexpectedCollectionsError(
   String operation,

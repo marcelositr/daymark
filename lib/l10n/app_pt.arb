@@ -56,5 +56,10 @@
   "collectionLoadFailed": "Não foi possível carregar esta Coleção.",
   "emptyCollection": "Nada registrado nesta Coleção ainda.",
   "collectionEntryHint": "Adicione uma tarefa, evento ou nota",
-  "backToCollections": "Voltar às Coleções"
+  "backToCollections": "Voltar às Coleções",
+  "entryActions": "Ações da entrada",
+  "referenceEntry": "Referenciar",
+  "referenceEntryTitle": "Referenciar em Coleção",
+  "referenceEntryFailed": "Não foi possível adicionar esta referência à Coleção.",
+  "collectionReferences": "Referências"
 }

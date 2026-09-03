@@ -175,6 +175,15 @@ final class JournalSession {
     );
   }
 
+  Future<void> referenceEntryInCollection({
+    required String entryId,
+    required String collectionId,
+  }) {
+    return run(
+      () => collections.reference(collectionId: collectionId, entryId: entryId),
+    );
+  }
+
   Future<void> migrateTaskToCollection({
     required String entryId,
     required String collectionId,

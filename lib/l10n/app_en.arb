@@ -56,5 +56,10 @@
   "collectionLoadFailed": "Could not load this Collection.",
   "emptyCollection": "Nothing logged in this Collection yet.",
   "collectionEntryHint": "Add a task, event, or note",
-  "backToCollections": "Back to Collections"
+  "backToCollections": "Back to Collections",
+  "entryActions": "Entry actions",
+  "referenceEntry": "Reference",
+  "referenceEntryTitle": "Reference in Collection",
+  "referenceEntryFailed": "Could not add this Collection reference.",
+  "collectionReferences": "References"
 }
