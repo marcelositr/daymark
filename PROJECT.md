@@ -6,13 +6,13 @@ This is Daymark's canonical living handoff. Read this file and `AGENTS.md` befor
 
 - Phase: pre-alpha, core Bullet Journal flows in active development.
 - Integration branch: `main` only.
-- Current `main` head before the active feature PR: `bf8018c0e2250566af39e9f90632e5808c780783` (`docs: checkpoint PR 18 merge (#19)`).
-- Current merged product baseline: PR #18 squash-merged as `03ef4d187845ff13128f28298336b540b3237e9e`.
-- Active product implementation branch/PR: `feat/collections` / PR #20, `feat(journal): add basic collections`.
-- PR #20 is Ready for review. Its current implementation provides a real minimal Collections surface without exposing forward migration (`>`), Index, references from chronological logs, planner abstractions, or schema changes.
-- Current merged product scope already includes deliberate Task scheduling (`<`) from Today and Monthly into one of the six real Future Log month buckets.
-- Deliberate migration (`>`) is **not** exposed yet. Collections now provide a real non-Future owning structure in PR #20, but merely having that structure does not justify exposing migration without a deliberate destination-selection flow and lifecycle coverage.
-- Current focus: validate this final documentation-only head with the full Ready CI, perform proportionate manual product validation if needed, then stop for explicit user merge approval.
+- Current `main` head before the active feature PR: `08199af85df7d10ba36b226d97b390da3acffbb9` (`feat(journal): add basic collections (#20)`).
+- Current merged product baseline: PR #20, basic Collections, squash-merged as `08199af85df7d10ba36b226d97b390da3acffbb9`.
+- Active product implementation branch/PR: `feat/task-migration-collections` / PR #21, `feat(journal): migrate tasks to collections`.
+- PR #21 is Draft. Its implementation exposes deliberate forward migration (`>`) for open Tasks from Today and Monthly Tasks into an existing Collection, preserving source history and lineage.
+- Current merged product scope includes deliberate Task scheduling (`<`) from Today and Monthly into one of the six real Future Log month buckets plus the basic Collections surface from PR #20.
+- PR #21 adds the first deliberately exposed non-Future migration destination without inventing next-Monthly browsing, automatic rollover, or planner abstractions.
+- Current focus: finish PR #21 documentation/exact-head CI, perform manual cross-surface migration/persistence validation, then run full Ready CI before explicit merge approval.
 - Merge policy: never merge without explicit user approval.
 - Runtime targets: Linux and Android.
 - Pinned toolchain: Flutter 3.47.2 / Dart 3.13.2.
@@ -65,7 +65,7 @@ Therefore:
 
 This guardrail exists because PR #18 initially persisted scheduled Tasks correctly while Future displayed stale in-memory data until lock/restart. The user found the bug manually. It now has a regression test.
 
-PR #20 does not yet introduce a cross-surface write into Collections. Its Collection screen changes only its own selected/listed state, so an activation refresh hook is not required for this slice. When migration or references can change Collections from another retained section, add the corresponding reactivation regression coverage rather than relying on remount behavior.
+PR #21 introduces the first cross-surface write into Collections. `CollectionsScreen` now reloads its list and selected Collection snapshot on inactive -> active transition through `AppSectionScope`, and a widget regression test proves a migrated Task appears after reactivation without lock, restart, or remount. Future Collection references must follow the same lifecycle rule.
 
 ## Stable architecture and security baseline
 
@@ -115,7 +115,7 @@ Current foundation includes:
 - Android OS backup/device-transfer exclusion;
 - portable authenticated encrypted backup with integrity validation and recovery protections.
 
-PR #20 changes no database schema, crypto, key lifecycle, backup format, dependency set, or plaintext boundary. Collection reads/writes remain inside the already encrypted journal database and the serialized unlocked session.
+PR #20 and PR #21 change no database schema, crypto, key lifecycle, backup format, dependency set, or plaintext boundary. Collection reads and movement remain inside the already encrypted journal database and the serialized unlocked session.
 
 ## Merged product history that matters
 
@@ -203,7 +203,7 @@ Validation lineage:
 - final full CI #300 on `d14c0796...`: `quality`, Linux build, Android build, dependency review, and `merge-gate` all green;
 - explicit user approval was received; squash merge produced `03ef4d187845ff13128f28298336b540b3237e9e` on `main`.
 
-## Active PR #20: basic Collections
+## Merged PR #20: basic Collections
 
 Branch: `feat/collections`.
 
@@ -243,22 +243,53 @@ Validation so far:
 - a temporary formatter-probe workflow was used only to recover exact formatter bytes through GitHub, then removed completely before Ready;
 - Draft CI #315 on head `703cc3f61f900d2699d370141c834d84a0785d96`: `dev-check` green, including localization generation, Drift generation/snapshot checks, formatter, and analyzer;
 - Draft CI #317 on head `d44a1d37febb5b84ed1fc9ffa63ee6da693e2ed4`: `dev-check` green after the architecture/handoff reconciliation;
-- full Ready CI #318 on the same head `d44a1d37febb5b84ed1fc9ffa63ee6da693e2ed4`: `quality` including the full test suite, Linux build, Android build, dependency review, and `merge-gate` all green;
-- this checkpoint commit is documentation-only and therefore changes the PR head after #318. The full Ready CI must still validate the final documentation head before merge approval is requested.
+- full Ready CI #318 on that head: `quality` including the full test suite, Linux build, Android build, dependency review, and `merge-gate` all green;
+- final Ready CI #319 on exact final PR head `27f4f91ebebc36c94696d171b1e96be37fec8b5a`: all merge-tier jobs green;
+- manual Linux product validation passed create/open/capture, Task complete/discard, lock/unlock, restart persistence, and no false error snackbar;
+- explicit user approval was received and PR #20 squash-merged as `08199af85df7d10ba36b226d97b390da3acffbb9`;
+- post-merge main CI #320: quality, Linux, and Android green.
 
-## Next work after PR #20
+## Active PR #21: deliberate Task migration to Collections
 
-Do not automatically expose `>` merely because Collections now exist.
+Branch: `feat/task-migration-collections`.
 
-A method-faithful next slice should stay small and deliberate. Likely choices are:
+PR: #21, `feat(journal): migrate tasks to collections`.
 
-1. expose deliberate Collection references from chronological entries while preserving original ownership; or
-2. design the explicit destination-selection flow required to migrate an open Task into a real Collection using the existing lineage semantics; or
-3. separately expose next-Monthly accessibility if that produces a clearer method-native migration path.
+Scope implemented:
 
-Index remains a distinct deliberate journal structure and should not be bundled into migration simply because its schema already exists. Search, backup UI, exports, OS lock hooks, accessibility/keyboard work, and packaging remain later focused slices.
+- Today and Monthly open Tasks gain a deliberate **Migrate** action;
+- the user chooses one existing Collection; migration never auto-selects or creates a destination;
+- `JournalSession.migrateTaskToCollection(...)` validates the source as an open Task before delegating to existing `JournalService.migrate` / repository lineage semantics;
+- the source stays historical as `migrated` (`>`);
+- the chosen Collection receives a fresh open Task with its own identity and lineage;
+- Collections refreshes on retained-tab reactivation after a migration from Today/Monthly;
+- English, `pt`, and `pt_BR` migration labels are localized;
+- session coverage proves source/destination state persists across lock/unlock;
+- widget coverage proves Today/Monthly destination selection and retained-Collections refresh;
+- no schema, crypto, backup, dependency, or platform-contract change.
 
-Any future cross-surface write into Collections must add retained-tab activation refresh coverage before merge.
+Explicit non-goals:
+
+- no automatic migration or reflection decision;
+- no Collection creation inside the migration dialog;
+- no migration from Future or Collection-owned entries;
+- no Event/Note migration UI;
+- no Collection references;
+- no Index;
+- no next-Monthly browsing;
+- no schema v2.
+
+Validation so far:
+
+- code-equivalent implementation head `57b171b3d3c1fc223dbdf13b5cd9c55a5f5efdc1` was produced by the pinned Flutter 3.47.2 / Dart 3.13.2 runner;
+- formatter applied to 64 files with 6 changes; analyzer reported **No issues found**; **113 tests passed**;
+- the suite includes new session migration persistence, Today/Monthly migration UI, and retained-Collections activation tests;
+- temporary patch workflow/script used to materialize exact formatter output were removed immediately afterward and are not part of the intended PR diff;
+- exact-head Draft CI and manual Linux cross-surface validation remain before Ready.
+
+## Next work after PR #21
+
+Keep the next slice separate from migration. Likely method-native choices are deliberate Collection references from chronological entries or next-Monthly accessibility. Index remains a distinct deliberate journal structure and must not be bundled into either merely because schema support exists. Search, backup UI, exports, OS lock hooks, accessibility/keyboard work, and packaging remain later focused slices.
 
 ## CI and handoff traps to remember
 

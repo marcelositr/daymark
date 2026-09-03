@@ -106,9 +106,11 @@ For a task:
 
 Only an open Task can change to migrated/scheduled Task state. A completed, discarded, migrated, or scheduled Task must not be moved again as though it were still open.
 
-The current product exposes Task scheduling from Daily/Today and Monthly Tasks into Future. That UI is intentionally Task-only even though the underlying movement model can preserve lineage for Events or Notes when a future product flow legitimately requires it.
+The current product exposes Task scheduling from Daily/Today and Monthly Tasks into Future, and forward Task migration from Daily/Today and Monthly Tasks into an existing Collection. Those UI flows are intentionally Task-only even though the underlying movement model can preserve lineage for Events or Notes when a future product flow legitimately requires it.
 
 Scheduling an open Task preserves the historical source in its original owner with `scheduled` state and creates a new open Task in the chosen Future bucket. The destination is not an in-place ownership mutation of the source.
+
+Migrating an open Task to a Collection preserves the historical source in its original chronological owner with `migrated` state and creates a new open Task owned by the deliberately selected Collection. The Collection must already exist; migration does not silently create or choose a destination.
 
 When an item from the Future Log becomes current and is brought into a Monthly Log, that movement must remain traceable even when the entry is an Event and therefore has no Task state.
 

@@ -79,14 +79,15 @@ When the current month advances, the visible Future horizon rolls forward. Exist
 
 Collections are deliberate topic/project-oriented journal containers, not generic configurable workspaces.
 
-The first Collection surface supports:
+The Collection surface supports:
 
 - listing and creating Collections;
 - opening one Collection;
 - Rapid Logging Task, Event, and Note entries owned by that Collection;
-- completing or discarding open Tasks inside that Collection.
+- completing or discarding open Tasks inside that Collection;
+- receiving deliberately migrated open Tasks from Today or Monthly Tasks.
 
-Collections deliberately do not gain Kanban fields, arbitrary properties, dashboards, or planner abstractions. Collection references and migration remain distinct domain operations. The first Collection UI does not yet expose references from chronological logs or deliberate forward migration (`>`).
+Collections deliberately do not gain Kanban fields, arbitrary properties, dashboards, or planner abstractions. Collection references and migration remain distinct domain operations. References from chronological logs are still deferred and must not be simulated by migration.
 
 ### Migration and scheduling
 
@@ -96,11 +97,13 @@ Do not invent temporary planner buckets, fake destinations, or automatic rollove
 
 The current product exposes **scheduling (`<`) for open Tasks in Today and Monthly**. The user deliberately chooses one of the six visible Future months. The historical source stays in place with scheduled state, and the selected Future month receives a fresh open Task with lineage back to the source.
 
-Scheduling must be immediately visible when the user navigates to Future. Retained navigation state is not permission to show stale journal snapshots after a cross-surface write.
+The current product also exposes **forward migration (`>`) for open Tasks in Today and Monthly Tasks into an existing Collection**. The user deliberately chooses the destination Collection. The historical source stays in place with migrated state, and the chosen Collection receives a fresh open Task with lineage back to the source. Daymark does not choose a Collection automatically and does not create one as a side effect of migration.
 
-A Future destination always uses scheduling semantics. A normal forward migration (`>`) must use another valid non-Future destination according to the method.
+Cross-surface movement must be immediately visible when the user navigates to its destination. Retained navigation state is not permission to show stale Future or Collection snapshots after a write from another section.
 
-Daymark does **not** treat the current Monthly Log as a shortcut destination for a Today Task merely because that container already exists. Forward-migration UI remains deferred until a method-faithful destination is intentionally exposed for migration. Collections now provide a real owning structure, but simply existing is not enough to expose `>` without a deliberate destination-selection flow and corresponding lifecycle tests.
+A Future destination always uses scheduling semantics. A normal forward migration (`>`) uses a valid non-Future destination according to the method.
+
+Daymark does **not** treat the current Monthly Log as a shortcut destination for a Today Task merely because that container already exists. Existing Collections are the first deliberately exposed forward-migration destination. Migration from Future or from Collection-owned entries, and migration to a future Monthly Log, remain separate product decisions rather than implicit extensions of this flow.
 
 ## Local-first
 
