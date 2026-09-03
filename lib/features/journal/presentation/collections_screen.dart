@@ -5,6 +5,7 @@ import 'package:daymark/core/session/journal_session_controller.dart';
 import 'package:daymark/features/journal/data/collection_repository.dart';
 import 'package:daymark/features/journal/domain/journal_domain.dart';
 import 'package:daymark/l10n/app_localizations.dart';
+import 'package:daymark/presentation/app_section_scope.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -101,11 +102,38 @@ class _CollectionsScreenState extends ConsumerState<CollectionsScreen> {
   JournalEntryType _entryType = JournalEntryType.task;
   bool _saving = false;
   String? _taskActionEntryId;
+  bool _sectionScopeInitialized = false;
+  bool _wasCollectionsSectionActive = false;
 
   @override
   void initState() {
     super.initState();
     _collectionsFuture = _dataSource().list();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final int? currentSectionIndex = AppSectionScope.maybeCurrentIndexOf(
+      context,
+    );
+    if (currentSectionIndex == null) {
+      return;
+    }
+
+    final bool isCollectionsSectionActive =
+        currentSectionIndex == AppSectionScope.collectionsSectionIndex;
+    if (_sectionScopeInitialized &&
+        isCollectionsSectionActive &&
+        !_wasCollectionsSectionActive) {
+      _collectionsFuture = _dataSource().list();
+      final String? collectionId = _selectedCollectionId;
+      if (collectionId != null) {
+        _collectionFuture = _dataSource().load(collectionId);
+      }
+    }
+    _sectionScopeInitialized = true;
+    _wasCollectionsSectionActive = isCollectionsSectionActive;
   }
 
   @override

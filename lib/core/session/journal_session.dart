@@ -175,6 +175,19 @@ final class JournalSession {
     );
   }
 
+  Future<void> migrateTaskToCollection({
+    required String entryId,
+    required String collectionId,
+  }) {
+    return run(() async {
+      await taskActions.requireOpen(entryId: entryId);
+      await service.migrate(
+        sourceEntryId: entryId,
+        destinationOwner: JournalCollectionOwner(collectionId),
+      );
+    });
+  }
+
   Future<void> scheduleTaskToFuture({
     required String entryId,
     required String periodStart,

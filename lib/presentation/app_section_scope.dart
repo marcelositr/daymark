@@ -13,6 +13,7 @@ final class AppSectionScope extends InheritedNotifier<ValueNotifier<int>> {
   }) : super(notifier: currentIndex);
 
   static const int futureSectionIndex = 2;
+  static const int collectionsSectionIndex = 3;
 
   static int? maybeCurrentIndexOf(BuildContext context) {
     return context

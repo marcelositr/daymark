@@ -202,6 +202,10 @@ Focused repositories are responsible for the semantic location they claim to rep
 
 The Collection boundary follows the same split: `CollectionRepository` owns focused Collection reads and delegates semantic creates/captures to `JournalService`, while `JournalSession` serializes list/create/load/capture operations with the rest of the unlocked journal lifecycle. Collection ownership, Collection references, and migration remain distinct domain operations rather than being collapsed into presentation helpers.
 
+Forward Task migration to a Collection is exposed through `JournalSession.migrateTaskToCollection(...)`. The session first validates the persisted source as an open Task, then delegates to `JournalService.migrate(...)` with a `JournalCollectionOwner`. The presentation layer only lists existing Collections and records the user's deliberate choice; it does not create a destination or reproduce lineage rules.
+
+Because Today or Monthly can now change a retained Collection while Collections is inactive, `CollectionsScreen` observes `AppSectionScope` reactivation and reloads both the Collection list and any selected Collection snapshot. This is the same presentation-lifecycle rule already used by Future scheduling, not a new persistence cache.
+
 Task scheduling is exposed through the serialized session rather than implemented inside Today/Monthly widgets. `JournalSession.scheduleTaskToFuture(...)` validates that the persisted source is an open Task before resolving/creating the Future destination, then delegates the actual movement and lineage semantics to the existing journal service/repository boundary. Invalid Task-only scheduling must fail before it creates a destination container or partial write.
 
 Scheduling therefore has three distinct responsibilities:
@@ -414,8 +418,8 @@ The current dependency sequence is:
 9. build real Monthly and Future destinations;
 10. expose deliberate scheduling (`<`) from Today/Monthly Tasks into real Future destinations;
 11. build a real minimal Collections surface as a non-Future method-native owning structure;
-12. add deliberate Collection references and/or forward migration (`>`) only through explicit method-faithful destination flows with retained-screen lifecycle coverage where cross-surface writes occur;
-13. separately expose next-Monthly accessibility if needed for a clearer migration path, then continue Index, Search, backup UI, exports, platform hooks, accessibility, and packaging in focused slices.
+12. expose deliberate forward migration (`>`) from Today/Monthly open Tasks into an existing Collection, with retained-Collections refresh coverage;
+13. continue Collection references, next-Monthly accessibility, Index, Search, backup UI, exports, platform hooks, accessibility, and packaging as separate focused slices.
 
 Do not implement convenience features ahead of the contracts that govern their persistence and security.
 
