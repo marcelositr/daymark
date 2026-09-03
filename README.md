@@ -13,7 +13,7 @@ The core product, domain, security, data, workflow, and toolchain constraints ar
 - encrypted journal creation, unlock, manual lock, and automatic inactivity lock;
 - Today / Daily Log with Rapid Logging for Task, Event, and Note;
 - deliberate Task completion and discard;
-- a current-month Monthly Log with Calendar and Tasks sections;
+- a Monthly Log with a fully interactive current month plus read-only historical month browsing;
 - a rolling six-month Future Log;
 - deliberate scheduling of open Tasks from Today and Monthly into real Future Log month buckets, preserving historical source state and movement lineage;
 - basic Collections with owned Task, Event, and Note entries;
@@ -45,7 +45,7 @@ Any human or AI contributor should read [`AGENTS.md`](AGENTS.md) before continui
 Daymark deliberately avoids turning Bullet Journal concepts into a generic planner.
 
 - **Today / Daily Log** captures Task, Event, and Note entries for the current method date.
-- **Monthly Log** currently represents the current month only, with a dated Calendar section and a separate Tasks section.
+- **Monthly Log** keeps the current month fully interactive, with a dated Calendar section and separate Tasks section, while earlier months can be browsed read-only without creating empty historical Logs merely by navigating.
 - **Future Log** is a rolling overview of six future month buckets beginning with the month after the current month. It is month-addressed, not a second day-level calendar.
 - **Collections** are simple method-native topic/project containers. They can own Task, Event, and Note entries without becoming configurable workspaces or dashboards.
 - **Scheduling (`<`)** is available for open Tasks in Today and Monthly. The source remains in history as scheduled and a fresh open Task is created in the selected Future month with lineage preserved.
@@ -53,7 +53,7 @@ Daymark deliberately avoids turning Bullet Journal concepts into a generic plann
 - **Collection references** let a Today, Monthly, or Future entry remain in its original location while also appearing in a Collection. The same Entry identity and Task state are preserved, and the reference is read-only from the Collection surface.
 - **Index** is a deliberate ordered list of existing Logs and Collections. Adding a structure to the Index does not duplicate its content, change ownership, or turn Search results into persistent Index items.
 
-Historical month browsing, richer reflection flows, Search, backup UI, and exports continue as focused pre-alpha work.
+Richer reflection flows, Search, backup UI, and exports continue as focused pre-alpha work.
 
 ## Technology direction
 
