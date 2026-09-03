@@ -27,6 +27,7 @@ This file is for user-visible behavior, data compatibility, security, packaging,
 - Deliberate forward migration (`>`) for open Tasks in Today and Monthly Tasks into an existing Collection, preserving the historical source and creating a fresh open destination Task with lineage.
 - Deliberate Collection references from Today, Monthly, and Future entries into an existing Collection without changing source ownership, entry identity, or Task state; references appear separately and read-only in the Collection.
 - Basic deliberate Index of existing Daily, Monthly, and Future Logs and Collections, preserving user-chosen Index order without duplicating journal content or deriving persistent items from Search.
+- Basic local Search over existing Entry content, showing read-only Daily, Monthly, Future, or Collection ownership context without creating Search history, duplicate content, references, or Index items.
 
 ### Changed
 
@@ -36,7 +37,7 @@ This file is for user-visible behavior, data compatibility, security, packaging,
 - Journal access now remains behind one stable router/application root instead of replacing the root application when lock state changes.
 - Journal operations and session closing are serialized so manual or automatic lock does not close encrypted persistence underneath an in-flight journal operation.
 - Master-password creation and unlock reject an empty password before cryptographic work begins.
-- Portuguese parent localization resources include the journal-access, Daily Log, Monthly Log, Future Log, Collection, migration, reference, and Index strings used by the Brazilian Portuguese locale.
+- Portuguese parent localization resources include the journal-access, Daily Log, Monthly Log, Future Log, Collection, migration, reference, Index, and Search strings used by the Brazilian Portuguese locale.
 - Compact navigation keeps four core journal destinations directly visible and groups Search and Index under a minimal More sheet, while expanded desktop navigation exposes both directly.
 - Human and AI contributors follow a staged validation workflow: baseline/audit, Draft CI, layer-correct tests, progressive local validation, documentation alignment, full merge CI, and explicit user merge approval.
 - AI handoff guidance now records concrete failure-prevention rules for localization generation, pinned formatting, widget-test diagnosis, safe interactive-shell command blocks, temporary CI probes, SHA-specific validation evidence, and retained-navigation refresh behavior.
@@ -54,6 +55,7 @@ This file is for user-visible behavior, data compatibility, security, packaging,
 - Focused Future Log persistence rejects non-Future owners before capture, preventing an incorrect caller from silently writing through the wrong product boundary.
 - Retained Future navigation now reloads its month snapshots when the Future section becomes active, so Tasks scheduled from Today or Monthly appear immediately without requiring lock, restart, or screen remount.
 - Retained Collections navigation now reloads its list, owned entries, and references when the section becomes active, so migrations or references created from another retained section appear without requiring lock, restart, or screen remount.
+- Retained Search reruns the last submitted query when its section becomes active, so result Task state reflects changes made elsewhere without polling or persisting Search history.
 
 ### Security
 
