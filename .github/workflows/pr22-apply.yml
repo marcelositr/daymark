@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   apply:
-    if: "${{ github.event.head_commit.message == 'ci: apply PR 22 patch in pinned toolchain' }}"
+    if: "${{ github.event.head_commit.message == 'ci: retry PR 22 patch after script syntax fix' }}"
     runs-on: ubuntu-24.04
     steps:
       - name: Check out feature branch
@@ -30,6 +30,28 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path('tool/apply_pr22_patch.py')
+          text = path.read_text()
+          open_marker = "    r'''import 'package:daymark/core/database/daymark_database.dart';"
+          close_marker = "''',\n)\n\nreplace_once(\n    \"lib/core/session/journal_session.dart\","
+          if text.count(open_marker) != 1 or text.count(close_marker) != 1:
+              raise SystemExit('Could not locate CollectionRepository wrapper markers.')
+          text = text.replace(
+              open_marker,
+              '    r"""import \'package:daymark/core/database/daymark_database.dart\';',
+              1,
+          )
+          text = text.replace(
+              close_marker,
+              '""",\n)\n\nreplace_once(\n    "lib/core/session/journal_session.dart",',
+              1,
+          )
+          path.write_text(text)
+          PY
+          python3 -m py_compile tool/apply_pr22_patch.py
           python3 tool/apply_pr22_patch.py
           flutter pub get --enforce-lockfile
           flutter gen-l10n
