@@ -23,10 +23,10 @@ void main() {
     expect(dataSource.calendarEntries.single.type, JournalEntryType.event);
     expect(dataSource.calendarEntries.single.calendarDate, '2026-09-15');
 
-    await tester.scrollUntilVisible(
+    await tester.dragUntilVisible(
       find.text('○ Dentist'),
-      200,
-      scrollable: find.byType(ListView),
+      find.byType(ListView),
+      const Offset(0, -200),
     );
 
     expect(find.text('○ Dentist'), findsOneWidget);
