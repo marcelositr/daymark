@@ -106,6 +106,10 @@ For a task:
 
 Only an open Task can change to migrated/scheduled Task state. A completed, discarded, migrated, or scheduled Task must not be moved again as though it were still open.
 
+The current product exposes Task scheduling from Daily/Today and Monthly Tasks into Future. That UI is intentionally Task-only even though the underlying movement model can preserve lineage for Events or Notes when a future product flow legitimately requires it.
+
+Scheduling an open Task preserves the historical source in its original owner with `scheduled` state and creates a new open Task in the chosen Future bucket. The destination is not an in-place ownership mutation of the source.
+
 When an item from the Future Log becomes current and is brought into a Monthly Log, that movement must remain traceable even when the entry is an Event and therefore has no Task state.
 
 Migration should normally create a destination entry while retaining the source as historical evidence of the decision. This preserves chronology and makes migration lineage inspectable.
@@ -113,6 +117,8 @@ Migration should normally create a destination entry while retaining the source 
 A migrated or scheduled destination Task begins as a new open Task in its destination. The source Task retains the terminal state that records the decision. Events and Notes may move with lineage without acquiring Task state.
 
 A Future destination uses scheduling semantics. A normal `migrated` operation must not target Future merely because both operations happen to create destination entries.
+
+Forward migration (`>`) must use a method-faithful non-Future destination such as the next Monthly Log or an appropriate Collection. The current Monthly Log is not a shortcut destination for a Today Task merely because it is already available in the UI.
 
 One source entry may have at most one direct outgoing migration. Product UI must not offer contradictory second movement after the source already has outgoing lineage.
 
