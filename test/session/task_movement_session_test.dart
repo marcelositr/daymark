@@ -81,10 +81,7 @@ void main() {
       '2026-09-03',
     );
     expect(reopenedDaily.entries.single.content, 'Carry forward');
-    expect(
-      reopenedDaily.entries.single.taskState,
-      JournalTaskState.migrated,
-    );
+    expect(reopenedDaily.entries.single.taskState, JournalTaskState.migrated);
 
     final MonthlyLogSnapshot reopenedMonthly = await reopened.loadMonthlyLog(
       '2026-09-01',
@@ -110,9 +107,7 @@ void main() {
       FROM migrations
       WHERE source_entry_id = ?
       ''',
-          variables: <Variable<Object>>[
-            Variable.withString(dailySourceId),
-          ],
+          variables: <Variable<Object>>[Variable.withString(dailySourceId)],
         )
         .getSingle();
     expect(migratedLineage.read<String>('kind'), 'migrated');
@@ -128,9 +123,7 @@ void main() {
       FROM migrations
       WHERE source_entry_id = ?
       ''',
-          variables: <Variable<Object>>[
-            Variable.withString(monthlySourceId),
-          ],
+          variables: <Variable<Object>>[Variable.withString(monthlySourceId)],
         )
         .getSingle();
     expect(scheduledLineage.read<String>('kind'), 'scheduled');
@@ -140,58 +133,63 @@ void main() {
     );
   });
 
-  test('Task movement rejects invalid sources before creating a destination', () async {
-    final JournalSession session = await manager.create(
-      masterPassword: 'task movement boundary journal',
-    );
-    final DailyLogSnapshot daily = await session.loadDailyLog('2026-09-03');
+  test(
+    'Task movement rejects invalid sources before creating a destination',
+    () async {
+      final JournalSession session = await manager.create(
+        masterPassword: 'task movement boundary journal',
+      );
+      final DailyLogSnapshot daily = await session.loadDailyLog('2026-09-03');
 
-    await session.captureDailyLogEntry(
-      logId: daily.logId,
-      type: JournalEntryType.event,
-      content: 'Not a Task',
-    );
-    await session.captureDailyLogEntry(
-      logId: daily.logId,
-      type: JournalEntryType.task,
-      content: 'Already done',
-    );
+      await session.captureDailyLogEntry(
+        logId: daily.logId,
+        type: JournalEntryType.event,
+        content: 'Not a Task',
+      );
+      await session.captureDailyLogEntry(
+        logId: daily.logId,
+        type: JournalEntryType.task,
+        content: 'Already done',
+      );
 
-    final DailyLogSnapshot captured = await session.loadDailyLog('2026-09-03');
-    final String eventId = captured.entries
-        .singleWhere((entry) => entry.content == 'Not a Task')
-        .id;
-    final String completedTaskId = captured.entries
-        .singleWhere((entry) => entry.content == 'Already done')
-        .id;
-    await session.completeTask(entryId: completedTaskId);
+      final DailyLogSnapshot captured = await session.loadDailyLog(
+        '2026-09-03',
+      );
+      final String eventId = captured.entries
+          .singleWhere((entry) => entry.content == 'Not a Task')
+          .id;
+      final String completedTaskId = captured.entries
+          .singleWhere((entry) => entry.content == 'Already done')
+          .id;
+      await session.completeTask(entryId: completedTaskId);
 
-    expect(
-      () => session.migrateTaskToMonthly(
-        entryId: eventId,
-        periodStart: '2026-09-01',
-      ),
-      throwsA(isA<JournalInvariantException>()),
-    );
-    expect(
-      () => session.scheduleTaskToFuture(
-        entryId: completedTaskId,
-        periodStart: '2026-12-01',
-      ),
-      throwsA(isA<JournalInvariantException>()),
-    );
+      expect(
+        () => session.migrateTaskToMonthly(
+          entryId: eventId,
+          periodStart: '2026-09-01',
+        ),
+        throwsA(isA<JournalInvariantException>()),
+      );
+      expect(
+        () => session.scheduleTaskToFuture(
+          entryId: completedTaskId,
+          periodStart: '2026-12-01',
+        ),
+        throwsA(isA<JournalInvariantException>()),
+      );
 
-    final monthlyCount = await session.database
-        .customSelect(
-          "SELECT COUNT(*) AS count FROM logs WHERE kind = 'monthly'",
-        )
-        .getSingle();
-    final futureCount = await session.database
-        .customSelect(
-          "SELECT COUNT(*) AS count FROM logs WHERE kind = 'future'",
-        )
-        .getSingle();
-    expect(monthlyCount.read<int>('count'), 0);
-    expect(futureCount.read<int>('count'), 0);
-  });
+      final monthlyCount = await session.database
+          .customSelect(
+            "SELECT COUNT(*) AS count FROM logs WHERE kind = 'monthly'",
+          )
+          .getSingle();
+      final futureCount = await session.database
+          .customSelect(
+            "SELECT COUNT(*) AS count FROM logs WHERE kind = 'future'",
+          )
+          .getSingle();
+      expect(monthlyCount.read<int>('count'), 0);
+      expect(futureCount.read<int>('count'), 0);
+    },
+  );
 }
