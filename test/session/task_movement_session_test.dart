@@ -64,10 +64,7 @@ void main() {
       );
       final String monthlySourceId = (await created.loadMonthlyLog(
         '2026-09-01',
-      ))
-          .taskEntries
-          .single
-          .id;
+      )).taskEntries.single.id;
       await created.scheduleTaskToFuture(
         entryId: monthlySourceId,
         periodStart: '2026-12-01',
@@ -132,9 +129,7 @@ void main() {
       FROM migrations
       WHERE source_entry_id = ?
       ''',
-            variables: <Variable<Object>>[
-              Variable.withString(monthlySourceId),
-            ],
+            variables: <Variable<Object>>[Variable.withString(monthlySourceId)],
           )
           .getSingle();
       expect(monthlyLineage.read<String>('kind'), 'scheduled');
