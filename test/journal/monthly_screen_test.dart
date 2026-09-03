@@ -108,7 +108,7 @@ Future<void> _pumpMonthly(
       child: MaterialApp(
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
-        home: const Scaffold(
+        home: Scaffold(
           body: MonthlyScreen(initialMonth: DateTime(2026, 9, 15)),
         ),
       ),
