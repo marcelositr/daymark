@@ -21,6 +21,7 @@ This file is for user-visible behavior, data compatibility, security, packaging,
 - Deliberate completion and discard actions for open Tasks in the Today/Daily Log flow.
 - Current-month Monthly Log with Calendar and Tasks sections, dated Event capture, Monthly Task capture, and deliberate complete/discard actions.
 - Rolling six-month Future Log, beginning with the month after the current month, with Task/Event/Note Rapid Logging and deliberate Future Task complete/discard actions.
+- Deliberate scheduling (`<`) for open Tasks in Today and Monthly into one of the six real Future Log month buckets, preserving source history and creating a fresh open destination Task with movement lineage.
 
 ### Changed
 
@@ -32,10 +33,11 @@ This file is for user-visible behavior, data compatibility, security, packaging,
 - Master-password creation and unlock reject an empty password before cryptographic work begins.
 - Portuguese parent localization resources include the journal-access, Daily Log, Monthly Log, and Future Log strings used by the Brazilian Portuguese locale.
 - Human and AI contributors follow a staged validation workflow: baseline/audit, Draft CI, layer-correct tests, progressive local validation, documentation alignment, full merge CI, and explicit user merge approval.
-- AI handoff guidance now records concrete failure-prevention rules for localization generation, pinned formatting, widget-test diagnosis, safe interactive-shell command blocks, temporary CI probes, and SHA-specific validation evidence.
+- AI handoff guidance now records concrete failure-prevention rules for localization generation, pinned formatting, widget-test diagnosis, safe interactive-shell command blocks, temporary CI probes, SHA-specific validation evidence, and retained-navigation refresh behavior.
 - Returning from application background re-evaluates the inactivity deadline immediately instead of trusting a platform timer to have continued firing while suspended.
 - Task terminal actions preserve the original journal entry and change only its Task state, keeping journal history visible.
 - Future Log is explicitly month-addressed rather than a second day-level calendar, preserving the method-native distinction between Monthly and Future surfaces.
+- Forward migration (`>`) UI remains deferred until Daymark exposes a method-faithful non-Future destination such as the next Monthly Log or a Collection; scheduling to Future does not reuse an incorrect current-Monthly shortcut.
 
 ### Fixed
 
@@ -43,6 +45,7 @@ This file is for user-visible behavior, data compatibility, security, packaging,
 - Unexpected journal-access and capture failures retain diagnostic stack information without logging passwords, journal contents, or raw exception messages.
 - Mobile text editing explicitly counts as journal activity even when an input method does not emit Flutter hardware-key events.
 - Focused Future Log persistence rejects non-Future owners before capture, preventing an incorrect caller from silently writing through the wrong product boundary.
+- Retained Future navigation now reloads its month snapshots when the Future section becomes active, so Tasks scheduled from Today or Monthly appear immediately without requiring lock, restart, or screen remount.
 
 ### Security
 
