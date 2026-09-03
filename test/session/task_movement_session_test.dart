@@ -139,4 +139,59 @@ void main() {
       reopenedFuture.entries.single.id,
     );
   });
+
+  test('Task movement rejects invalid sources before creating a destination', () async {
+    final JournalSession session = await manager.create(
+      masterPassword: 'task movement boundary journal',
+    );
+    final DailyLogSnapshot daily = await session.loadDailyLog('2026-09-03');
+
+    await session.captureDailyLogEntry(
+      logId: daily.logId,
+      type: JournalEntryType.event,
+      content: 'Not a Task',
+    );
+    await session.captureDailyLogEntry(
+      logId: daily.logId,
+      type: JournalEntryType.task,
+      content: 'Already done',
+    );
+
+    final DailyLogSnapshot captured = await session.loadDailyLog('2026-09-03');
+    final String eventId = captured.entries
+        .singleWhere((entry) => entry.content == 'Not a Task')
+        .id;
+    final String completedTaskId = captured.entries
+        .singleWhere((entry) => entry.content == 'Already done')
+        .id;
+    await session.completeTask(entryId: completedTaskId);
+
+    expect(
+      () => session.migrateTaskToMonthly(
+        entryId: eventId,
+        periodStart: '2026-09-01',
+      ),
+      throwsA(isA<JournalInvariantException>()),
+    );
+    expect(
+      () => session.scheduleTaskToFuture(
+        entryId: completedTaskId,
+        periodStart: '2026-12-01',
+      ),
+      throwsA(isA<JournalInvariantException>()),
+    );
+
+    final monthlyCount = await session.database
+        .customSelect(
+          "SELECT COUNT(*) AS count FROM logs WHERE kind = 'monthly'",
+        )
+        .getSingle();
+    final futureCount = await session.database
+        .customSelect(
+          "SELECT COUNT(*) AS count FROM logs WHERE kind = 'future'",
+        )
+        .getSingle();
+    expect(monthlyCount.read<int>('count'), 0);
+    expect(futureCount.read<int>('count'), 0);
+  });
 }
