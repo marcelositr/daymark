@@ -146,6 +146,39 @@ final class JournalSession {
     );
   }
 
+  Future<void> migrateTaskToMonthly({
+    required String entryId,
+    required String periodStart,
+  }) {
+    return run(() async {
+      final MonthlyLogSnapshot destination = await monthlyLog.loadOrCreate(
+        periodStart,
+      );
+      await service.migrate(
+        sourceEntryId: entryId,
+        destinationOwner: JournalLogOwner(
+          logId: destination.logId,
+          monthlySection: JournalMonthlySection.tasks,
+        ),
+      );
+    });
+  }
+
+  Future<void> scheduleTaskToFuture({
+    required String entryId,
+    required String periodStart,
+  }) {
+    return run(() async {
+      final FutureLogSnapshot destination = await futureLog.loadOrCreate(
+        periodStart,
+      );
+      await service.schedule(
+        sourceEntryId: entryId,
+        futureLogOwner: JournalLogOwner(logId: destination.logId),
+      );
+    });
+  }
+
   Future<void> completeTask({required String entryId}) {
     return run(() => taskActions.complete(entryId: entryId));
   }
