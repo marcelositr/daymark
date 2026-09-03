@@ -56,6 +56,8 @@ This file is for user-visible behavior, data compatibility, security, packaging,
 - Retained Future navigation now reloads its month snapshots when the Future section becomes active, so Tasks scheduled from Today or Monthly appear immediately without requiring lock, restart, or screen remount.
 - Retained Collections navigation now reloads its list, owned entries, and references when the section becomes active, so migrations or references created from another retained section appear without requiring lock, restart, or screen remount.
 - Retained Search reruns the last submitted query when its section becomes active, so result Task state reflects changes made elsewhere without polling or persisting Search history.
+- Search case-insensitive matching now handles Unicode case changes such as `RÁDIO` and `rádio` while keeping accents literal.
+- A completed retained Search refresh can no longer overwrite the result of a newer explicitly submitted query.
 
 ### Security
 
