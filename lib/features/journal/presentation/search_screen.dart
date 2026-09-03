@@ -1,9 +1,12 @@
+import 'dart:async';
+
 import 'package:daymark/core/session/journal_search_session.dart';
 import 'package:daymark/core/session/journal_session.dart';
 import 'package:daymark/core/session/journal_session_controller.dart';
 import 'package:daymark/features/journal/data/search_repository.dart';
 import 'package:daymark/features/journal/domain/journal_domain.dart';
 import 'package:daymark/l10n/app_localizations.dart';
+import 'package:daymark/presentation/app_section_scope.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -46,6 +49,34 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   bool _searching = false;
   bool _hasSearched = false;
   bool _failed = false;
+  bool _sectionScopeInitialized = false;
+  bool _wasSearchSectionActive = false;
+  String? _lastSubmittedQuery;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final int? currentSectionIndex = AppSectionScope.maybeCurrentIndexOf(
+      context,
+    );
+    if (currentSectionIndex == null) {
+      return;
+    }
+
+    final bool isSearchSectionActive =
+        currentSectionIndex == AppSectionScope.searchSectionIndex;
+    if (_sectionScopeInitialized &&
+        isSearchSectionActive &&
+        !_wasSearchSectionActive &&
+        !_searching) {
+      final String? query = _lastSubmittedQuery;
+      if (query != null) {
+        unawaited(_executeSearch(query, showProgress: false));
+      }
+    }
+    _sectionScopeInitialized = true;
+    _wasSearchSectionActive = isSearchSectionActive;
+  }
 
   @override
   void dispose() {
@@ -159,15 +190,26 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
           _results = const <JournalSearchResult>[];
           _hasSearched = false;
           _failed = false;
+          _lastSubmittedQuery = null;
         });
       }
       return;
     }
 
-    setState(() {
-      _searching = true;
-      _failed = false;
-    });
+    _lastSubmittedQuery = query;
+    await _executeSearch(query, showProgress: true);
+  }
+
+  Future<void> _executeSearch(
+    String query, {
+    required bool showProgress,
+  }) async {
+    if (showProgress && mounted) {
+      setState(() {
+        _searching = true;
+        _failed = false;
+      });
+    }
 
     try {
       final List<JournalSearchResult> results = await _dataSource().search(query);
@@ -175,6 +217,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
         setState(() {
           _results = results;
           _hasSearched = true;
+          _failed = false;
         });
       }
     } catch (error, stackTrace) {
@@ -194,7 +237,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
         });
       }
     } finally {
-      if (mounted) {
+      if (showProgress && mounted) {
         setState(() => _searching = false);
       }
     }
