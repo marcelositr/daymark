@@ -26,22 +26,41 @@ final class CollectionEntry {
   final int ordinal;
 }
 
+final class CollectionReferenceEntry {
+  const CollectionReferenceEntry({
+    required this.id,
+    required this.type,
+    required this.taskState,
+    required this.content,
+    required this.ordinal,
+  });
+
+  final String id;
+  final JournalEntryType type;
+  final JournalTaskState? taskState;
+  final String content;
+  final int ordinal;
+}
+
 final class CollectionSnapshot {
   CollectionSnapshot({
     required this.id,
     required this.title,
     required List<CollectionEntry> entries,
-  }) : entries = List<CollectionEntry>.unmodifiable(entries);
+    List<CollectionReferenceEntry> references = const [],
+  }) : entries = List<CollectionEntry>.unmodifiable(entries),
+       references = List<CollectionReferenceEntry>.unmodifiable(references);
 
   final String id;
   final String title;
   final List<CollectionEntry> entries;
+  final List<CollectionReferenceEntry> references;
 }
 
 /// Focused read/write boundary for Bullet Journal Collections.
 ///
 /// Reads query encrypted storage directly. Mutations continue through the
-/// semantic [JournalService], which owns entry placement invariants.
+/// semantic [JournalService], which owns entry placement/reference invariants.
 final class CollectionRepository {
   const CollectionRepository(this._database, this._journalService);
 
@@ -79,7 +98,7 @@ final class CollectionRepository {
       throw JournalNotFoundException('Collection', collectionId);
     }
 
-    final rows = await _database
+    final ownedRows = await _database
         .customSelect(
           '''
           SELECT
@@ -97,12 +116,42 @@ final class CollectionRepository {
         )
         .get();
 
+    final referenceRows = await _database
+        .customSelect(
+          '''
+          SELECT
+            e.id,
+            e.entry_type,
+            e.task_state,
+            e.content,
+            r.ordinal
+          FROM collection_references r
+          JOIN entries e ON e.id = r.entry_id
+          WHERE r.collection_id = ?
+          ORDER BY r.ordinal
+          ''',
+          variables: <Variable<Object>>[Variable.withString(collectionId)],
+        )
+        .get();
+
     return CollectionSnapshot(
       id: collection.read<String>('id'),
       title: collection.read<String>('title'),
       entries: <CollectionEntry>[
-        for (final row in rows)
+        for (final row in ownedRows)
           CollectionEntry(
+            id: row.read<String>('id'),
+            type: _entryTypeFromCode(row.read<String>('entry_type')),
+            taskState: _taskStateFromCode(
+              row.readNullable<String>('task_state'),
+            ),
+            content: row.read<String>('content'),
+            ordinal: row.read<int>('ordinal'),
+          ),
+      ],
+      references: <CollectionReferenceEntry>[
+        for (final row in referenceRows)
+          CollectionReferenceEntry(
             id: row.read<String>('id'),
             type: _entryTypeFromCode(row.read<String>('entry_type')),
             taskState: _taskStateFromCode(
@@ -124,6 +173,16 @@ final class CollectionRepository {
       type: type,
       content: content,
       owner: JournalCollectionOwner(collectionId),
+    );
+  }
+
+  Future<void> reference({
+    required String collectionId,
+    required String entryId,
+  }) {
+    return _journalService.referenceInCollection(
+      collectionId: collectionId,
+      entryId: entryId,
     );
   }
 }

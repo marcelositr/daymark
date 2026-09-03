@@ -8,6 +8,7 @@ import 'package:daymark/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'entry_collection_reference_dialog.dart';
 import 'journal_activity_guard.dart';
 import 'task_collection_migration_dialog.dart';
 import 'task_schedule_dialog.dart';
@@ -114,7 +115,7 @@ class _MonthlyScreenState extends ConsumerState<MonthlyScreen>
   Timer? _monthRolloverTimer;
   JournalMonthlySection _section = JournalMonthlySection.calendar;
   bool _saving = false;
-  String? _taskActionEntryId;
+  String? _entryActionId;
 
   @override
   void initState() {
@@ -205,6 +206,7 @@ class _MonthlyScreenState extends ConsumerState<MonthlyScreen>
                   return switch (_section) {
                     JournalMonthlySection.calendar => _buildCalendar(
                       context,
+                      l10n,
                       snapshot.requireData,
                     ),
                     JournalMonthlySection.tasks => _buildTasks(
@@ -224,7 +226,11 @@ class _MonthlyScreenState extends ConsumerState<MonthlyScreen>
     );
   }
 
-  Widget _buildCalendar(BuildContext context, MonthlyLogSnapshot snapshot) {
+  Widget _buildCalendar(
+    BuildContext context,
+    AppLocalizations l10n,
+    MonthlyLogSnapshot snapshot,
+  ) {
     final MaterialLocalizations material = MaterialLocalizations.of(context);
     final int dayCount = _daysInMonth(_month);
 
@@ -260,9 +266,23 @@ class _MonthlyScreenState extends ConsumerState<MonthlyScreen>
                     for (final MonthlyLogEntry entry in entries)
                       Padding(
                         padding: const EdgeInsets.only(bottom: 4),
-                        child: Text(
-                          '○ ${entry.content}',
-                          style: Theme.of(context).textTheme.bodyLarge,
+                        child: PopupMenuButton<_MonthlyEntryAction>(
+                          enabled: _entryActionId == null,
+                          tooltip: l10n.entryActions,
+                          padding: EdgeInsets.zero,
+                          onSelected: (action) {
+                            unawaited(_applyEntryAction(entry, action));
+                          },
+                          itemBuilder: (context) => [
+                            PopupMenuItem<_MonthlyEntryAction>(
+                              value: _MonthlyEntryAction.reference,
+                              child: Text(l10n.referenceEntry),
+                            ),
+                          ],
+                          child: Text(
+                            '○ ${entry.content}',
+                            style: Theme.of(context).textTheme.bodyLarge,
+                          ),
                         ),
                       ),
                   ],
@@ -331,7 +351,7 @@ class _MonthlyScreenState extends ConsumerState<MonthlyScreen>
     AppLocalizations l10n,
     MonthlyLogEntry entry,
   ) {
-    if (_taskActionEntryId == entry.id) {
+    if (_entryActionId == entry.id) {
       return const Center(
         child: SizedBox.square(
           dimension: 16,
@@ -348,36 +368,42 @@ class _MonthlyScreenState extends ConsumerState<MonthlyScreen>
           ? markerStyle?.copyWith(decoration: TextDecoration.lineThrough)
           : markerStyle,
     );
+    final bool openTask =
+        entry.type == JournalEntryType.task &&
+        entry.taskState == JournalTaskState.open;
 
-    if (entry.type != JournalEntryType.task ||
-        entry.taskState != JournalTaskState.open) {
-      return marker;
-    }
-
-    return PopupMenuButton<_MonthlyTaskAction>(
-      enabled: _taskActionEntryId == null,
-      tooltip: l10n.taskActions,
+    return PopupMenuButton<_MonthlyEntryAction>(
+      enabled: _entryActionId == null,
+      tooltip: l10n.entryActions,
       padding: EdgeInsets.zero,
       onSelected: (action) {
-        unawaited(_applyTaskAction(entry, action));
+        unawaited(_applyEntryAction(entry, action));
       },
       itemBuilder: (context) => [
-        PopupMenuItem<_MonthlyTaskAction>(
-          value: _MonthlyTaskAction.complete,
-          child: Text(l10n.completeTask),
+        if (openTask)
+          PopupMenuItem<_MonthlyEntryAction>(
+            value: _MonthlyEntryAction.complete,
+            child: Text(l10n.completeTask),
+          ),
+        if (openTask)
+          PopupMenuItem<_MonthlyEntryAction>(
+            value: _MonthlyEntryAction.migrate,
+            child: Text(l10n.migrateTask),
+          ),
+        if (openTask)
+          PopupMenuItem<_MonthlyEntryAction>(
+            value: _MonthlyEntryAction.schedule,
+            child: Text(l10n.scheduleTask),
+          ),
+        PopupMenuItem<_MonthlyEntryAction>(
+          value: _MonthlyEntryAction.reference,
+          child: Text(l10n.referenceEntry),
         ),
-        PopupMenuItem<_MonthlyTaskAction>(
-          value: _MonthlyTaskAction.migrate,
-          child: Text(l10n.migrateTask),
-        ),
-        PopupMenuItem<_MonthlyTaskAction>(
-          value: _MonthlyTaskAction.schedule,
-          child: Text(l10n.scheduleTask),
-        ),
-        PopupMenuItem<_MonthlyTaskAction>(
-          value: _MonthlyTaskAction.discard,
-          child: Text(l10n.discardTask),
-        ),
+        if (openTask)
+          PopupMenuItem<_MonthlyEntryAction>(
+            value: _MonthlyEntryAction.discard,
+            child: Text(l10n.discardTask),
+          ),
       ],
       child: marker,
     );
@@ -490,19 +516,23 @@ class _MonthlyScreenState extends ConsumerState<MonthlyScreen>
     }
   }
 
-  Future<void> _applyTaskAction(
+  Future<void> _applyEntryAction(
     MonthlyLogEntry entry,
-    _MonthlyTaskAction action,
+    _MonthlyEntryAction action,
   ) async {
-    if (_taskActionEntryId != null ||
-        entry.type != JournalEntryType.task ||
-        entry.taskState != JournalTaskState.open) {
+    if (_entryActionId != null) {
+      return;
+    }
+    final bool openTask =
+        entry.type == JournalEntryType.task &&
+        entry.taskState == JournalTaskState.open;
+    if (action != _MonthlyEntryAction.reference && !openTask) {
       return;
     }
 
     final DateTime actionMonth = _month;
     String? migrationCollectionId;
-    if (action == _MonthlyTaskAction.migrate) {
+    if (action == _MonthlyEntryAction.migrate) {
       migrationCollectionId = await showTaskCollectionMigrationDialog(
         context: context,
         dataSource: ref.read(taskCollectionMigrationDataSourceProvider),
@@ -512,8 +542,19 @@ class _MonthlyScreenState extends ConsumerState<MonthlyScreen>
       }
     }
 
+    String? referenceCollectionId;
+    if (action == _MonthlyEntryAction.reference) {
+      referenceCollectionId = await showEntryCollectionReferenceDialog(
+        context: context,
+        dataSource: ref.read(entryCollectionReferenceDataSourceProvider),
+      );
+      if (!mounted || referenceCollectionId == null) {
+        return;
+      }
+    }
+
     String? schedulePeriodStart;
-    if (action == _MonthlyTaskAction.schedule) {
+    if (action == _MonthlyEntryAction.schedule) {
       schedulePeriodStart = await showTaskScheduleDialog(
         context: context,
         anchor: actionMonth,
@@ -524,15 +565,15 @@ class _MonthlyScreenState extends ConsumerState<MonthlyScreen>
     }
 
     final AppLocalizations l10n = AppLocalizations.of(context);
-    setState(() => _taskActionEntryId = entry.id);
+    setState(() => _entryActionId = entry.id);
 
     try {
       final MonthlyJournalDataSource dataSource = _dataSource();
       switch (action) {
-        case _MonthlyTaskAction.complete:
+        case _MonthlyEntryAction.complete:
           await dataSource.completeTask(entryId: entry.id);
           break;
-        case _MonthlyTaskAction.migrate:
+        case _MonthlyEntryAction.migrate:
           await ref
               .read(taskCollectionMigrationDataSourceProvider)
               .migrateTask(
@@ -540,13 +581,21 @@ class _MonthlyScreenState extends ConsumerState<MonthlyScreen>
                 collectionId: migrationCollectionId!,
               );
           break;
-        case _MonthlyTaskAction.schedule:
+        case _MonthlyEntryAction.schedule:
           await dataSource.scheduleTaskToFuture(
             entryId: entry.id,
             periodStart: schedulePeriodStart!,
           );
           break;
-        case _MonthlyTaskAction.discard:
+        case _MonthlyEntryAction.reference:
+          await ref
+              .read(entryCollectionReferenceDataSourceProvider)
+              .referenceEntry(
+                entryId: entry.id,
+                collectionId: referenceCollectionId!,
+              );
+          break;
+        case _MonthlyEntryAction.discard:
           await dataSource.discardTask(entryId: entry.id);
           break;
       }
@@ -557,16 +606,25 @@ class _MonthlyScreenState extends ConsumerState<MonthlyScreen>
 
       setState(() {
         _snapshotFuture = dataSource.load(formatJournalMonthStart(_month));
-        _taskActionEntryId = null;
+        _entryActionId = null;
       });
     } catch (error, stackTrace) {
-      _reportUnexpectedMonthlyError('task action', error, stackTrace);
+      _reportUnexpectedMonthlyError(
+        action == _MonthlyEntryAction.reference
+            ? 'collection reference'
+            : 'task action',
+        error,
+        stackTrace,
+      );
       if (!mounted) {
         return;
       }
+      final String message = action == _MonthlyEntryAction.reference
+          ? l10n.referenceEntryFailed
+          : l10n.taskActionFailed;
       ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(l10n.taskActionFailed)));
-      setState(() => _taskActionEntryId = null);
+          .showSnackBar(SnackBar(content: Text(message)));
+      setState(() => _entryActionId = null);
     }
   }
 
@@ -609,7 +667,7 @@ class _MonthlyScreenState extends ConsumerState<MonthlyScreen>
   }
 }
 
-enum _MonthlyTaskAction { complete, migrate, schedule, discard }
+enum _MonthlyEntryAction { complete, migrate, schedule, reference, discard }
 
 int _daysInMonth(DateTime month) {
   return DateTime(month.year, month.month + 1, 0).day;

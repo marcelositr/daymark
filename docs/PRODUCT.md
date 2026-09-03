@@ -85,9 +85,14 @@ The Collection surface supports:
 - opening one Collection;
 - Rapid Logging Task, Event, and Note entries owned by that Collection;
 - completing or discarding open Tasks inside that Collection;
-- receiving deliberately migrated open Tasks from Today or Monthly Tasks.
+- receiving deliberately migrated open Tasks from Today or Monthly Tasks;
+- displaying deliberate references to Today, Monthly, and Future entries in a separate read-only section.
 
-Collections deliberately do not gain Kanban fields, arbitrary properties, dashboards, or planner abstractions. Collection references and migration remain distinct domain operations. References from chronological logs are still deferred and must not be simulated by migration.
+Collections deliberately do not gain Kanban fields, arbitrary properties, dashboards, or planner abstractions. Collection references and migration remain distinct domain operations.
+
+A **Collection reference** does not move or copy the source entry. The source remains owned by its original Daily, Monthly, or Future Log with the same stable Entry identity and Task state. The Collection displays that entry as a reference only, and Task actions are not exposed through the reference. The user must deliberately choose an existing Collection; Daymark does not auto-select or create a Collection as a side effect.
+
+Removing references, navigating from a reference back to its source, and referencing Collection-owned entries from inside Collections remain separate product decisions.
 
 ### Migration and scheduling
 
@@ -99,7 +104,7 @@ The current product exposes **scheduling (`<`) for open Tasks in Today and Month
 
 The current product also exposes **forward migration (`>`) for open Tasks in Today and Monthly Tasks into an existing Collection**. The user deliberately chooses the destination Collection. The historical source stays in place with migrated state, and the chosen Collection receives a fresh open Task with lineage back to the source. Daymark does not choose a Collection automatically and does not create one as a side effect of migration.
 
-Cross-surface movement must be immediately visible when the user navigates to its destination. Retained navigation state is not permission to show stale Future or Collection snapshots after a write from another section.
+Cross-surface movement or referencing must be immediately visible when the user navigates to its destination. Retained navigation state is not permission to show stale Future or Collection snapshots after a write from another section.
 
 A Future destination always uses scheduling semantics. A normal forward migration (`>`) uses a valid non-Future destination according to the method.
 

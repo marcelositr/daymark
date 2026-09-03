@@ -8,6 +8,7 @@ import 'package:daymark/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'entry_collection_reference_dialog.dart';
 import 'journal_activity_guard.dart';
 import 'task_collection_migration_dialog.dart';
 import 'task_schedule_dialog.dart';
@@ -103,7 +104,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen>
   Timer? _dayRolloverTimer;
   JournalEntryType _entryType = JournalEntryType.task;
   bool _saving = false;
-  String? _taskActionEntryId;
+  String? _entryActionId;
 
   @override
   void initState() {
@@ -233,7 +234,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen>
     AppLocalizations l10n,
     DailyLogEntry entry,
   ) {
-    if (_taskActionEntryId == entry.id) {
+    if (_entryActionId == entry.id) {
       return const Center(
         child: SizedBox.square(
           dimension: 16,
@@ -250,36 +251,42 @@ class _TodayScreenState extends ConsumerState<TodayScreen>
           ? markerStyle?.copyWith(decoration: TextDecoration.lineThrough)
           : markerStyle,
     );
+    final bool openTask =
+        entry.type == JournalEntryType.task &&
+        entry.taskState == JournalTaskState.open;
 
-    if (entry.type != JournalEntryType.task ||
-        entry.taskState != JournalTaskState.open) {
-      return marker;
-    }
-
-    return PopupMenuButton<_TaskAction>(
-      enabled: _taskActionEntryId == null,
-      tooltip: l10n.taskActions,
+    return PopupMenuButton<_EntryAction>(
+      enabled: _entryActionId == null,
+      tooltip: l10n.entryActions,
       padding: EdgeInsets.zero,
       onSelected: (action) {
-        unawaited(_applyTaskAction(entry, action));
+        unawaited(_applyEntryAction(entry, action));
       },
       itemBuilder: (context) => [
-        PopupMenuItem<_TaskAction>(
-          value: _TaskAction.complete,
-          child: Text(l10n.completeTask),
+        if (openTask)
+          PopupMenuItem<_EntryAction>(
+            value: _EntryAction.complete,
+            child: Text(l10n.completeTask),
+          ),
+        if (openTask)
+          PopupMenuItem<_EntryAction>(
+            value: _EntryAction.migrate,
+            child: Text(l10n.migrateTask),
+          ),
+        if (openTask)
+          PopupMenuItem<_EntryAction>(
+            value: _EntryAction.schedule,
+            child: Text(l10n.scheduleTask),
+          ),
+        PopupMenuItem<_EntryAction>(
+          value: _EntryAction.reference,
+          child: Text(l10n.referenceEntry),
         ),
-        PopupMenuItem<_TaskAction>(
-          value: _TaskAction.migrate,
-          child: Text(l10n.migrateTask),
-        ),
-        PopupMenuItem<_TaskAction>(
-          value: _TaskAction.schedule,
-          child: Text(l10n.scheduleTask),
-        ),
-        PopupMenuItem<_TaskAction>(
-          value: _TaskAction.discard,
-          child: Text(l10n.discardTask),
-        ),
+        if (openTask)
+          PopupMenuItem<_EntryAction>(
+            value: _EntryAction.discard,
+            child: Text(l10n.discardTask),
+          ),
       ],
       child: marker,
     );
@@ -390,16 +397,23 @@ class _TodayScreenState extends ConsumerState<TodayScreen>
     }
   }
 
-  Future<void> _applyTaskAction(DailyLogEntry entry, _TaskAction action) async {
-    if (_taskActionEntryId != null ||
-        entry.type != JournalEntryType.task ||
-        entry.taskState != JournalTaskState.open) {
+  Future<void> _applyEntryAction(
+    DailyLogEntry entry,
+    _EntryAction action,
+  ) async {
+    if (_entryActionId != null) {
+      return;
+    }
+    final bool openTask =
+        entry.type == JournalEntryType.task &&
+        entry.taskState == JournalTaskState.open;
+    if (action != _EntryAction.reference && !openTask) {
       return;
     }
 
     final DateTime actionDate = _today;
     String? migrationCollectionId;
-    if (action == _TaskAction.migrate) {
+    if (action == _EntryAction.migrate) {
       migrationCollectionId = await showTaskCollectionMigrationDialog(
         context: context,
         dataSource: ref.read(taskCollectionMigrationDataSourceProvider),
@@ -409,8 +423,19 @@ class _TodayScreenState extends ConsumerState<TodayScreen>
       }
     }
 
+    String? referenceCollectionId;
+    if (action == _EntryAction.reference) {
+      referenceCollectionId = await showEntryCollectionReferenceDialog(
+        context: context,
+        dataSource: ref.read(entryCollectionReferenceDataSourceProvider),
+      );
+      if (!mounted || referenceCollectionId == null) {
+        return;
+      }
+    }
+
     String? schedulePeriodStart;
-    if (action == _TaskAction.schedule) {
+    if (action == _EntryAction.schedule) {
       schedulePeriodStart = await showTaskScheduleDialog(
         context: context,
         anchor: actionDate,
@@ -421,15 +446,15 @@ class _TodayScreenState extends ConsumerState<TodayScreen>
     }
 
     final AppLocalizations l10n = AppLocalizations.of(context);
-    setState(() => _taskActionEntryId = entry.id);
+    setState(() => _entryActionId = entry.id);
 
     try {
       final TodayJournalDataSource dataSource = _dataSource();
       switch (action) {
-        case _TaskAction.complete:
+        case _EntryAction.complete:
           await dataSource.completeTask(entryId: entry.id);
           break;
-        case _TaskAction.migrate:
+        case _EntryAction.migrate:
           await ref
               .read(taskCollectionMigrationDataSourceProvider)
               .migrateTask(
@@ -437,13 +462,21 @@ class _TodayScreenState extends ConsumerState<TodayScreen>
                 collectionId: migrationCollectionId!,
               );
           break;
-        case _TaskAction.schedule:
+        case _EntryAction.schedule:
           await dataSource.scheduleTaskToFuture(
             entryId: entry.id,
             periodStart: schedulePeriodStart!,
           );
           break;
-        case _TaskAction.discard:
+        case _EntryAction.reference:
+          await ref
+              .read(entryCollectionReferenceDataSourceProvider)
+              .referenceEntry(
+                entryId: entry.id,
+                collectionId: referenceCollectionId!,
+              );
+          break;
+        case _EntryAction.discard:
           await dataSource.discardTask(entryId: entry.id);
           break;
       }
@@ -454,16 +487,25 @@ class _TodayScreenState extends ConsumerState<TodayScreen>
 
       setState(() {
         _snapshotFuture = dataSource.load(formatJournalMethodDate(_today));
-        _taskActionEntryId = null;
+        _entryActionId = null;
       });
     } catch (error, stackTrace) {
-      _reportUnexpectedJournalError('task action', error, stackTrace);
+      _reportUnexpectedJournalError(
+        action == _EntryAction.reference
+            ? 'collection reference'
+            : 'task action',
+        error,
+        stackTrace,
+      );
       if (!mounted) {
         return;
       }
+      final String message = action == _EntryAction.reference
+          ? l10n.referenceEntryFailed
+          : l10n.taskActionFailed;
       ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(l10n.taskActionFailed)));
-      setState(() => _taskActionEntryId = null);
+          .showSnackBar(SnackBar(content: Text(message)));
+      setState(() => _entryActionId = null);
     }
   }
 
@@ -502,7 +544,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen>
   }
 }
 
-enum _TaskAction { complete, migrate, schedule, discard }
+enum _EntryAction { complete, migrate, schedule, reference, discard }
 
 DateTime _dateOnly(DateTime date) => DateTime(date.year, date.month, date.day);
 

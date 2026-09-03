@@ -50,9 +50,55 @@ void main() {
     await tester.pump();
     expect(find.text('Migrated from Today'), findsOneWidget);
   });
+
+  testWidgets('Collections refreshes references when reactivated', (
+    tester,
+  ) async {
+    final _CollectionsDataSource dataSource = _CollectionsDataSource();
+    final ValueNotifier<int> currentSection = ValueNotifier<int>(
+      AppSectionScope.collectionsSectionIndex,
+    );
+    addTearDown(currentSection.dispose);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          collectionsJournalDataSourceProvider.overrideWithValue(dataSource),
+        ],
+        child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: AppSectionScope(
+              currentIndex: currentSection,
+              child: const CollectionsScreen(),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.tap(find.text('Project'));
+    await tester.pump();
+    await tester.pump();
+    expect(find.text('Linked elsewhere'), findsNothing);
+
+    currentSection.value = 0;
+    await tester.pump();
+    dataSource.addReference();
+    expect(find.text('Linked elsewhere'), findsNothing);
+
+    currentSection.value = AppSectionScope.collectionsSectionIndex;
+    await tester.pump();
+    await tester.pump();
+    expect(find.text('References'), findsOneWidget);
+    expect(find.text('Linked elsewhere'), findsOneWidget);
+  });
 }
 
 final class _CollectionsDataSource implements CollectionsJournalDataSource {
+  final List<CollectionReferenceEntry> references = [];
+
   final List<CollectionEntry> entries = [
     const CollectionEntry(
       id: 'original',
@@ -75,6 +121,18 @@ final class _CollectionsDataSource implements CollectionsJournalDataSource {
     );
   }
 
+  void addReference() {
+    references.add(
+      const CollectionReferenceEntry(
+        id: 'linked',
+        type: JournalEntryType.note,
+        taskState: null,
+        content: 'Linked elsewhere',
+        ordinal: 0,
+      ),
+    );
+  }
+
   @override
   Future<List<CollectionSummary>> list() async => const [
     CollectionSummary(id: 'project', title: 'Project'),
@@ -85,7 +143,12 @@ final class _CollectionsDataSource implements CollectionsJournalDataSource {
 
   @override
   Future<CollectionSnapshot> load(String collectionId) async =>
-      CollectionSnapshot(id: 'project', title: 'Project', entries: entries);
+      CollectionSnapshot(
+        id: 'project',
+        title: 'Project',
+        entries: entries,
+        references: references,
+      );
 
   @override
   Future<void> capture({

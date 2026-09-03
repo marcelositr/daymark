@@ -16,8 +16,10 @@ The core product, domain, security, data, workflow, and toolchain constraints ar
 - a current-month Monthly Log with Calendar and Tasks sections;
 - a rolling six-month Future Log;
 - deliberate scheduling of open Tasks from Today and Monthly into real Future Log month buckets, preserving historical source state and movement lineage;
-- encrypted portable backup/restore foundations;
-- semantic migration persistence and lineage, while forward-migration (`>`) UI remains deferred until a method-faithful next Monthly Log or Collection destination is available.
+- basic Collections with owned Task, Event, and Note entries;
+- deliberate forward migration (`>`) of open Tasks from Today and Monthly Tasks into an explicitly selected existing Collection;
+- deliberate Collection references from chronological entries without moving the source or changing Task state;
+- encrypted portable backup/restore foundations.
 
 The pinned toolchain is Flutter 3.47.2 with Dart 3.13.2, targeting Linux and Android.
 
@@ -44,10 +46,12 @@ Daymark deliberately avoids turning Bullet Journal concepts into a generic plann
 - **Today / Daily Log** captures Task, Event, and Note entries for the current method date.
 - **Monthly Log** currently represents the current month only, with a dated Calendar section and a separate Tasks section.
 - **Future Log** is a rolling overview of six future month buckets beginning with the month after the current month. It is month-addressed, not a second day-level calendar.
-- **Scheduling (`<`)** is currently available for open Tasks in Today and Monthly. The source remains in history as scheduled and a fresh open Task is created in the selected Future month with lineage preserved.
-- **Forward migration (`>`)** remains deliberate and is not exposed to an incorrect current-Monthly shortcut. Product UI waits for a real next Monthly Log or Collection destination.
+- **Collections** are simple method-native topic/project containers. They can own Task, Event, and Note entries without becoming configurable workspaces or dashboards.
+- **Scheduling (`<`)** is available for open Tasks in Today and Monthly. The source remains in history as scheduled and a fresh open Task is created in the selected Future month with lineage preserved.
+- **Forward migration (`>`)** is available for open Tasks in Today and Monthly Tasks into an explicitly selected existing Collection. The historical source becomes migrated and the Collection receives a fresh open Task with lineage.
+- **Collection references** let a Today, Monthly, or Future entry remain in its original location while also appearing in a Collection. The same Entry identity and Task state are preserved, and the reference is read-only from the Collection surface.
 
-Historical month browsing, richer reflection flows, Collections, Index, Search, backup UI, and exports continue as focused pre-alpha work.
+Historical month browsing, richer reflection flows, Index, Search, backup UI, and exports continue as focused pre-alpha work.
 
 ## Technology direction
 
