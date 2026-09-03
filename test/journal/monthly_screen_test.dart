@@ -26,7 +26,7 @@ void main() {
     await tester.scrollUntilVisible(
       find.text('○ Dentist'),
       200,
-      scrollable: find.byType(Scrollable),
+      scrollable: find.byType(ListView),
     );
 
     expect(find.text('○ Dentist'), findsOneWidget);
