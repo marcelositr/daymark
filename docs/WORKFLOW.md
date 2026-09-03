@@ -102,12 +102,14 @@ Daymark uses a staged validation flow so cheap, high-signal checks happen before
 Before implementation:
 
 1. start from an up-to-date `main` unless a current task branch is already the explicit source of truth;
-2. verify the current branch, PR, and working-tree state;
+2. verify the current branch, PR, exact head SHA, and working-tree state;
 3. read `PROJECT.md` plus the authoritative documents for the affected area;
 4. inspect the existing implementation and tests;
 5. establish what is already green and what failure or requirement is actually being addressed.
 
 If inherited work has repeated corrective commits, contradictory CI/manual results, or unclear architecture, audit it before editing. An isolated worktree is preferred when it helps keep diagnosis non-mutating.
+
+Do not treat a PR number or branch name as sufficient evidence of current state. Verify whether the PR is Draft, Ready, merged, closed, superseded, or still open.
 
 ### 2. Draft PR as the development gate
 
@@ -125,6 +127,8 @@ The repository's Draft `dev-check` is intentionally lightweight and should remai
 
 Do not weaken these checks to accommodate a branch. Fix the underlying source, generated-state, or toolchain problem.
 
+If ARB localization resources changed, local validation must run `flutter gen-l10n` before analyzer/tests that compile presentation code. Missing generated getters are not evidence that production UI should be rewritten.
+
 Focused tests may be run during Draft development whenever they are useful to prove behavior or diagnose a failure. The full suite and native builds are merge gates, not substitutes for targeted reasoning.
 
 ### 3. Test at the correct layer
@@ -137,6 +141,8 @@ Tests should match the boundary they claim to validate.
 - manual platform tests cover behavior that depends on the real Linux/Android application environment.
 
 A test that bypasses the production transition responsible for a bug is not a sufficient regression test for that bug.
+
+A widget-test failure must be classified before production changes are made. Off-screen content, ambiguous finders, incorrect scrolling APIs, and invalid fake boundaries are test-harness defects when production behavior is otherwise correct.
 
 ### 4. Diagnose failures before changing behavior
 
@@ -151,6 +157,8 @@ When a command, test, or CI job fails:
 7. remove temporary probes/workflows after diagnosis.
 
 Repeated speculative fixes are a signal to stop and re-audit the affected slice.
+
+Formatter-only failures are mechanical. Reproduce them with the Dart version supplied by the pinned Flutter toolchain rather than guessing reflow by eye. If a temporary CI probe is required because the agent cannot execute the pinned formatter, it must be removed before the PR is reviewable.
 
 ### 5. Local validation ladder
 
@@ -169,6 +177,18 @@ For risky lifecycle/persistence work, manual validation should exercise the full
 
 When an AI agent cannot execute a required local step, it should provide the user a complete copy-paste block with stop conditions, expected success markers, and a clear request for the resulting output. Do not require the user to invent debugging commands.
 
+Commands intended to be pasted into an existing interactive shell must be safe in that shell:
+
+- do not end with a bare `exit`;
+- avoid nested guard patterns that call `exit 1` and can close the user's shell;
+- prefer `if ...; then ...; else ...; fi` with printed stop messages;
+- capture and print exit codes when the whole block should continue reporting status;
+- verify shell syntax before sending the block;
+- when branch-sensitive, print and compare the exact expected HEAD;
+- prefer one bounded block at a time when the result determines the next action.
+
+The user is an execution bridge for local evidence, not the debugger responsible for repairing agent-generated commands.
+
 ### 6. Documentation alignment
 
 Before the PR becomes ready for review:
@@ -179,6 +199,8 @@ Before the PR becomes ready for review:
 - remove temporary diagnostic scaffolding and unrelated artifacts.
 
 The repository must be sufficient for a different agent to continue without the previous chat.
+
+Documentation commits create a new PR head. When implementation/manual validation belongs to an earlier implementation head, record that fact explicitly and perform the proportionate final validation required by policy on the final documented head before Ready.
 
 ### 7. Ready for review and full CI
 
@@ -193,6 +215,8 @@ A non-Draft PR runs the full validation tier:
 - `merge-gate`, which requires the merge-tier jobs to succeed.
 
 The live `main` ruleset requires the exact `merge-gate` status. A PR is not merge-eligible until that check succeeds.
+
+CI evidence is head-SHA-specific. A green run from a superseded implementation head does not validate a later documentation or code head.
 
 If GitHub Actions or an API is delayed or returns incomplete data, do not infer success. Wait for reliable evidence or ask the user for the smallest missing CI/job reference needed to continue.
 
@@ -209,13 +233,13 @@ Before a PR is eligible for merge:
 1. the branch is based on a current enough `main` that conflicts and migration interactions are understood;
 2. `PROJECT.md` reflects the work and next step;
 3. relevant product/domain/security/architecture/workflow documentation is updated;
-4. formatting, analysis, tests, and required builds pass;
+4. formatting, analysis, tests, and required builds pass on the exact final head;
 5. schema changes include migrations and migration tests;
 6. security-sensitive changes include their threat-model impact;
 7. dependency changes include a concrete rationale and security/license review;
-8. no secrets, generated junk, temporary diagnostics, build artifacts, or accidental binaries are committed;
+8. no secrets, generated junk, temporary diagnostics, build artifacts, accidental binaries, or probe workflows are committed;
 9. review conversations are resolved;
-10. the required `merge-gate` check is green;
+10. the required `merge-gate` check is green for the current head;
 11. the user has explicitly approved the merge.
 
 ## Versioning

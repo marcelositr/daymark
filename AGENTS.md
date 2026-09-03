@@ -12,12 +12,13 @@ Before planning or changing anything:
 2. verify the current Git branch and open pull request, if any;
 3. read the documents relevant to the area being changed;
 4. inspect existing code and tests before assuming behavior;
-5. check `PROJECT.md` for open questions, blockers, and previously rejected directions.
+5. check `PROJECT.md` for open questions, blockers, previously rejected directions, and the next intended PR boundary.
 
 For foundational work, also read:
 
 - `docs/PRODUCT.md`;
 - `docs/DOMAIN.md`;
+- `docs/DATA_MODEL.md` when persistence or migration is involved;
 - `docs/ARCHITECTURE.md`;
 - `SECURITY.md`;
 - `docs/WORKFLOW.md`;
@@ -25,14 +26,16 @@ For foundational work, also read:
 
 Conversation context is useful, but it is not the project source of truth. If a conversation and the repository disagree, stop and reconcile the difference explicitly instead of silently choosing one.
 
+Do not infer current state from PR number alone. Check whether the PR is Draft, Ready, merged, closed, superseded, or still open, and compare its exact head SHA with `PROJECT.md` before acting.
+
 ## Mandatory end sequence
 
 Before ending a meaningful work session, handing work to another agent, or stopping because of a tool/API limit:
 
 1. update the relevant tests and documentation;
-2. update `PROJECT.md` with what was completed, what remains, blockers, and the next concrete step;
+2. update `PROJECT.md` with what was completed, what remains, blockers, validation evidence, exact important SHAs, and the next concrete step;
 3. record any new durable architectural, security, product, domain, or workflow decision in its authoritative document;
-4. ensure the branch contains no accidental generated files, secrets, binaries, temporary diagnostic files, or unrelated changes;
+4. ensure the branch contains no accidental generated files, secrets, binaries, temporary diagnostic files, probe workflows, or unrelated changes;
 5. leave the repository in a state another agent can understand without the previous chat.
 
 A task is not considered properly handed off until `PROJECT.md` reflects reality.
@@ -72,7 +75,74 @@ For substantive feature, repair, lifecycle, persistence, security, or architectu
 
 This ladder is a default, not bureaucracy. Tiny documentation or mechanical changes can use a proportionate subset, but skipping a layer must never hide uncertainty about persistence, lifecycle, security, migration, or user-data behavior.
 
-### Local/manual validation with the user
+## Failure-prevention rules from real project incidents
+
+These rules exist because the project has already lost time to these exact classes of mistakes.
+
+### Generated localization comes before analysis and tests
+
+When any ARB resource changes, run `flutter gen-l10n` before `flutter analyze` or tests that compile presentation code.
+
+If generated localization accessors are stale locally, missing getters can look like production compile defects even when CI is correct. Do not modify UI code merely to accommodate stale generated localization output.
+
+The informational message saying that `l10n.yaml` options are being used is expected and is not a failure.
+
+### Use the pinned formatter, do not guess its reflow
+
+Formatting is defined by the Dart version supplied by the pinned Flutter toolchain. If CI reports formatter-only changes, reproduce formatting with the exact pinned Dart version.
+
+Do not hand-edit formatting repeatedly based on visual guesses. If the agent cannot run the pinned formatter locally, a temporary diagnostic workflow may print the exact diff, but that workflow must be removed before the PR is reviewable.
+
+### Distinguish a test-harness defect from a production defect
+
+A failing widget assertion does not automatically justify changing production behavior. First determine whether the test is wrong, including:
+
+- content exists but is outside the built viewport;
+- a finder matches more than one widget;
+- a scrolling helper expects a `Scrollable` while the test supplied a `ListView` or another wrapper;
+- the fake/test boundary does not model the production transition being asserted.
+
+Fix the test when the test architecture or Flutter test API usage is wrong. Do not distort product behavior to make a brittle test pass.
+
+### Preserve semantic repository boundaries
+
+Focused repositories must validate the owner/location semantics they claim to represent. Do not rely solely on a correct caller.
+
+Example: a Future Log repository must reject a non-Future Log owner even if the UI would never normally pass one. Boundary tests should prove invalid owners cause no partial write.
+
+### User terminal blocks must be safe in an interactive shell
+
+Commands sent to the user are often pasted directly into an existing shell. Therefore:
+
+- never end a pasteable block with a bare `exit`;
+- avoid guarded `{ ...; exit 1; }` patterns that can close the user's shell;
+- prefer `if ...; then ...; else ...; fi` and printed stop messages;
+- capture and print command exit codes when later commands should still report status;
+- verify shell syntax before sending a multi-line block;
+- prefer one bounded command block at a time when its result determines the next step;
+- include the exact expected branch/head when branch-sensitive validation matters.
+
+A malformed or unsafe diagnostic block is an agent defect, not a user mistake.
+
+### Never delete unexplained local files blindly
+
+Git's normal fetch metadata lives at `.git/FETCH_HEAD`. A repository-root file named `FETCH_HEAD` is a different path.
+
+If an unexpected untracked file appears, inspect its path, size, type, and relevant content before deleting it. Do not assume a familiar filename is Git metadata when it is outside `.git/`.
+
+### Do not confuse superseded CI with current evidence
+
+A push can cancel or supersede an earlier workflow run. Validation evidence belongs to the exact head SHA being considered.
+
+Before citing a CI run as proof, verify that its `head_sha` matches the PR head. Do not use a green run from an earlier implementation head as final evidence for a later documentation or code head.
+
+### Documentation commits create a new validation boundary
+
+If documentation is committed after local/manual implementation validation, the PR head changes even when production code does not.
+
+Record which evidence belongs to the implementation head, then run the proportionate final checks required by project policy on the final documented head before Ready/full CI. Do not silently describe an older SHA as the final validated head.
+
+## Local/manual validation with the user
 
 When a required validation can only be performed in the user's environment or on hardware the agent cannot access:
 
@@ -85,7 +155,7 @@ When a required validation can only be performed in the user's environment or on
 
 The user is an execution bridge for local evidence, not a substitute debugger. The agent remains responsible for interpreting the result and deciding the next safe step.
 
-### Tool and API degradation
+## Tool and API degradation
 
 GitHub, CI, connectors, and external APIs can be delayed or return incomplete data.
 
@@ -104,6 +174,8 @@ Daymark implements a focused digital Bullet Journal. Do not silently expand it i
 Before introducing a feature or abstraction, verify that it belongs under `docs/PRODUCT.md` and `docs/DOMAIN.md`.
 
 Do not introduce speculative architecture for features outside current scope. Prefer the smallest design that preserves known future portability and security requirements.
+
+Do not create temporary product concepts solely to unblock a UI. In particular, destination-selection UI for migration/scheduling must use real method-native destinations rather than invented placeholder containers.
 
 ## Security discipline
 

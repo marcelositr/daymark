@@ -44,6 +44,45 @@ Migration is a deliberate decision. Unresolved entries must never be silently ro
 
 The detailed domain semantics are defined in `docs/DOMAIN.md`.
 
+## Current chronological product shape
+
+The initial digital implementation keeps the method-native chronological surfaces distinct instead of merging them into a general planner.
+
+### Daily Log / Today
+
+Today represents the current Daily Log and supports Rapid Logging of Task, Event, and Note entries.
+
+The date changes automatically at the method-day boundary, but unresolved entries are not automatically migrated because the calendar advanced.
+
+### Monthly Log
+
+The first Monthly implementation represents the **current month** only.
+
+It preserves the method's two different areas:
+
+- **Calendar**: one row per date, with dated Event entries;
+- **Tasks**: an open monthly Task list.
+
+Historical month browsing may be added later, but it must not change the meaning of the current-month Monthly Log or turn it into a generic agenda.
+
+### Future Log
+
+The initial Future Log is a rolling overview of **six future months**, beginning with the month immediately after the current month.
+
+Each month is a month-addressed bucket. Future does not assign entries to a day inside that month and must not become a second day-level calendar.
+
+Rapid Logging may place Task, Event, and Note entries into the selected future month. Scheduling an existing open Task into Future is a separate deliberate migration action, not the same as capturing a new Future entry.
+
+When the current month advances, the visible Future horizon rolls forward. Existing historical data remains persisted in its original month bucket even when that bucket falls outside the six-month overview.
+
+### Migration and scheduling
+
+Migration and scheduling must use real method-native destinations.
+
+Do not invent temporary planner buckets, fake destinations, or automatic rollover rules merely to make a migration UI easier to implement.
+
+A scheduling action targets the Future Log. A normal forward migration must use another valid non-Future destination according to the domain rules.
+
 ## Local-first
 
 The journal belongs to the user.
@@ -122,5 +161,6 @@ Before adding a feature, ask:
 2. Does it reduce mechanical friction without removing a conscious decision?
 3. Does it keep the user's attention on their journal rather than on Daymark itself?
 4. Can it remain understandable without configuration overhead?
+5. Does it use an existing method-native concept instead of inventing a parallel productivity abstraction?
 
 If the answer is no, the feature probably does not belong in Daymark.

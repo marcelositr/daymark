@@ -44,7 +44,7 @@ The domain must support zero or more signifiers per entry. The initial built-in 
 
 Signifier identity must be separate from its displayed symbol or localized label so that future user-defined signifiers can be added without changing the entry schema or inventing new entry types.
 
-## Locations and modules
+## Locations and chronological logs
 
 Entries may belong to method-native locations such as:
 
@@ -56,6 +56,33 @@ Entries may belong to method-native locations such as:
 The Index and Search are retrieval/navigation structures rather than owners of duplicated entry content.
 
 Reflection is a method behavior and may have its own records or workflow, but it is not an `EntryType`.
+
+### Daily Log
+
+A Daily Log belongs to one method date.
+
+Rapid Logging may capture Task, Event, or Note entries there. Advancing to a new day does not silently migrate unresolved entries.
+
+### Monthly Log
+
+A Monthly Log belongs to one month.
+
+Its two semantic sections are distinct:
+
+- `calendar` — date-addressed Event placements within that month;
+- `tasks` — monthly Task placements without a calendar date.
+
+A Monthly Calendar date must belong to its owning month. A Monthly Task does not acquire a hidden day merely because a UI could display one.
+
+### Future Log
+
+A Future Log bucket belongs to one month and is **month-addressed rather than day-addressed**.
+
+Task, Event, and Note entries may be captured into that future month. A Future Log entry does not acquire a `monthly_section` or a `monthly_calendar_date`.
+
+The product may show a rolling subset of future months, but visibility does not change ownership or delete older Future data.
+
+Capturing a new entry directly in Future is different from scheduling an existing entry into Future. Scheduling must create deliberate migration lineage.
 
 ## Migration
 
@@ -74,12 +101,20 @@ A migration records lineage rather than overwriting history. The model must pres
 
 For a task:
 
-- `>` means a deliberate forward migration, such as into the next Monthly Log or an appropriate Collection;
+- `>` means a deliberate forward migration into an appropriate non-Future destination;
 - `<` means a deliberate scheduling action into the Future Log.
+
+Only an open Task can change to migrated/scheduled Task state. A completed, discarded, migrated, or scheduled Task must not be moved again as though it were still open.
 
 When an item from the Future Log becomes current and is brought into a Monthly Log, that movement must remain traceable even when the entry is an Event and therefore has no Task state.
 
 Migration should normally create a destination entry while retaining the source as historical evidence of the decision. This preserves chronology and makes migration lineage inspectable.
+
+A migrated or scheduled destination Task begins as a new open Task in its destination. The source Task retains the terminal state that records the decision. Events and Notes may move with lineage without acquiring Task state.
+
+A Future destination uses scheduling semantics. A normal `migrated` operation must not target Future merely because both operations happen to create destination entries.
+
+One source entry may have at most one direct outgoing migration. Product UI must not offer contradictory second movement after the source already has outgoing lineage.
 
 ## Collection references versus migration
 
@@ -95,5 +130,7 @@ This distinction prevents Collections from becoming a hidden second task manager
 Every persisted entry must have a stable identifier independent of its text, date, symbol, language, or screen position.
 
 Editing content must not silently change semantic identity. Migration history and relationships must refer to stable IDs rather than copied display text.
+
+An entry is not moved between owners in place to simulate migration. The historical source placement remains part of the journal record and the destination receives its own identity.
 
 The exact database schema may evolve, but these semantics must remain explicit in migrations and compatibility code.
