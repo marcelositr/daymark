@@ -133,6 +133,8 @@ Daymark distinguishes two different actions:
 
 This distinction prevents Collections from becoming a hidden second task manager while still allowing useful digital cross-reference.
 
+The current product exposes deliberate references from Today, Monthly, and Future entries into an existing Collection. A reference keeps the same Entry identity, owner, content, and Task state; the Collection presents it separately as read-only content rather than granting ownership-level Task actions.
+
 ## Identity and history
 
 Every persisted entry must have a stable identifier independent of its text, date, symbol, language, or screen position.
