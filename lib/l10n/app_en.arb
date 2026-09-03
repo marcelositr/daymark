@@ -33,7 +33,6 @@
   "addEntry": "Add entry",
   "taskActions": "Task actions",
   "completeTask": "Complete",
-  "migrateTaskToMonthly": "Migrate to Monthly",
   "scheduleTask": "Schedule",
   "scheduleTaskTitle": "Schedule task",
   "discardTask": "Discard",
