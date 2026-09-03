@@ -51,6 +51,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   bool _failed = false;
   bool _sectionScopeInitialized = false;
   bool _wasSearchSectionActive = false;
+  int _searchRequestId = 0;
   String? _lastSubmittedQuery;
 
   @override
@@ -185,6 +186,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   Future<void> _runSearch() async {
     final String query = _controller.text.trim();
     if (query.isEmpty) {
+      _searchRequestId++;
       if (mounted) {
         setState(() {
           _results = const <JournalSearchResult>[];
@@ -204,6 +206,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     String query, {
     required bool showProgress,
   }) async {
+    final int requestId = ++_searchRequestId;
     if (showProgress && mounted) {
       setState(() {
         _searching = true;
@@ -215,7 +218,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
       final List<JournalSearchResult> results = await _dataSource().search(
         query,
       );
-      if (mounted) {
+      if (mounted && requestId == _searchRequestId) {
         setState(() {
           _results = results;
           _hasSearched = true;
@@ -231,7 +234,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
           context: ErrorDescription('while searching journal entries'),
         ),
       );
-      if (mounted) {
+      if (mounted && requestId == _searchRequestId) {
         setState(() {
           _results = const <JournalSearchResult>[];
           _hasSearched = true;
@@ -239,7 +242,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
         });
       }
     } finally {
-      if (showProgress && mounted) {
+      if (showProgress && mounted && requestId == _searchRequestId) {
         setState(() => _searching = false);
       }
     }
