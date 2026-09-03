@@ -94,6 +94,23 @@ A **Collection reference** does not move or copy the source entry. The source re
 
 Removing references, navigating from a reference back to its source, and referencing Collection-owned entries from inside Collections remain separate product decisions.
 
+### Index
+
+The Index is a deliberate Bullet Journal catalog of existing journal structures. It is persisted independently from Search and never duplicates Entry content.
+
+The first Index surface supports:
+
+- listing indexed Logs and Collections in deliberate Index order;
+- adding an existing Daily, Monthly, or Future Log to the Index;
+- adding an existing Collection to the Index;
+- excluding a structure once it has already been indexed.
+
+Adding something to the Index does not move it, copy it, change Entry ownership, alter Task state, or create a new Log or Collection. Daymark never auto-indexes every structure merely because the software can discover it.
+
+The initial Index appends new items in the order the user chooses them. Reordering, removing Index items, and navigating an Index row directly to an arbitrary historical Log remain separate focused slices. Direct navigation must use real product routes rather than pretending the current Today/Monthly/Future screens can represent an arbitrary historical target.
+
+Search remains a separate retrieval mechanism. A Search result does not become a persistent Index item unless the user makes an explicit future product action that says so.
+
 ### Migration and scheduling
 
 Migration and scheduling must use real method-native destinations.
@@ -148,17 +165,18 @@ The interface must avoid layout assumptions that make future right-to-left langu
 
 ## Navigation
 
-The primary product destinations are:
+The journal navigation model contains:
 
 - Today;
 - Monthly;
 - Future;
 - Collections;
-- Search.
+- Search;
+- Index.
 
-The exact control used to reach them may differ by screen size. Desktop can keep these destinations visible in a compact sidebar or equivalent navigation. Android may move Search to a global action when five persistent destinations would create unnecessary clutter.
+The exact control used to reach them differs by screen size. Wider desktop layouts expose all six directly in the navigation rail. Compact/mobile layouts keep Today, Monthly, Future, and Collections as direct bottom destinations and use a minimal **More** destination for Search and Index rather than crowding six items into the bottom bar.
 
-The Index remains a deliberate Bullet Journal structure and is not replaced by Search. It should remain directly accessible from the journal navigation model and may appear as an additional sidebar destination on wider layouts.
+Grouping Search and Index under the same compact navigation entry does not merge their product meaning. The Index remains a deliberate persisted Bullet Journal structure; Search remains query-driven retrieval.
 
 Reflection is contextual rather than a permanent top-level workspace. Reflection actions should appear where they belong, such as Daily or Monthly review flows.
 
