@@ -31,8 +31,7 @@ void main() {
     expect(find.text('Collections: Radio'), findsOneWidget);
 
     await tester.tap(find.text('Collections: Radio'));
-    await tester.pump();
-    await tester.pump();
+    await tester.pumpAndSettle();
 
     expect(find.text('Nothing indexed yet.'), findsNothing);
     expect(find.text('Collections: Radio'), findsOneWidget);
