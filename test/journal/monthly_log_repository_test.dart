@@ -3,6 +3,7 @@ import 'package:daymark/features/journal/application/journal_service.dart';
 import 'package:daymark/features/journal/data/journal_repository.dart';
 import 'package:daymark/features/journal/data/monthly_log_repository.dart';
 import 'package:daymark/features/journal/domain/journal_domain.dart';
+import 'package:drift/drift.dart' hide isNull;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 
