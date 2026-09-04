@@ -2,7 +2,6 @@ import 'dart:io';
 
 import 'package:daymark/core/backup/encrypted_backup_service.dart';
 import 'package:daymark/core/crypto/key_envelope.dart';
-import 'package:daymark/core/crypto/security_exception.dart';
 import 'package:daymark/core/session/journal_files.dart';
 import 'package:daymark/core/session/journal_session.dart';
 import 'package:daymark/features/journal/domain/journal_domain.dart';
