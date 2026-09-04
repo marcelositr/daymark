@@ -162,9 +162,14 @@ String _renderMarkdown(Map<String, Object?> payload) {
   final StringBuffer buffer = StringBuffer()
     ..writeln('# Daymark Open Export')
     ..writeln()
-    ..writeln('Format: `${payload['format']}`')
-    ..writeln('Format version: `${payload['formatVersion']}`')
-    ..writeln('Database schema version: `${payload['databaseSchemaVersion']}`')
+    ..writeln('Format: ${_inlineCode(payload['format'].toString())}')
+    ..writeln(
+      'Format version: ${_inlineCode(payload['formatVersion'].toString())}',
+    )
+    ..writeln(
+      'Database schema version: '
+      '${_inlineCode(payload['databaseSchemaVersion'].toString())}',
+    )
     ..writeln()
     ..writeln(
       '> This is a plaintext export. It is not protected by Daymark encryption.',
@@ -198,18 +203,18 @@ String _renderMarkdown(Map<String, Object?> payload) {
           records[index]! as Map<String, Object?>;
       final Object? id = record['id'] ?? record['entryId'];
       buffer.writeln(
-        '### ${index + 1}${id == null ? '' : ' · `${_escapeCode(id.toString())}`'}',
+        '### ${index + 1}'
+        '${id == null ? '' : ' · ${_inlineCode(id.toString())}'}',
       );
       buffer.writeln();
 
       for (final MapEntry<String, Object?> field in record.entries) {
-        if (field.key == 'content' && field.value is String) {
-          _writeContent(buffer, field.value! as String);
+        final String value = _scalar(field.value);
+        if (field.key == 'content' || value.contains('\n')) {
+          _writeTextBlock(buffer, field.key, value);
           continue;
         }
-        buffer.writeln(
-          '- ${field.key}: `${_escapeCode(_scalar(field.value))}`',
-        );
+        buffer.writeln('- ${field.key}: ${_inlineCode(value)}');
       }
       buffer.writeln();
     }
@@ -218,13 +223,13 @@ String _renderMarkdown(Map<String, Object?> payload) {
   return buffer.toString().trimRight();
 }
 
-void _writeContent(StringBuffer buffer, String content) {
+void _writeTextBlock(StringBuffer buffer, String key, String content) {
   String fence = '```';
   while (content.contains(fence)) {
     fence += '`';
   }
   buffer
-    ..writeln('- content:')
+    ..writeln('- $key:')
     ..writeln('${fence}text')
     ..writeln(content)
     ..writeln(fence);
@@ -237,4 +242,21 @@ String _scalar(Object? value) {
   return value.toString();
 }
 
-String _escapeCode(String value) => value.replaceAll('`', r'\`');
+String _inlineCode(String value) {
+  int longestRun = 0;
+  for (final RegExpMatch match in RegExp(r'`+').allMatches(value)) {
+    final int length = match.group(0)!.length;
+    if (length > longestRun) {
+      longestRun = length;
+    }
+  }
+
+  final String fence = List<String>.filled(longestRun + 1, '`').join();
+  final bool needsPadding =
+      value.startsWith('`') ||
+      value.endsWith('`') ||
+      value.startsWith(' ') ||
+      value.endsWith(' ');
+
+  return needsPadding ? '$fence $value $fence' : '$fence$value$fence';
+}
