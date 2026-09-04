@@ -115,6 +115,21 @@ The initial Index appends new items in the order the user chooses them. Reorderi
 
 Search remains a separate retrieval mechanism. A Search result does not become a persistent Index item unless the user makes an explicit future product action that says so.
 
+### Search
+
+Search is an explicit local retrieval surface over existing Entry content. It is not another owner, Collection, or persistent catalog.
+
+The first Search surface:
+
+- runs only after the user deliberately submits text;
+- performs case-insensitive literal substring matching over existing Entry content;
+- shows the result's real Entry type/Task state and owning Daily, Monthly, Future, or Collection context;
+- remains read-only and exposes no Task, migration, scheduling, reference, or ownership actions;
+- presents a quiet prompt before a query and a quiet empty state when nothing matches;
+- refreshes the last submitted query when the retained Search section becomes active again so Task state does not remain stale after work elsewhere.
+
+Search does not create Entries, Collection references, or Index items. It does not persist query history, maintain a Search cache, or introduce a relevance/ranking engine in this slice. Direct navigation from a result to its source, Collection-title search, richer filtering, and any future full-text indexing remain separate product decisions.
+
 ### Migration and scheduling
 
 Migration and scheduling must use real method-native destinations.

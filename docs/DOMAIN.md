@@ -53,7 +53,7 @@ Entries may belong to method-native locations such as:
 - Future Log;
 - Collection.
 
-The Index and Search are retrieval/navigation structures rather than owners of duplicated entry content.
+The Index and Search are retrieval/navigation structures rather than owners of duplicated entry content. A Search result is a transient view of an existing Entry and never changes that Entry's identity, owner, content, or Task state.
 
 Reflection is a method behavior and may have its own records or workflow, but it is not an `EntryType`.
 
@@ -101,6 +101,14 @@ Adding a structure to the Index:
 A given Log or Collection appears at most once in the Index. Index order records the user's deliberate catalog order rather than being inferred from timestamps, Search relevance, or chronological ownership.
 
 Search is not the Index. Search may derive transient results from journal content, while the Index persists structures that the user intentionally chose to catalog.
+
+## Search
+
+Search is a transient read model over existing journal Entries. Matching an Entry does not create a new Entry, placement, Collection reference, migration edge, or Index item.
+
+A Search result preserves and reports the source Entry's stable identity, entry type, Task state when applicable, and actual owning context. Daily, Monthly, Future, and Collection ownership remain authoritative; Search never becomes an owner itself.
+
+The current product matches submitted text against Entry content only. Query interpretation, result ranking, filtering, Collection-title search, and navigation to the source are presentation/retrieval concerns that may evolve without changing ownership or history semantics.
 
 ## Migration
 

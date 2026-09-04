@@ -9,8 +9,6 @@
   "search": "Search",
   "index": "Index",
   "more": "More",
-  "foundationMessage": "Daymark foundation is ready.",
-  "placeholderMessage": "This area will be implemented in its own focused change.",
   "createJournalTitle": "Create your journal",
   "createJournalMessage": "Choose a master password. Daymark keeps this journal encrypted on this device.",
   "unlockJournalTitle": "Unlock Daymark",
@@ -73,5 +71,10 @@
   "addIndexItem": "Add to Index",
   "indexCandidatesLoadFailed": "Could not load structures available for the Index.",
   "noIndexCandidates": "Every available journal structure is already indexed.",
-  "indexAddFailed": "Could not add this structure to the Index."
+  "indexAddFailed": "Could not add this structure to the Index.",
+  "searchHint": "Search journal entries",
+  "searchAction": "Search",
+  "searchPrompt": "Enter text to search your journal.",
+  "searchNoResults": "No matching entries.",
+  "searchFailed": "Could not search the journal."
 }

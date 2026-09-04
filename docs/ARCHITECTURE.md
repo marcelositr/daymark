@@ -45,7 +45,7 @@ lib/
         └── presentation/
 ```
 
-Daily Log, Monthly Log, Future Log, Migration, Collections, and Index belong to one coherent journal domain rather than pretending they are unrelated products.
+Daily Log, Monthly Log, Future Log, Migration, Collections, Index, and Search belong to one coherent journal domain rather than pretending they are unrelated products.
 
 Framework and platform details remain at the edges. Domain logic must not depend on Flutter widgets, Android APIs, Linux desktop APIs, filesystem paths, windowing systems, keyrings, or routing libraries.
 
@@ -191,7 +191,7 @@ The unlocked-session abstraction is implemented and is no longer future architec
 - mutable `JournalKeyMaterial`;
 - `JournalRepository` and `JournalService`;
 - Task action services/repositories;
-- focused Daily, Monthly, Future, Collection, and Index repository/session boundaries.
+- focused Daily, Monthly, Future, Collection, Index, and Search repository/session boundaries.
 
 All journal operations exposed through `JournalSession` are serialized. Once closing begins, new operations cannot enter the encrypted database; lock waits for queued/in-flight work, closes persistence, then destroys key material.
 
@@ -204,6 +204,10 @@ Focused repositories are responsible for the semantic location they claim to rep
 The Collection boundary follows the same split: `CollectionRepository` owns focused Collection reads for both owned entries and references, and delegates semantic create/capture/reference writes to `JournalService`, while `JournalSession` serializes list/create/load/capture/reference operations with the rest of the unlocked journal lifecycle. Collection ownership, Collection references, and migration remain distinct domain operations rather than being collapsed into presentation helpers.
 
 The Index uses a focused `IndexRepository` over the existing encrypted `index_items` schema. Presentation reaches it through `JournalIndexSession` extension methods, which serialize list/candidate/add operations with `JournalSession.run(...)` so Index I/O cannot escape the unlocked session lifetime. The repository owns target existence, duplicate prevention, and global ordinal allocation; the widget only presents existing candidates and the user's deliberate choice.
+
+Search uses a focused read-only `JournalSearchRepository` against the existing encrypted schema. It joins Entries to their one owning placement and to the corresponding Log or Collection so results retain method-native context. The first implementation deliberately scans Entries in bounded ordered pages and performs Unicode-aware case-insensitive literal substring matching in Dart rather than relying on SQLite's ASCII-oriented `lower()` behavior or introducing an FTS table, Search cache, or schema v2; a submitted query returns at most 100 Entries ordered by most recent update. Presentation reaches Search through `JournalSearchSession`, so query I/O remains serialized inside `JournalSession.run(...)`.
+
+Because Search is retained by `StatefulShellRoute.indexedStack`, `SearchScreen` keeps only its last submitted query as presentation state and observes `AppSectionScope` reactivation. Returning to Search reruns that query silently so a Task changed elsewhere does not keep a stale symbol/state. This is presentation freshness, not polling or persisted Search history. Search results remain read-only and do not reproduce Task/movement/reference semantics.
 
 Forward Task migration to a Collection is exposed through `JournalSession.migrateTaskToCollection(...)`. The session first validates the persisted source as an open Task, then delegates to `JournalService.migrate(...)` with a `JournalCollectionOwner`. The presentation layer only lists existing Collections and records the user's deliberate choice; it does not create a destination or reproduce lineage rules.
 
