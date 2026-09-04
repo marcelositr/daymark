@@ -14,7 +14,7 @@ This is Daymark's canonical living handoff. Read this file and `AGENTS.md` befor
 - Post-merge `main` CI #465 passed on exact merged SHA `e4659c14e84759150060e4f834a1a2fc50b20910`.
 - User-facing encrypted backup/restore is now merged into `main` and passed real disposable Linux backup/restore validation before merge.
 - Active product branch: `feat/open-export`.
-- Open Export implementation and manual Linux validation are complete; final full validation and Ready CI remain before integration.
+- Open Export implementation and manual Linux validation are complete; final local validation is green and exact-head Ready CI remains before integration.
 - Next planned product slice after Open Export: **Appearance selection**.
 - Runtime targets: Linux and Android.
 - Pinned toolchain: Flutter 3.47.2 / Dart 3.13.2.
@@ -175,7 +175,7 @@ Current foundation includes:
 Implemented behavior:
 
 - unlocked journals can create a portable authenticated encrypted Daymark backup after master-password verification;
-- Linux save-file flow copies the encrypted container without buffering the full file;
+- encrypted backup save currently passes the encrypted container bytes through the file-picker save API on supported targets; these are encrypted container bytes, not plaintext journal data, and the temporary memory buffer is wiped afterward;
 - Android uses the platform file-picker/document-provider boundary;
 - restore is exposed only when the journal is locked or absent, never over a live encrypted database session;
 - restore validates authentication, compatibility, database integrity, foreign keys, and staged files before replacement;
@@ -220,9 +220,9 @@ Implementation and validation:
 - UI clearly warns that JSON and Markdown are plaintext and no longer protected by Daymark encryption;
 - Open Export remains separate from encrypted backup and restore;
 - no dependency, schema, cryptographic-format, or backup-format change;
-- focused analyzer/tests and Linux debug build passed during implementation;
+- final local validation passed: locked dependency resolution, localization generation, Drift generation/migration checks, generated-artifact freshness, formatter, analyzer, focused Open Export tests, complete Flutter suite, Linux debug build, and Android debug APK build;
 - real disposable Linux validation passed for JSON, Markdown, Unicode, Collection ownership, and the plaintext warning;
-- final full local validation and exact-head Ready CI remain before merge.
+- exact-head Ready CI remains before merge.
 
 ## Vacation-ready stabilization plan
 
