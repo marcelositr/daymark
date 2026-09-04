@@ -91,10 +91,7 @@ void main() {
         themeModeForAppearance(AppearancePreference.light),
         ThemeMode.light,
       );
-      expect(
-        themeModeForAppearance(AppearancePreference.dark),
-        ThemeMode.dark,
-      );
+      expect(themeModeForAppearance(AppearancePreference.dark), ThemeMode.dark);
     });
   });
 }

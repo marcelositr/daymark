@@ -50,11 +50,8 @@ final class AppearancePreferenceStore {
     await file.parent.create(recursive: true);
 
     final File temporary = File('${file.path}.creating');
-    final String contents = '${jsonEncode(<String, Object?>{
-      'format': _format,
-      'version': _version,
-      'appearance': preference.name,
-    })}\n';
+    final String contents =
+        '${jsonEncode(<String, Object?>{'format': _format, 'version': _version, 'appearance': preference.name})}\n';
 
     try {
       await temporary.writeAsString(contents, flush: true);

@@ -1,10 +1,10 @@
 import 'package:daymark/core/settings/appearance_preferences.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-final FutureProvider<AppearancePreferenceStore> appearancePreferenceStoreProvider =
-    FutureProvider<AppearancePreferenceStore>(
-      (ref) => AppearancePreferenceStore.forApplication(),
-    );
+final FutureProvider<AppearancePreferenceStore>
+appearancePreferenceStoreProvider = FutureProvider<AppearancePreferenceStore>(
+  (ref) => AppearancePreferenceStore.forApplication(),
+);
 
 final AsyncNotifierProvider<AppearanceController, AppearancePreference>
 appearanceControllerProvider =

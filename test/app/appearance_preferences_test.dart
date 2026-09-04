@@ -11,7 +11,9 @@ void main() {
 
   setUp(() async {
     root = await Directory.systemTemp.createTemp('daymark-appearance-test-');
-    preferenceFile = File('${root.path}${Platform.pathSeparator}preferences.json');
+    preferenceFile = File(
+      '${root.path}${Platform.pathSeparator}preferences.json',
+    );
     store = AppearancePreferenceStore(preferenceFile);
   });
 
@@ -34,8 +36,7 @@ void main() {
     expect(await reopened.load(), AppearancePreference.dark);
 
     final Map<String, Object?> payload =
-        jsonDecode(await preferenceFile.readAsString())
-            as Map<String, Object?>;
+        jsonDecode(await preferenceFile.readAsString()) as Map<String, Object?>;
     expect(payload['format'], 'daymark-device-preferences');
     expect(payload['version'], 1);
     expect(payload['appearance'], 'dark');

@@ -54,17 +54,13 @@ final class _AppearanceDialogState extends ConsumerState<AppearanceDialog> {
               icon: Icons.light_mode_outlined,
               label: l10n.appearanceLight,
               selected: current == AppearancePreference.light,
-              onTap: enabled
-                  ? () => _select(AppearancePreference.light)
-                  : null,
+              onTap: enabled ? () => _select(AppearancePreference.light) : null,
             ),
             _AppearanceChoice(
               icon: Icons.dark_mode_outlined,
               label: l10n.appearanceDark,
               selected: current == AppearancePreference.dark,
-              onTap: enabled
-                  ? () => _select(AppearancePreference.dark)
-                  : null,
+              onTap: enabled ? () => _select(AppearancePreference.dark) : null,
             ),
             if (!appearance.hasValue) ...[
               const SizedBox(height: 8),
