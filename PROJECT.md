@@ -248,19 +248,23 @@ The first three accelerated post-alpha.2 branches are complete and merged:
 2. `feat/navigation-and-organization`;
 3. `feat/reflection-and-daily-ux`.
 
-The fourth branch, `feat/security-and-next-release`, is active. Its current completed slice requires master-password reauthentication before Open Export creates plaintext and adds deliberate clipboard copy alongside file save.
+The fourth branch, `feat/security-and-next-release`, is active.
+
+Completed in this branch:
+
+- Open Export requires master-password reauthentication before any plaintext representation is created;
+- Open Export supports deliberate Markdown/JSON clipboard copy and file save with an explicit plaintext/clipboard warning;
+- manual Linux Open Export validation passed for wrong-password rejection, correct-password Copy/Save, and both formats;
+- Android listens for the system device-noninteractive transition and requests immediate Daymark lock;
+- Linux listens for the current systemd-logind session `Lock` signal and requests immediate Daymark lock;
+- both OS-level hooks use the same serialized journal-session lock path as manual/inactivity locking.
 
 Before this branch is Ready:
 
-- manually validate Open Export on Linux with the real UI;
-- confirm a wrong password produces no export and leaves the live session usable;
-- confirm the correct password allows Markdown and JSON save;
-- confirm Copy places the selected representation on the system clipboard;
-- confirm the plaintext/clipboard warning is clear and the post-action notice is unobtrusive;
-- finish any remaining security/release work that is still justified by the current alpha scope;
-- align release-facing documentation;
-- run the final exact-head Ready CI / `merge-gate`.
+- manually validate the Linux logind lock signal with the real application;
+- run focused tests, analyzer, Linux build, and Android build for the native lock hooks;
+- align the final branch diff and run exact-head Ready CI / `merge-gate`.
 
-The broader security backlog still includes OS-level immediate lock hooks and optional device-assisted/biometric unlock. Those are not silently considered complete merely because Open Export reauthentication is complete; they must either be implemented and validated in a focused slice or explicitly deferred before the next release is prepared.
+Device-assisted/biometric unlock is explicitly deferred beyond this branch. The official Flutter `local_auth` stack does not support Linux, and biometric authentication alone is not a secure substitute for device-bound wrapping of Daymark's random journal key. Daymark will not store/replay the master password merely to advertise biometric unlock.
 
 After this branch is merged, release preparation may begin from the resulting current `main`. Daymark remains alpha; the next prerelease must receive a new version/build number and must not be tagged, built for publication, or promoted to GitHub Release without explicit user approval.

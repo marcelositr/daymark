@@ -143,7 +143,7 @@ Future native/database APIs may reduce this exposure, but replacing a reviewed w
 
 Device-specific unlock mechanisms are convenience layers, not replacements for the portable master-password security model.
 
-The exact secure-storage integration remains deferred to a later focused task. A maintained platform secure-storage package may be used only when compatible with Daymark's pinned Flutter/Android/Linux toolchain and threat model.
+The exact secure-storage integration remains deferred to a later focused task. The official Flutter `local_auth` stack does not provide Linux support, and a biometric prompt by itself would not safely recover Daymark's random journal key. Daymark therefore does not add a cosmetic biometric gate that stores or replays the master password. A future implementation must provide deliberate device-bound key wrapping and a clean master-password fallback on every supported platform where the feature is exposed.
 
 On supported Android devices, Daymark may protect device-local unlock material using Android secure-storage/Keystore mechanisms and require strong biometric or device-credential authentication before that material can be used.
 
@@ -169,7 +169,7 @@ If both the master password and any configured recovery secret are lost, encrypt
 
 Daymark provides an explicit manual lock action and automatically locks after five minutes without journal interaction.
 
-The timeout policy may evolve, including a stricter immediate option. An operating-system session lock, device lock, or equivalent protected state should lock Daymark immediately when the platform exposes a reliable signal; those platform hooks remain deferred.
+The timeout policy may evolve, including a stricter immediate option. Daymark now requests immediate journal lock when the supported host exposes a reliable protected-state signal: Android's system `ACTION_SCREEN_OFF` transition and Linux systemd-logind's per-session `Lock` signal. These hooks call the same serialized session-controller lock path used by manual and inactivity locking. If a Linux environment does not expose the logind session signal, the normal inactivity policy remains the fallback rather than pretending a generic window-focus change is a device lock.
 
 Moving the app to the background starts or continues the lock timeout rather than implicitly exposing decrypted content indefinitely.
 

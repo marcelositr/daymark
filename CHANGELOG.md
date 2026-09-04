@@ -27,6 +27,8 @@ This file is for user-visible behavior, data compatibility, security, packaging,
 - Open Export now requires master-password reauthentication before Daymark creates any plaintext representation.
 - Reauthentication validates the existing authenticated key envelope with temporary key material that is destroyed immediately without replacing or reopening the live journal session.
 - The Open Export warning explicitly covers both saved plaintext files and the system clipboard, including clipboard-manager retention risk.
+- Android device non-interactive events and Linux systemd-logind session-lock signals now request immediate Daymark lock through the same serialized journal-session path as manual and inactivity locking.
+- Device-assisted/biometric unlock remains deferred rather than storing the master password or introducing an incomplete device-bound key path.
 
 ## [1.0.0-alpha.2] - 2026-09-04
 
