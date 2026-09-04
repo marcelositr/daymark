@@ -59,6 +59,29 @@ Pasteable blocks execute inside the user's existing interactive shell. Therefore
 
 A malformed, interactive, or shell-closing block is an agent defect.
 
+### Preserve stdin ownership
+
+A command has only one standard-input stream. Do not accidentally give two different producers ownership of it.
+
+In particular, **never** combine a pipe that is supposed to provide data to `python3 -` with a heredoc that also provides the Python program:
+
+```text
+printf '%s' "$JSON" | python3 - <<'PY'
+...
+PY
+```
+
+The heredoc wins the stdin redirection, so the piped JSON is not available to `json.load(sys.stdin)`. This caused a real post-alpha.2 release-verification script to report a false local validation error after the GitHub Release had already been created successfully.
+
+Safe alternatives include:
+
+- use `python3 -c '...'` and pipe the data into that program;
+- write the payload to a temporary file and pass its path as an argument;
+- write the Python program to a temporary file and pipe data to it;
+- pass small non-secret values through arguments/environment where appropriate.
+
+When a shell block validates a destructive or publication operation, separate **operation success** from **verification-script success** so a bug in the verifier cannot be mistaken for rollback of an operation that already completed.
+
 ## Output handoff
 
 The user may paste the command itself together with all resulting output. That is acceptable and should be treated as a complete execution transcript when it includes:
