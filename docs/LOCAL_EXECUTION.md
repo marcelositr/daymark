@@ -70,6 +70,20 @@ The user may paste the command itself together with all resulting output. That i
 
 The agent should not ask the user to resend the same information merely because the command text is also present. Read the output portion and proceed.
 
+### Visual result delimiters
+
+For long blocks, print a conspicuous ANSI-red boundary immediately before the result section and another at the end. This lets the user copy only the evidence instead of resending the command itself.
+
+A typical helper is:
+
+```bash
+red() {
+  printf '\033[1;31m%s\033[0m\n' "$1"
+}
+```
+
+Use messages such as `COPIE O RESULTADO A PARTIR DESTA LINHA` and `FIM DO RESULTADO`. The block must still remain understandable when ANSI color is unavailable, so the text boundary matters more than the color itself.
+
 ## Secrets and destructive operations
 
 Non-interactive execution does not override Daymark's security boundaries.
