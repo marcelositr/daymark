@@ -22,6 +22,23 @@ final class NativeBackupFileGateway implements BackupFileGateway {
     required String suggestedName,
     required String dialogTitle,
   }) async {
+    if (Platform.isLinux) {
+      try {
+        final String? destination = await FilePicker.saveFile(
+          dialogTitle: dialogTitle,
+          fileName: suggestedName,
+          type: FileType.any,
+        );
+        if (destination == null) {
+          return false;
+        }
+        await sourceFile.copy(destination);
+        return true;
+      } on Exception {
+        throw const BackupFileSelectionException();
+      }
+    }
+
     final Uint8List bytes = await sourceFile.readAsBytes();
     try {
       try {
