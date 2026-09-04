@@ -16,6 +16,7 @@ import 'package:daymark/features/journal/data/journal_repository.dart';
 import 'package:daymark/features/journal/data/monthly_log_repository.dart';
 import 'package:daymark/features/journal/data/task_action_repository.dart';
 import 'package:daymark/features/journal/domain/journal_domain.dart';
+import 'package:uuid/uuid.dart';
 
 import 'journal_files.dart';
 
@@ -329,6 +330,7 @@ final class JournalSessionManager {
         file: files.databaseFile,
         keyMaterial: keyMaterial,
       );
+      await _ensureJournalMetadata(database);
 
       await files.creatingKeyEnvelopeFile.rename(files.keyEnvelopeFile.path);
 
@@ -368,6 +370,7 @@ final class JournalSessionManager {
         file: files.databaseFile,
         keyMaterial: keyMaterial,
       );
+      await _ensureJournalMetadata(database);
 
       final JournalSession session = JournalSession._(database, keyMaterial);
       _session = session;
@@ -439,6 +442,28 @@ final class JournalSessionManager {
   }
 
   Future<void> dispose() => lock();
+
+  Future<void> _ensureJournalMetadata(DaymarkDatabase database) async {
+    await database.transaction(() async {
+      final rows = await database
+          .customSelect('SELECT id FROM journal_metadata ORDER BY id LIMIT 2')
+          .get();
+
+      if (rows.length > 1) {
+        throw StateError('Journal metadata contains more than one row.');
+      }
+      if (rows.isNotEmpty) {
+        return;
+      }
+
+      final int nowUtcMicros = DateTime.now().toUtc().microsecondsSinceEpoch;
+      await database.customStatement(
+        'INSERT INTO journal_metadata (id, created_at, updated_at) '
+        'VALUES (?, ?, ?)',
+        <Object?>[const Uuid().v7(), nowUtcMicros, nowUtcMicros],
+      );
+    });
+  }
 
   Future<void> _cleanupFailedCreation() async {
     await _deleteIfExists(files.creatingKeyEnvelopeFile);

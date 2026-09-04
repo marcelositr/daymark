@@ -1,33 +1,21 @@
 # Daymark project checkpoint
 
-This is Daymark's canonical living handoff. Read this file and `AGENTS.md` before meaningful work. Update it before handing work off. The repository, not a chat transcript, is the project memory.
+This is Daymark's canonical living handoff. Read this file and `AGENTS.md` before meaningful work. The repository, not a chat transcript, is the project memory.
 
 ## Current state
 
-- Phase: pre-alpha, core Bullet Journal flows are implemented and the project is in the vacation-ready stabilization cycle.
+- Phase: pre-alpha, vacation-ready stabilization and first distributable prerelease.
 - Integration branch: `main` only.
-- Current merged `main`: `fecc5ea4b63297de0a8b1eb9da5c93e1ecf562e3`, squash merge of PR #30 `feat(export): add plaintext open export`.
-- PR #30 exact Ready head: `0b3d4158c6bffee9d43d6ef8c57a75151bbc2b5a`.
-- PR #30 Ready CI #470 passed quality, Linux, Android, dependency review, and `merge-gate`.
-- Post-merge `main` CI #471 passed on exact merged SHA `fecc5ea4b63297de0a8b1eb9da5c93e1ecf562e3`.
-- PR #29 exact Ready head: `f95a62cc41b1cd2e51dc29e341aa00657c4a4408`.
-- PR #29 Ready CI #467 passed quality, Linux, Android, dependency review, and `merge-gate`.
-- PR #28 exact Ready head: `a7fd2dfd5b408b0285ac88a7bf610041cf8c299d`.
-- PR #28 Ready CI #464 passed `quality`, Linux build, Android build, dependency review, and `merge-gate` on that exact head.
-- Post-merge `main` CI #465 passed on exact merged SHA `e4659c14e84759150060e4f834a1a2fc50b20910`.
-- User-facing encrypted backup/restore is now merged into `main` and passed real disposable Linux backup/restore validation before merge.
-- Open Export is merged in PR #30 and passed post-merge `main` CI #471.
-- Active product branch: `feat/appearance-settings`.
-- Appearance System / Light / Dark is implemented and passed focused validation plus real Linux persistence/restart testing.
-- Next planned product slice after Appearance: **Release hardening**.
+- Current merged `main`: `5184f519eed723221206ce529c4f0e0a2fed8bcf`, squash merge of PR #31 `feat(appearance): add persistent appearance selection`.
+- PR #31 exact Ready head: `e0474bbf873d1a20cf128e367850cac84228c19d`.
+- PR #31 Ready CI #472 passed quality, Linux, Android, dependency review, and `merge-gate`.
+- Post-merge `main` CI #473 passed on exact merged SHA `5184f519eed723221206ce529c4f0e0a2fed8bcf`.
+- Active branch: `release/1.0.0-alpha.2`.
+- Release target: `1.0.0-alpha.2+2`, eventual annotated tag `v1.0.0-alpha.2` only after final Ready CI, explicit user approval, squash merge, and post-merge verification.
 - Runtime targets: Linux and Android.
 - Pinned toolchain: Flutter 3.47.2 / Dart 3.13.2.
-- Primary local validation host details: `docs/LOCAL_ENVIRONMENT.md`.
-- Local terminal execution contract: `docs/LOCAL_EXECUTION.md`.
-- Local performance benchmark protocol and baseline: `docs/PERFORMANCE_BENCHMARK.md`.
 - Merge policy: never merge without explicit user approval; squash merge is the default.
 - Production Argon2id baseline: 19 MiB / 2 iterations / p=1 / 32-byte output.
-- Stabilization target: have a vacation-ready prerelease completed no later than 2026-09-06, preferably by 2026-09-05, without weakening architecture, security, persistence, tests, or merge protection.
 - Last updated: 2026-09-04 (America/Sao_Paulo).
 
 ## Product doctrine
@@ -51,16 +39,13 @@ Daymark is a faithful digital Bullet Journal, not a generic productivity suite.
 - When local execution is faster or GitHub Actions/API evidence is degraded, the user may act as an execution bridge using complete agent-provided command blocks.
 - Local execution does not transfer debugging responsibility to the user. The agent interprets failures and decides the next safe step.
 - Local-first validation may replace routine Draft-CI iteration, but it never weakens the final Ready PR merge gate.
-- Use the pinned formatter early. If ARB resources changed, run `flutter gen-l10n` before formatter/analyzer/tests that compile localization-dependent code.
-- Keep `PROJECT.md` current and `CHANGELOG.md` release-facing.
 - Treat formatter output from the pinned Dart version as authoritative.
 - Treat CI evidence as SHA-specific. A green superseded run does not validate a newer head.
-- Distinguish mechanical CI/test-harness failures from product defects before changing behavior.
 - Never weaken security, persistence invariants, tests, or CI merely to make a check green.
+- Do not use `flutter clean` as routine hygiene; preserve incremental build state unless evidence requires a controlled clean rebuild.
+- Keep `PROJECT.md` current and `CHANGELOG.md` release-facing.
 - Remove temporary workflow probes/scripts before Ready.
 - User shell blocks must follow `docs/LOCAL_EXECUTION.md`.
-- Do not invent fake product destinations or temporary domain concepts to unblock UI.
-- Do not duplicate repository/service semantics inside widgets/providers.
 
 ## Local-first stabilization loop
 
@@ -68,44 +53,17 @@ For each substantive branch unless the change is too small to justify every step
 
 1. start from exact current `main` and create one short-lived branch with one coherent responsibility;
 2. implement and add/update focused tests at the correct layer;
-3. if localization changed, run `flutter gen-l10n` first;
-4. run the pinned Dart formatter immediately and incorporate its exact output before expensive validation;
+3. generate localization/Drift artifacts when applicable;
+4. run the pinned formatter early;
 5. run analyzer and focused tests;
-6. when the slice appears correct, run the complete Flutter suite and the locally relevant native build(s);
-7. run the real manual user flow when persistence, lifecycle, navigation, rendering, import/export, backup/restore, or platform behavior is involved;
+6. run the complete Flutter suite and locally relevant native builds at meaningful checkpoints;
+7. run the real manual flow for persistence, lifecycle, navigation, backup/restore, export, or platform behavior;
 8. diagnose surprising results before changing production behavior;
 9. align documentation on the final branch head;
-10. use GitHub full Ready CI once the branch is reviewable;
-11. merge only after the exact final head is green and the user explicitly approves squash merge.
+10. use full Ready CI once the branch is reviewable;
+11. merge only after exact-head CI is green and the user explicitly approves squash merge.
 
-If GitHub Actions or the API is slow, delayed, or incomplete, continue independent local/product work that does not depend on the missing evidence. `gh` is available on the local validation host as a fallback for GitHub status inspection. Never infer a green result.
-
-## Local performance rule
-
-Normal development should preserve warm incremental state. Do not use `flutter clean` as routine hygiene.
-
-A controlled benchmark is a separate diagnostic workflow defined in `docs/PERFORMANCE_BENCHMARK.md`. The 2026-09-04 baseline showed:
-
-- full Flutter suite: 54.99 s;
-- Linux debug rebuild: 9.37 s;
-- Linux warm incremental: 4.30 s;
-- Android debug rebuild: 140.96 s;
-- Android warm incremental: 31.71 s.
-
-The Android rebuild already reached roughly 390% sampled CPU on the four-core local host and pushed the machine into about 0.94 GiB of swap. Therefore future Gradle caching, parallelism, or heap tuning must be A/B measured rather than enabled by assumption.
-
-## Critical retained-navigation lifecycle rule
-
-The router uses `StatefulShellRoute.indexedStack`, so top-level sections remain mounted while inactive.
-
-Therefore:
-
-- returning to a section does not imply another `initState()`;
-- a retained screen whose data can become stale because of work elsewhere must refresh when it becomes active;
-- `AppSectionScope` is the current presentation-level activation signal;
-- do not solve freshness by destroying all tabs, polling continuously, or adding an unrelated global cache.
-
-This rule first mattered for Future after scheduling, then Collections after migration/references, and Search reruns the last submitted query on reactivation. Any future cross-surface write must preserve the same immediate-freshness rule.
+If GitHub Actions or API evidence is delayed, continue independent work where safe. `gh` is available on the local validation host as a fallback. Never infer a green result.
 
 ## Stable domain and persistence baseline
 
@@ -124,36 +82,52 @@ Schema v1 contains:
 
 Durable rules:
 
-- Task, Event, and Note are distinct entry types.
-- Task states are open/completed/migrated/scheduled/discarded.
-- Events and Notes do not acquire Task state.
-- Every Entry has exactly one owning placement.
-- Monthly Calendar/Tasks placement and date invariants are enforced.
-- Future is month-addressed, not a second day-level calendar.
-- A Collection is a simple method-native owning container, not a configurable workspace.
-- Collection references do not move the source Entry and remain distinct from migration.
-- Scheduling (`<`) targets Future.
-- Forward migration (`>`) currently targets an explicitly selected existing Collection.
-- Movement preserves the historical source and creates a fresh destination Entry plus lineage; do not move ownership in place.
-- Index deliberately catalogs an existing Log or Collection and never duplicates Entry content.
-- Search is transient read-only retrieval over existing Entries and is never an owner or persistent Index source.
-- Historical Monthly and Daily lookups are non-mutating.
-- Cross-table semantic writes remain transactional through repository/service boundaries.
+- one encrypted Daymark database represents one journal;
+- `journal_metadata` identifies that journal with exactly one singleton row;
+- Task, Event, and Note are distinct entry types;
+- Task states are open/completed/migrated/scheduled/discarded;
+- Events and Notes do not acquire Task state;
+- every Entry has exactly one owning placement;
+- Monthly Calendar/Tasks placement and date invariants are enforced;
+- Future is month-addressed, not a second day-level calendar;
+- a Collection is a simple method-native owning container, not a configurable workspace;
+- Collection references do not move the source Entry and remain distinct from migration;
+- scheduling (`<`) targets Future;
+- forward migration (`>`) currently targets an explicitly selected existing Collection;
+- movement preserves historical source content and creates a fresh destination Entry plus lineage;
+- Index deliberately catalogs an existing Log or Collection and never duplicates Entry content;
+- Search is transient read-only retrieval and is never an owner or persistent Index source;
+- historical Monthly and Daily lookups are non-mutating;
+- cross-table semantic writes remain transactional through repository/service boundaries;
 - `JournalSession` serializes unlocked journal work and owns encrypted persistence/key lifetime.
 
-## Security / backup baseline
+## Retained-navigation lifecycle rule
 
-The current security contract lives in `SECURITY.md`; `docs/SECURITY_FOUNDATION.md` is the historical PR #7 validation record. Backup-format details live in `docs/BACKUP_FORMAT.md`, with architecture boundaries in `docs/ARCHITECTURE.md`.
+The router uses `StatefulShellRoute.indexedStack`, so top-level sections remain mounted while inactive.
+
+- returning to a section does not imply another `initState()`;
+- a retained screen whose data can become stale because of work elsewhere must refresh when it becomes active;
+- `AppSectionScope` is the current presentation-level activation signal;
+- do not solve freshness by destroying all tabs, polling continuously, or adding an unrelated global cache.
+
+This rule currently matters for Future after scheduling, Collections after migration/references, and Search after Task-state changes elsewhere.
+
+## Security and portability baseline
+
+The authoritative security contract lives in `SECURITY.md`. Backup details live in `docs/BACKUP_FORMAT.md`; Open Export details live in `docs/OPEN_EXPORT_FORMAT.md`; platform release procedure lives in `docs/RELEASE.md`.
 
 Current foundation includes:
 
 - SQLite3MultipleCiphers ChaCha20-Poly1305 encrypted persistence;
-- random 48-byte SQLite material: 32-byte journal key + 16-byte cipher salt;
+- random 48-byte journal material: 32-byte key + 16-byte cipher salt;
 - master password never used directly as the SQLite key and never persisted;
-- Argon2id-derived KEK + XChaCha20-Poly1305 versioned key envelope;
+- Argon2id-derived KEK + XChaCha20-Poly1305 authenticated key envelope;
 - explicit mutable key-material destruction where practical;
 - Android OS backup/device-transfer exclusion;
-- portable authenticated encrypted backup with integrity and rollback/recovery protections.
+- portable authenticated encrypted backup with HMAC integrity and rollback/recovery protections;
+- explicit plaintext Open Export to deterministic JSON and human-readable Markdown;
+- Appearance is non-secret device/application state outside the encrypted journal database;
+- Android release builds fail closed if dedicated release signing is absent and never silently use debug signing.
 
 ## Merged product baseline
 
@@ -174,113 +148,141 @@ Current foundation includes:
 - PR #28: user-facing encrypted backup/restore. Squash `e4659c14e84759150060e4f834a1a2fc50b20910`.
 - PR #29: post-backup documentation and local performance benchmark. Squash `75380a863a64dd6d6e2b56f5fde2879ca517c2f4`.
 - PR #30: explicit plaintext Open Export to deterministic JSON and human-readable Markdown. Squash `fecc5ea4b63297de0a8b1eb9da5c93e1ecf562e3`.
+- PR #31: device-local System / Light / Dark Appearance selection. Squash `5184f519eed723221206ce529c4f0e0a2fed8bcf`.
 
-### PR #28 backup/restore checkpoint
+## Active stabilization slice: release 1.0.0-alpha.2
 
-Implemented behavior:
+Release hardening is implemented on `release/1.0.0-alpha.2`.
 
-- unlocked journals can create a portable authenticated encrypted Daymark backup after master-password verification;
-- encrypted backup save currently passes the encrypted container bytes through the file-picker save API on supported targets; these are encrypted container bytes, not plaintext journal data, and the temporary memory buffer is wiped afterward;
-- Android uses the platform file-picker/document-provider boundary;
-- restore is exposed only when the journal is locked or absent, never over a live encrypted database session;
-- restore validates authentication, compatibility, database integrity, foreign keys, and staged files before replacement;
-- wrong password or failed restore leaves the existing journal locked and unchanged;
-- successful restore reopens only from the committed database/key-envelope pair;
-- interrupted restore recovery runs before normal locked-journal inspection;
-- backup/restore errors are localized and raw crypto/filesystem errors are not shown to the user;
-- `file_picker` is pinned to `12.1.3` for compatibility with the current AGP 9 / Gradle 9 toolchain.
+### Packaging and signing
 
-Validation evidence:
+- version is `1.0.0-alpha.2+2`;
+- Android and Linux user-facing application name is `Daymark`;
+- Android release signing uses local-only `android/key.properties` plus `android/daymark-upload.jks`;
+- signing files are ignored and passwords were never printed or committed;
+- release Gradle tasks fail closed when signing configuration or keystore is absent;
+- Android release builds run `flutter build apk --config-only` before `flutter build apk --release --no-pub` to avoid the pinned Flutter `integration_test` stale-registrant regression;
+- generated `android/build/` output is ignored;
+- no routine `flutter clean` was introduced.
 
-- formatter, analyzer, focused backup/restore tests, complete Flutter suite, Linux debug build, and Android debug build passed locally;
-- manual Linux restore used an isolated disposable XDG root;
-- the manual flow proved snapshot rollback semantics, wrong-password rejection, auto-unlock after correct restore, and restored-state persistence across a second launch;
-- Ready CI #464 passed on exact head `a7fd2dfd5b408b0285ac88a7bf610041cf8c299d` including `merge-gate`;
-- squash merge produced `main` SHA `e4659c14e84759150060e4f834a1a2fc50b20910`;
-- post-merge `main` CI #465 passed on that exact merged SHA.
+### Journal metadata compatibility repair
 
-### PR #30 Open Export checkpoint
+Physical Open Export validation exposed a legacy compatibility defect: the real alpha.1 journal had zero `journal_metadata` rows even though the data-model contract requires exactly one.
 
-Open Export is merged in PR #30.
+The release branch now:
 
-Expected boundary:
+- initializes one UUID-v7 singleton metadata row when a new journal is created;
+- repairs a legacy journal with zero rows on successful unlock;
+- performs the repair transactionally and idempotently;
+- keeps the generated identity stable after creation;
+- fails closed when more than one metadata row exists instead of silently choosing or rewriting one;
+- preserves existing encrypted journal content during the repair.
 
-- explicit user action only;
-- structured JSON for machine-readable portability;
-- Markdown for human-readable archival use;
-- clear warning that exported files are plaintext and no longer protected by Daymark's encrypted journal storage;
-- technically and conceptually separate from encrypted backup;
-- deterministic/versioned output where appropriate;
-- preserve stable IDs, owners, states, and relationships needed for meaningful portability;
-- tests for escaping, Unicode, states, and relationships;
-- no cloud/sync semantics and no hidden automatic export.
+Focused metadata/session/export/backup tests, analyzer, the complete Flutter suite, Linux release build, Android configuration refresh, and signed Android release build passed after this change.
 
-Implementation and validation:
+### Linux release evidence
 
-- machine-readable `daymark-open-export` JSON format version 1;
-- human-readable Markdown rendering of the same consistent snapshot;
-- stable IDs, Task states, owners, ordinals, migration lineage, Collection references, signifiers, and Index relationships are preserved;
-- output is deterministic and contains no volatile export timestamp;
-- Unicode and Markdown scalar/fence escaping are covered by focused tests;
-- UI clearly warns that JSON and Markdown are plaintext and no longer protected by Daymark encryption;
-- Open Export remains separate from encrypted backup and restore;
-- no dependency, schema, cryptographic-format, or backup-format change;
-- final local validation passed: locked dependency resolution, localization generation, Drift generation/migration checks, generated-artifact freshness, formatter, analyzer, focused Open Export tests, complete Flutter suite, Linux debug build, and Android debug APK build;
-- real disposable Linux validation passed for JSON, Markdown, Unicode, Collection ownership, and the plaintext warning;
-- Ready CI #470 passed on exact head `0b3d4158c6bffee9d43d6ef8c57a75151bbc2b5a`;
-- squash merge produced `main` SHA `fecc5ea4b63297de0a8b1eb9da5c93e1ecf562e3`;
-- post-merge `main` CI #471 passed on that exact SHA.
+Latest candidate directory on the validation host:
 
-## Active stabilization slice: Appearance
+`~/Downloads/daymark-1.0.0-alpha.2-20260904T150736`
 
-Appearance selection is implemented on `feat/appearance-settings`.
+Latest candidate SHA-256 values:
 
-Implemented behavior:
+- Linux x64 bundle archive: `490ce7c62126e8b9d5e9e78a3727f68c131e60ef197d0673d174ea0d44def9c4`;
+- signed Android APK: `96f69264a4fc0fead8d31893f96aac428db341303abdfab929daaee5760f20f0`.
 
-- System, Light, and Dark are explicit choices;
-- the selected mode is applied immediately across the application;
-- the preference is device/application state, not journal domain data;
-- it is stored outside the encrypted journal database in a small versioned `device-preferences.json` file;
-- missing, malformed, incompatible, or unknown preference content falls safely back to System;
-- writes use a temporary file followed by replacement;
-- appearance applies while the journal is locked and persists across application restarts;
-- no schema, cryptographic, backup-format, or dependency change.
+Linux release validation passed:
 
-Validation evidence:
+- analyzer and complete Flutter suite;
+- native release build;
+- `ldd` with no missing libraries;
+- disposable XDG journal creation;
+- Task/Note persistence across lock/unlock and restart;
+- Dark Appearance persistence before unlock after restart;
+- representative plaintext marker absent from application data.
 
-- localization generation, formatter, analyzer, focused preference/UI tests, and Linux debug build passed;
-- real disposable Linux testing confirmed immediate Dark and Light changes;
-- restart testing confirmed Dark and Light before journal unlock;
-- returning to System persisted successfully;
-- complete Flutter suite and Android debug build are the final local gates before Ready CI.
+The artifact checksums above supersede all earlier alpha.2 candidate checksums.
 
-## Vacation-ready stabilization plan
+### Physical Android release evidence
 
-Priority order:
+Validation hardware: Multilaser `M7_3G_PLUS`, Android 8.1.0 / SDK 27.
 
-1. **User-facing encrypted backup/restore**: merged in PR #28.
-2. **Open export**: merged in PR #30.
-3. **Appearance selection**: implemented on `feat/appearance-settings`; final validation and merge remain.
-4. **Release hardening**: packaging/versioning, Android release signing setup, Linux and Android release builds, installation/upgrade smoke tests, dependency/security review, documentation alignment, and final controlled recovery validation.
-5. **Final stabilization only**: after the above closes, fix blockers and regressions; do not add unrelated features merely because time remains.
+Release certificate SHA-256:
 
-Explicitly deferrable when they threaten stability or the date boundary:
+`44342dcd1343643bc56da2545ec10e5624fc2e49d1bcc3b418f4f9ab160e1b88`
+
+The existing physical `1.0.0-alpha.1` installation was a debug build signed with a different certificate. The migration flow therefore did not pretend that a direct signed upgrade was possible.
+
+Validated migration path:
+
+1. identify the installed alpha.1 version, debug status, and certificate before destructive work;
+2. preserve the installed APK;
+3. build current code in debug mode and confirm it uses the same old debug certificate;
+4. `adb install -r` that temporary debug build to preserve the real alpha.1 journal while exposing current backup behavior;
+5. create a portable encrypted backup and pull it to the host;
+6. additionally preserve a raw encrypted database/key-envelope/device-preferences safety snapshot before uninstall;
+7. verify the raw database does not expose the plaintext SQLite header;
+8. uninstall only after both safety copies exist;
+9. install the signed, non-debuggable alpha.2 release cleanly;
+10. restore the portable alpha.1 backup into alpha.2 and verify real journal data;
+11. revalidate lock/unlock and Appearance;
+12. create an alpha.2 backup and validate its v1/schema-v1 structure;
+13. `adb install -r` the same signed release and verify retained data again;
+14. create a second post-reinstall backup and validate it.
+
+Migration backup SHA-256:
+
+`febbd3b2247ae9a434470ee1a6458b8bd7e14d0a49e5cea75b8629803255cdff`
+
+Open Export on physical Android passed:
+
+- Markdown format/version/schema header;
+- explicit plaintext warning;
+- complete section set;
+- UTF-8;
+- JSON format v1/schema v1 and ordered top-level structure;
+- after metadata repair, exactly one UUID-v7 `journalMetadata` row;
+- existing entries remained present after the repair/update.
+
+Physical validation-copy checksums:
+
+- Markdown: `ada5a36771280785f57417f17e4d6baeaeb0720618b28e97d3ba1fe7454b206f`;
+- repaired JSON: `c6c0b7b37466c91486f7793fd714ed7033acfa46c707e2e13fa5eb965e27d91e`.
+
+The local safety directory and tablet `.daymark-backup` files must be retained until the prerelease is fully published and verified.
+
+## Remaining alpha.2 gate
+
+1. final release documentation alignment;
+2. Ready PR from `release/1.0.0-alpha.2` to `main`;
+3. exact-head quality/full tests, Linux build, Android build, dependency review, and `merge-gate` green;
+4. explicit user approval for squash merge;
+5. post-merge `main` CI green on the exact squash SHA;
+6. explicit release approval;
+7. annotated tag `v1.0.0-alpha.2` on the approved merged commit;
+8. GitHub Release marked prerelease with the exact Linux/APK artifacts and SHA-256 values.
+
+No tag or GitHub Release is created before these gates pass.
+
+## Deferred after alpha.2 unless a blocker appears
 
 - direct source navigation from Search/Index;
 - richer Reflection workflows;
 - OS-level immediate lock hooks;
 - device-assisted/biometric unlock;
-- accessibility/keyboard refinement beyond release-blocking defects;
-- cloud/sync or other out-of-scope product expansion.
+- reference removal;
+- Index reorder/remove;
+- cloud/sync;
+- broader Settings complexity;
+- large refactors;
+- AGP 9 built-in Kotlin migration, unless it becomes a release blocker.
 
 ## CI and handoff traps
 
-- Local-first is the preferred development feedback loop when it is faster or GitHub is degraded.
-- Draft PRs may run `dev-check`; repeated remote Draft iterations are not required when equivalent pinned local checks are available and recorded.
-- Ready PRs still require quality/full tests, Linux, Android, dependency review, and `merge-gate` on the exact final head.
-- A red formatter is mechanical evidence, not automatically a product defect.
-- Commits created by `github-actions[bot]` may show `action_required`; do not treat that status alone as code failure.
-- Temporary workflow probes must not remain in the final PR diff.
+- Ready PRs require quality/full tests, Linux, Android, dependency review, and `merge-gate` on the exact final head.
+- CI evidence is SHA-specific; a green superseded run validates nothing newer.
+- A red formatter or generated-source check may be mechanical evidence rather than a product defect; diagnose before changing behavior.
+- Android release signing secrets never belong in CI merely to make a local signed release test reproducible there; CI debug Android build remains an appropriate code/build gate.
+- The pinned Flutter toolchain may leave a dev-only `integration_test` registrant for Android `--no-pub`; use the documented `--config-only` refresh, not `flutter clean` or production dependency pollution.
 - `StatefulShellRoute.indexedStack` retains screens; section navigation is not a remount lifecycle.
-- Manual product testing remains important for lifecycle freshness, compact/desktop navigation, persistence, backup/restore, import/export, and false-success/false-error UI behavior.
-- If GitHub Actions/API results are delayed or incomplete, do not infer success. Continue independent work where safe, then request only the smallest missing evidence when a merge decision is blocked.
+- If GitHub Actions/API results are delayed or incomplete, do not infer success. Continue independent work where safe and request only the smallest missing evidence when blocked.

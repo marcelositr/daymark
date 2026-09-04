@@ -35,6 +35,9 @@ This file is for user-visible behavior, data compatibility, security, packaging,
 
 ### Changed
 
+- Prerelease packaging advances to `1.0.0-alpha.2+2`; Linux and Android present the application name as `Daymark`.
+- Android release builds require explicit local release signing and fail closed instead of silently using the debug key.
+- Android release packaging refreshes generated plugin configuration before the `--no-pub` release build to avoid a stale development-only `integration_test` registrant.
 - English is the canonical and fallback UI locale; an exact Brazilian Portuguese system locale selects Portuguese (Brazil).
 - Device-assisted secure-storage integration is deferred until the portable master-password/recovery security baseline is complete.
 - Android OS-managed app-data backup and device-transfer paths are explicitly excluded; portable migration is reserved for Daymark's encrypted backup/restore design.
@@ -55,6 +58,7 @@ This file is for user-visible behavior, data compatibility, security, packaging,
 
 ### Fixed
 
+- Journal creation now initializes the required singleton `journal_metadata` record, and unlocking an older pre-alpha journal with that row missing repairs it idempotently without replacing existing encrypted journal content; multiple metadata rows still fail closed as corruption.
 - Replaced the first Today regression-test approach, which mixed real filesystem/cryptographic I/O into a Flutter widget test, with an isolated in-memory presentation boundary.
 - Unexpected journal-access and capture failures retain diagnostic stack information without logging passwords, journal contents, or raw exception messages.
 - Mobile text editing explicitly counts as journal activity even when an input method does not emit Flutter hardware-key events.
@@ -67,6 +71,7 @@ This file is for user-visible behavior, data compatibility, security, packaging,
 
 ### Security
 
+- The `1.0.0-alpha.2` Android candidate uses a dedicated non-debug release signing key kept outside Git; physical-device migration validation preserved encrypted journal data while moving from the earlier debug-signed alpha.1 lineage into the release-signed alpha.2 installation through the portable encrypted backup boundary.
 - Journal persistence uses SQLite3MultipleCiphers ChaCha20-Poly1305 with random per-journal key material instead of plaintext SQLite.
 - Master passwords protect the random journal key through Argon2id and XChaCha20-Poly1305 rather than being used directly as database passwords.
 - Key-envelope and encrypted-database tests cover wrong credentials, corrupted authenticated data, incorrect database keys, unkeyed SQLite access, and representative plaintext leakage.
