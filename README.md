@@ -59,7 +59,7 @@ Richer reflection flows, direct retrieval navigation from Index/Search, backup U
 
 ## Technology direction
 
-The reviewed baseline is documented in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md), with the relational persistence contract in [`docs/DATA_MODEL.md`](docs/DATA_MODEL.md) and security contracts in [`SECURITY.md`](SECURITY.md) and [`docs/SECURITY_FOUNDATION.md`](docs/SECURITY_FOUNDATION.md).
+The reviewed baseline is documented in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md), with the relational persistence contract in [`docs/DATA_MODEL.md`](docs/DATA_MODEL.md) and the current security contract in [`SECURITY.md`](SECURITY.md). [`docs/SECURITY_FOUNDATION.md`](docs/SECURITY_FOUNDATION.md) preserves the historical validation record for the security-foundation PR #7.
 
 At a glance:
 
@@ -102,7 +102,7 @@ Development uses one permanent integration branch (`main`), short-lived task bra
 
 See [`docs/WORKFLOW.md`](docs/WORKFLOW.md).
 
-AI-assisted work follows a staged validation ladder: trustworthy baseline, Draft CI, layer-correct focused tests, complete local validation, manual platform validation when needed, documentation alignment, full non-Draft CI, and explicit user merge approval.
+AI-assisted work follows a staged validation ladder: trustworthy baseline, the fastest trustworthy feedback path (normally pinned local-first validation when explicitly agreed, otherwise Draft-CI assistance where useful), layer-correct focused tests, complete local validation and manual platform validation when needed, documentation alignment, full non-Draft CI / `merge-gate`, and explicit user merge approval.
 
 The first public release train progresses deliberately through:
 
@@ -123,8 +123,8 @@ Release candidates are not promoted automatically. Stable `1.0.0` happens only a
 - [`docs/DOMAIN.md`](docs/DOMAIN.md): Bullet Journal semantics
 - [`docs/DATA_MODEL.md`](docs/DATA_MODEL.md): relational schema, persistence invariants, and migration policy
 - [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md): technical architecture and technology baseline
-- [`SECURITY.md`](SECURITY.md): threat model and security constraints
-- [`docs/SECURITY_FOUNDATION.md`](docs/SECURITY_FOUNDATION.md): security implementation/validation contract
+- [`SECURITY.md`](SECURITY.md): current threat model and security constraints
+- [`docs/SECURITY_FOUNDATION.md`](docs/SECURITY_FOUNDATION.md): historical PR #7 security-foundation validation record
 - [`docs/ARGON2_BENCHMARK.md`](docs/ARGON2_BENCHMARK.md): Linux/Android KDF benchmark procedure and evidence
 - [`docs/BACKUP_FORMAT.md`](docs/BACKUP_FORMAT.md): portable authenticated backup format
 - [`docs/WORKFLOW.md`](docs/WORKFLOW.md): branches, PRs, validation, versioning, and releases
