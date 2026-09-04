@@ -2,15 +2,17 @@
 
 ## Purpose
 
-This document defines the relational persistence contract for Daymark before the Drift implementation is allowed to make those decisions implicitly.
+This document defines Daymark's current relational persistence contract. The Drift implementation, schema snapshots, migration tests, export contracts, and compatibility code must remain consistent with these rules rather than allowing database structure to redefine Bullet Journal semantics implicitly.
 
 The model follows `docs/DOMAIN.md`. Database structure must preserve Bullet Journal semantics, migration lineage, deliberate Index structure, and encrypted local ownership without turning the product into a generic task database.
+
+Schema version 1 is published in `v1.0.0-alpha.2` and is therefore a real compatibility boundary.
 
 ## Database boundary
 
 One encrypted Daymark database file represents exactly one journal.
 
-Daymark must not model multiple journals as tenants inside one SQLite database with a `journal_id` repeated across every table. If multiple journals are supported later, each journal should normally have its own encrypted database file and its own independent journal key.
+Daymark must not model multiple journals as tenants inside one SQLite database with a `journal_id` repeated across every table. If multiple journals are supported later, each journal should normally have its own encrypted database file and independent journal key.
 
 Reasons:
 
@@ -20,7 +22,9 @@ Reasons:
 - accidental cross-journal queries become structurally impossible;
 - future multi-journal support does not require changing entry identity or relationships.
 
-The database contains a single `journal_metadata` record with the journal's stable identity. Application code must treat more than one metadata row as corruption.
+The database contains exactly one `journal_metadata` record with the journal's stable identity. Application code treats more than one metadata row as corruption.
+
+`v1.0.0-alpha.2` also repairs an older development journal that has zero metadata rows: successful unlock transactionally creates one UUID-v7 singleton row and preserves it thereafter. This compatibility repair does not change schema version 1.
 
 ## Storage conventions
 
@@ -48,9 +52,7 @@ Foreign-key violations are data-integrity failures. The application must not sil
 
 Small semantic enums use stable text values instead of ordinal integers. Adding or reordering an application enum must therefore not reinterpret old data.
 
-## Initial schema
-
-The first schema version is `1`.
+## Schema version 1
 
 ### `journal_metadata`
 
@@ -62,7 +64,7 @@ Fields:
 - `created_at` — UTC microseconds;
 - `updated_at` — UTC microseconds.
 
-This table deliberately does not contain password-derived keys, KDF salts, wrapped database keys, recovery material, or device-keystore handles. Those values are needed before the encrypted database can be opened and therefore belong to the versioned key-envelope design defined by the security spike.
+This table deliberately does not contain password-derived keys, KDF salts, wrapped database keys, recovery material, or device-keystore handles. Those values are needed before the encrypted database can be opened and belong to the versioned key-envelope design defined by `SECURITY.md`.
 
 ### `logs`
 
@@ -119,7 +121,7 @@ Task-state invariant:
 - an `event` has `task_state = NULL`;
 - a `note` has `task_state = NULL`.
 
-Rendered Bullet symbols are not persisted as the semantic state.
+Rendered Bullet symbols are not persisted as semantic state.
 
 Editing content updates the existing entry identity. It does not create a new identity merely because text changed.
 
@@ -146,7 +148,7 @@ Exactly one of `log_id` and `collection_id` is non-null.
 
 A Monthly calendar placement stores its calendar date explicitly. Daymark must not infer a date by parsing entry text such as `15 dentist`. Repository/application validation must also ensure that a Monthly calendar date belongs to the month represented by its owning Monthly Log; that cross-table invariant cannot be expressed as a normal SQLite `CHECK` constraint.
 
-An entry is never moved between owners in-place to implement Bullet Journal migration. Migration creates a destination entry and a lineage record, leaving the source in its historical location.
+An entry is never moved between owners in-place to implement Bullet Journal migration. Migration creates a destination entry and lineage record, leaving the source in its historical location.
 
 ### `migrations`
 
@@ -166,7 +168,7 @@ Invariants:
 - one source entry may have at most one direct outgoing migration;
 - one destination entry may have at most one direct predecessor.
 
-This deliberately forms chains rather than a many-parent graph. Repeated future movement creates another entry and another edge:
+This deliberately forms chains rather than a many-parent graph. Repeated future movement creates another entry and edge:
 
 ```text
 A -> B -> C
@@ -174,14 +176,14 @@ A -> B -> C
 
 rather than rewriting `A` or attaching several destinations to one historical decision.
 
-For tasks, application/domain logic must keep source task state consistent with migration kind:
+For tasks, application/domain logic keeps source task state consistent with migration kind:
 
 - `migrated` lineage normally corresponds to source state `migrated`;
 - `scheduled` lineage corresponds to source state `scheduled` and destination ownership in a Future Log.
 
-Events and Notes may participate in traceable movement without acquiring task states.
+Events and Notes may participate in traceable movement without acquiring task states when a future product flow legitimately exposes such movement.
 
-Source and destination locations are preserved through their immutable entry placements, so lineage does not need to duplicate display text or denormalized location labels.
+Source and destination locations are preserved through their entry placements, so lineage does not need to duplicate display text or denormalized location labels.
 
 ### `collection_references`
 
@@ -198,7 +200,7 @@ Primary key:
 
 - `(collection_id, entry_id)`.
 
-This is intentionally distinct from migrating an entry into a Collection. A referenced Daily entry remains owned by its Daily Log.
+This is intentionally distinct from migrating an entry into a Collection. A referenced Daily/Monthly/Future entry remains owned by its chronological Log and appears read-only through the Collection reference surface.
 
 ### `signifiers`
 
@@ -221,7 +223,7 @@ Initial built-in identities are expected to use stable IDs such as:
 
 Built-in translated labels are not stored in the database.
 
-Custom signifiers are not required for the first product milestone, but this definition table prevents a future custom signifier feature from requiring new `EntryType` values or new columns on `entries`.
+Custom signifiers are not required for the first stable product milestone, but this definition table prevents a future custom-signifier feature from requiring new `EntryType` values or new columns on `entries`.
 
 ### `entry_signifiers`
 
@@ -253,23 +255,23 @@ The Index stores references to journal structures, not duplicated entry content.
 
 ### Search index
 
-Search must initially query the encrypted journal database directly. If an FTS index is introduced later, it must live inside the same encrypted database boundary. No plaintext external search index is allowed.
+Search queries the encrypted journal database directly. If an FTS index is introduced later, it must live inside the same encrypted database boundary. No plaintext external search index is allowed.
 
 ### Application preferences
 
 Theme, language override, window state, and similar application preferences are not journal domain records and do not belong in the encrypted journal relational model merely for convenience.
 
-Security-sensitive preference behavior such as auto-lock is governed by the security architecture, but it still must not be mixed into entry/domain tables.
+Appearance is currently stored as non-secret device/application state outside the encrypted journal database. Security-sensitive preferences such as future lock configuration still must not be mixed into entry/domain tables.
 
 ### Key-envelope metadata
 
-Master-password KDF parameters, salts, wrapped journal key material, recovery metadata, and device-assisted unlock handles are intentionally outside this Drift schema because they are required to unlock the database itself.
+Master-password KDF parameters, salts, wrapped journal-key material, recovery metadata, and device-assisted unlock handles are intentionally outside this Drift schema because they are required to unlock the database itself.
 
-The security spike must define a small versioned envelope with authenticated handling. Plain metadata in that envelope must not reveal journal content.
+The current versioned authenticated envelope is defined by `SECURITY.md` and the historical foundation record in `docs/SECURITY_FOUNDATION.md`.
 
 ### Attachments
 
-Attachments are not part of schema v1. If introduced, they will use encrypted files plus database metadata rather than creating a plaintext side channel.
+Attachments are not part of schema v1. If introduced, they must use encrypted files plus database metadata rather than create a plaintext side channel.
 
 ### Reflection records
 
@@ -295,26 +297,27 @@ Do not use timestamps alone as UI order.
 
 `ordinal` is scoped to the owning structure or reference list. Initial insertion may use monotonically increasing integers. If manual insertion/reordering is later needed, the application may renumber a container transactionally. No fractional-position package or collaborative ordering algorithm is justified for the initial local-only product.
 
-## Schema migration policy
+## Published schema and migration policy
 
 Daymark uses Drift's versioned migration tooling rather than ad-hoc `ALTER TABLE` strings as the normal path.
 
 The implementation must:
 
-1. start at `schemaVersion = 1`;
-2. keep exported schema snapshots under `drift_schemas/`;
-3. use Drift's `make-migrations` / generated step-by-step migration helpers for subsequent versions;
-4. keep generated migration verification code under the test tree;
-5. test schema shape and representative data preservation across supported upgrades;
-6. enable foreign keys before normal use and verify foreign-key integrity around migrations;
-7. run schema/migration tests in CI once schema v1 is implemented.
+1. retain exported schema snapshots under `drift_schemas/`;
+2. use Drift's migration tooling/generated helpers for subsequent versions;
+3. keep migration verification code under the test tree;
+4. test target schema shape and representative data preservation across every supported predecessor upgrade;
+5. enable foreign keys before normal use and verify foreign-key integrity around migrations;
+6. keep schema/migration checks in CI.
 
-Before the first public `v1.0.0-alpha.1`, an unreleased schema may still be corrected aggressively when evidence warrants it. Once any prerelease containing user data is published, every later supported build must have an explicit tested upgrade path from the published schema versions it claims to support.
+Schema version 1 is published in `v1.0.0-alpha.2`. The earlier pre-publication freedom to regenerate an unreleased schema no longer applies to the supported release line.
 
-No release may solve a migration problem by silently deleting and recreating the user's journal.
+Any later build that claims to support alpha.2 data must have an explicit tested path from published schema v1. A future schema version may migrate forward, but it must not silently reinterpret semantic values, delete journal content, or solve incompatibility by deleting/recreating the database.
+
+Compatibility code that repairs missing data required by an already-published semantic invariant, such as the alpha.2 `journal_metadata` singleton repair for older development journals, must be transactional, idempotent, tested, and must not conceal genuine corruption.
 
 ## Review rule
 
 A schema change is a product/data-compatibility change, not a private implementation detail.
 
-Any future change to tables, semantic values, constraints, or migration behavior must update the schema snapshot, migration tests, relevant documentation, and `PROJECT.md` in the same pull request.
+Any future change to tables, semantic values, constraints, or migration behavior must update the schema snapshot, migration tests, relevant documentation, `CHANGELOG.md` when release-facing, and `PROJECT.md` in the same pull request.
