@@ -1,6 +1,8 @@
+import 'package:daymark/app/appearance_controller.dart';
 import 'package:daymark/app/daymark_app.dart';
 import 'package:daymark/core/session/journal_session.dart';
 import 'package:daymark/core/session/journal_session_controller.dart';
+import 'package:daymark/core/settings/appearance_preferences.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -12,6 +14,9 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
+          appearanceControllerProvider.overrideWithBuild(
+            (ref, controller) => AppearancePreference.system,
+          ),
           journalSessionControllerProvider.overrideWithBuild(
             (ref, controller) => const JournalNeedsCreation(),
           ),
@@ -32,6 +37,9 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
+          appearanceControllerProvider.overrideWithBuild(
+            (ref, controller) => AppearancePreference.system,
+          ),
           journalSessionControllerProvider.overrideWithBuild(
             (ref, controller) => const JournalNeedsCreation(),
           ),
@@ -66,6 +74,26 @@ void main() {
       expect(
         resolveDaymarkLocale(const <Locale>[Locale('pt', 'PT')]),
         const Locale('en'),
+      );
+    });
+  });
+
+  group('appearance mapping', () {
+    test('maps system preference to ThemeMode.system', () {
+      expect(
+        themeModeForAppearance(AppearancePreference.system),
+        ThemeMode.system,
+      );
+    });
+
+    test('maps explicit light and dark preferences', () {
+      expect(
+        themeModeForAppearance(AppearancePreference.light),
+        ThemeMode.light,
+      );
+      expect(
+        themeModeForAppearance(AppearancePreference.dark),
+        ThemeMode.dark,
       );
     });
   });
