@@ -25,7 +25,10 @@ void main() {
       ),
       findsOneWidget,
     );
-    expect(find.widgetWithText(OutlinedButton, 'Export Markdown'), findsOneWidget);
+    expect(
+      find.widgetWithText(OutlinedButton, 'Export Markdown'),
+      findsOneWidget,
+    );
     expect(find.widgetWithText(FilledButton, 'Export JSON'), findsOneWidget);
   });
 }

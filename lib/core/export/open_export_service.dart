@@ -12,10 +12,7 @@ extension OpenExportFormatFile on OpenExportFormat {
 }
 
 final class OpenExportDocument {
-  const OpenExportDocument({
-    required this.format,
-    required this.contents,
-  });
+  const OpenExportDocument({required this.format, required this.contents});
 
   final OpenExportFormat format;
   final String contents;
@@ -90,12 +87,7 @@ final class OpenExportService {
           'SELECT collection_id, entry_id, ordinal, created_at '
           'FROM collection_references '
           'ORDER BY collection_id, ordinal, entry_id',
-          const <String>[
-            'collection_id',
-            'entry_id',
-            'ordinal',
-            'created_at',
-          ],
+          const <String>['collection_id', 'entry_id', 'ordinal', 'created_at'],
         ),
         'signifiers': await _readTable(
           'SELECT id, kind, builtin_code, custom_label, custom_symbol, created_at '
@@ -135,10 +127,7 @@ final class OpenExportService {
         OpenExportFormat.markdown => _renderMarkdown(payload),
       };
 
-      return OpenExportDocument(
-        format: format,
-        contents: '$contents\n',
-      );
+      return OpenExportDocument(format: format, contents: '$contents\n');
     });
   }
 
@@ -150,8 +139,7 @@ final class OpenExportService {
     return <Map<String, Object?>>[
       for (final row in rows)
         <String, Object?>{
-          for (final column in columns)
-            _camelCase(column): row.data[column],
+          for (final column in columns) _camelCase(column): row.data[column],
         },
     ];
   }
@@ -176,9 +164,7 @@ String _renderMarkdown(Map<String, Object?> payload) {
     ..writeln()
     ..writeln('Format: `${payload['format']}`')
     ..writeln('Format version: `${payload['formatVersion']}`')
-    ..writeln(
-      'Database schema version: `${payload['databaseSchemaVersion']}`',
-    )
+    ..writeln('Database schema version: `${payload['databaseSchemaVersion']}`')
     ..writeln()
     ..writeln(
       '> This is a plaintext export. It is not protected by Daymark encryption.',
@@ -221,7 +207,9 @@ String _renderMarkdown(Map<String, Object?> payload) {
           _writeContent(buffer, field.value! as String);
           continue;
         }
-        buffer.writeln('- ${field.key}: `${_escapeCode(_scalar(field.value))}`');
+        buffer.writeln(
+          '- ${field.key}: `${_escapeCode(_scalar(field.value))}`',
+        );
       }
       buffer.writeln();
     }
