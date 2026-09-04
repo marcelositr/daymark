@@ -6,7 +6,9 @@ import 'package:daymark/features/journal/data/collection_repository.dart';
 import 'package:daymark/features/journal/domain/journal_domain.dart';
 import 'package:daymark/l10n/app_localizations.dart';
 import 'package:daymark/presentation/app_section_scope.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -114,6 +116,8 @@ class CollectionsScreen extends ConsumerStatefulWidget {
 class _CollectionsScreenState extends ConsumerState<CollectionsScreen> {
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _entryController = TextEditingController();
+  final FocusNode _titleFocusNode = FocusNode();
+  final FocusNode _entryFocusNode = FocusNode();
 
   late Future<List<CollectionSummary>> _collectionsFuture;
   Future<CollectionSnapshot>? _collectionFuture;
@@ -155,6 +159,7 @@ class _CollectionsScreenState extends ConsumerState<CollectionsScreen> {
       if (collectionId != null) {
         _collectionFuture = _dataSource().load(collectionId);
       }
+      _restoreActiveFocus();
     }
     _sectionScopeInitialized = true;
     _wasCollectionsSectionActive = isCollectionsSectionActive;
@@ -164,6 +169,8 @@ class _CollectionsScreenState extends ConsumerState<CollectionsScreen> {
   void dispose() {
     _titleController.dispose();
     _entryController.dispose();
+    _titleFocusNode.dispose();
+    _entryFocusNode.dispose();
     super.dispose();
   }
 
@@ -239,7 +246,13 @@ class _CollectionsScreenState extends ConsumerState<CollectionsScreen> {
             Expanded(
               child: TextField(
                 controller: _titleController,
+                focusNode: _titleFocusNode,
+                autofocus:
+                    defaultTargetPlatform == TargetPlatform.linux &&
+                    _selectedCollectionId == null,
                 enabled: !_saving,
+                textInputAction: TextInputAction.done,
+                onSubmitted: (_) => unawaited(_createCollection()),
                 onChanged: (_) => JournalActivityGuard.recordActivity(context),
                 decoration: InputDecoration(
                   hintText: l10n.collectionTitleHint,
@@ -323,16 +336,23 @@ class _CollectionsScreenState extends ConsumerState<CollectionsScreen> {
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 Expanded(
-                  child: TextField(
-                    controller: _entryController,
-                    enabled: !_saving,
-                    minLines: 1,
-                    maxLines: 4,
-                    onChanged: (_) =>
-                        JournalActivityGuard.recordActivity(context),
-                    decoration: InputDecoration(
-                      hintText: l10n.collectionEntryHint,
-                      isDense: true,
+                  child: Focus(
+                    onKeyEvent: _handleEntryComposerKeyEvent,
+                    child: TextField(
+                      controller: _entryController,
+                      focusNode: _entryFocusNode,
+                      autofocus:
+                          defaultTargetPlatform == TargetPlatform.linux &&
+                          _selectedCollectionId != null,
+                      enabled: !_saving,
+                      minLines: 1,
+                      maxLines: 4,
+                      onChanged: (_) =>
+                          JournalActivityGuard.recordActivity(context),
+                      decoration: InputDecoration(
+                        hintText: l10n.collectionEntryHint,
+                        isDense: true,
+                      ),
                     ),
                   ),
                 ),
@@ -484,6 +504,32 @@ class _CollectionsScreenState extends ConsumerState<CollectionsScreen> {
     );
   }
 
+  KeyEventResult _handleEntryComposerKeyEvent(FocusNode node, KeyEvent event) {
+    if (event is KeyDownEvent &&
+        event.logicalKey == LogicalKeyboardKey.enter &&
+        HardwareKeyboard.instance.isControlPressed) {
+      unawaited(_capture());
+      return KeyEventResult.handled;
+    }
+    return KeyEventResult.ignored;
+  }
+
+  void _restoreActiveFocus() {
+    if (defaultTargetPlatform != TargetPlatform.linux || _saving) {
+      return;
+    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || _saving) {
+        return;
+      }
+      if (_selectedCollectionId == null) {
+        _titleFocusNode.requestFocus();
+      } else {
+        _entryFocusNode.requestFocus();
+      }
+    });
+  }
+
   CollectionsJournalDataSource _dataSource() {
     return ref.read(collectionsJournalDataSourceProvider);
   }
@@ -493,6 +539,7 @@ class _CollectionsScreenState extends ConsumerState<CollectionsScreen> {
       _selectedCollectionId = collectionId;
       _collectionFuture = _dataSource().load(collectionId);
     });
+    _restoreActiveFocus();
   }
 
   void _backToList() {
@@ -505,6 +552,7 @@ class _CollectionsScreenState extends ConsumerState<CollectionsScreen> {
       _collectionFuture = null;
       _collectionsFuture = _dataSource().list();
     });
+    _restoreActiveFocus();
   }
 
   Future<void> _createCollection() async {
@@ -522,6 +570,7 @@ class _CollectionsScreenState extends ConsumerState<CollectionsScreen> {
         _collectionsFuture = _dataSource().list();
         _saving = false;
       });
+      _restoreActiveFocus();
     } catch (error, stackTrace) {
       _reportUnexpectedCollectionsError('create', error, stackTrace);
       if (!mounted) return;
@@ -549,6 +598,7 @@ class _CollectionsScreenState extends ConsumerState<CollectionsScreen> {
         _collectionFuture = _dataSource().load(collectionId);
         _saving = false;
       });
+      _restoreActiveFocus();
     } catch (error, stackTrace) {
       _reportUnexpectedCollectionsError('capture', error, stackTrace);
       if (!mounted) return;

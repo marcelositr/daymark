@@ -8,6 +8,7 @@ import 'package:daymark/features/journal/domain/journal_domain.dart';
 import 'package:daymark/features/journal/presentation/source_navigation.dart';
 import 'package:daymark/l10n/app_localizations.dart';
 import 'package:daymark/presentation/app_section_scope.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -47,6 +48,7 @@ class SearchScreen extends ConsumerStatefulWidget {
 
 class _SearchScreenState extends ConsumerState<SearchScreen> {
   final TextEditingController _controller = TextEditingController();
+  final FocusNode _searchFocusNode = FocusNode();
   List<JournalSearchResult> _results = const <JournalSearchResult>[];
   bool _searching = false;
   bool _hasSearched = false;
@@ -76,6 +78,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
       if (query != null) {
         unawaited(_executeSearch(query, showProgress: false));
       }
+      _restoreSearchFocus();
     }
     _sectionScopeInitialized = true;
     _wasSearchSectionActive = isSearchSectionActive;
@@ -84,6 +87,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   @override
   void dispose() {
     _controller.dispose();
+    _searchFocusNode.dispose();
     super.dispose();
   }
 
@@ -114,6 +118,8 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
             const SizedBox(height: 16),
             TextField(
               controller: _controller,
+              focusNode: _searchFocusNode,
+              autofocus: defaultTargetPlatform == TargetPlatform.linux,
               enabled: !_searching,
               textInputAction: TextInputAction.search,
               onSubmitted: (_) => _runSearch(),
@@ -184,6 +190,17 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
         );
       },
     );
+  }
+
+  void _restoreSearchFocus() {
+    if (defaultTargetPlatform != TargetPlatform.linux || _searching) {
+      return;
+    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && !_searching) {
+        _searchFocusNode.requestFocus();
+      }
+    });
   }
 
   Future<void> _runSearch() async {

@@ -134,7 +134,8 @@ class _TodayScreenState extends ConsumerState<TodayScreen>
       return;
     }
 
-    final bool isTodaySectionActive = currentSectionIndex == 0;
+    final bool isTodaySectionActive =
+        currentSectionIndex == AppSectionScope.todaySectionIndex;
     if (_sectionScopeInitialized &&
         isTodaySectionActive &&
         !_wasTodaySectionActive &&

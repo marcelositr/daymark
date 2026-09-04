@@ -6,7 +6,10 @@ import 'package:daymark/core/session/journal_session_controller.dart';
 import 'package:daymark/features/journal/data/monthly_log_repository.dart';
 import 'package:daymark/features/journal/domain/journal_domain.dart';
 import 'package:daymark/l10n/app_localizations.dart';
+import 'package:daymark/presentation/app_section_scope.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'entry_collection_reference_dialog.dart';
@@ -123,6 +126,7 @@ class MonthlyScreen extends ConsumerStatefulWidget {
 class _MonthlyScreenState extends ConsumerState<MonthlyScreen>
     with WidgetsBindingObserver {
   final TextEditingController _entryController = TextEditingController();
+  final FocusNode _entryFocusNode = FocusNode();
 
   late DateTime _month;
   late Future<MonthlyLogSnapshot?> _snapshotFuture;
@@ -132,6 +136,8 @@ class _MonthlyScreenState extends ConsumerState<MonthlyScreen>
   late JournalMonthlySection _section;
   bool _saving = false;
   String? _entryActionId;
+  bool _sectionScopeInitialized = false;
+  bool _wasMonthlySectionActive = false;
 
   @override
   void initState() {
@@ -155,6 +161,29 @@ class _MonthlyScreenState extends ConsumerState<MonthlyScreen>
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+
+    final int? currentSectionIndex = AppSectionScope.maybeCurrentIndexOf(
+      context,
+    );
+    if (currentSectionIndex == null) {
+      return;
+    }
+
+    final bool isMonthlySectionActive =
+        currentSectionIndex == AppSectionScope.monthlySectionIndex;
+    if (_sectionScopeInitialized &&
+        isMonthlySectionActive &&
+        !_wasMonthlySectionActive) {
+      _restoreComposerFocus();
+    }
+
+    _sectionScopeInitialized = true;
+    _wasMonthlySectionActive = isMonthlySectionActive;
+  }
+
+  @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed &&
         widget.initialMonth == null &&
@@ -168,6 +197,7 @@ class _MonthlyScreenState extends ConsumerState<MonthlyScreen>
     WidgetsBinding.instance.removeObserver(this);
     _monthRolloverTimer?.cancel();
     _entryController.dispose();
+    _entryFocusNode.dispose();
     super.dispose();
   }
 
@@ -237,6 +267,7 @@ class _MonthlyScreenState extends ConsumerState<MonthlyScreen>
                     : (selection) {
                         _entryController.clear();
                         setState(() => _section = selection.single);
+                        _restoreComposerFocus();
                       },
               ),
             ),
@@ -497,15 +528,24 @@ class _MonthlyScreenState extends ConsumerState<MonthlyScreen>
           const SizedBox(width: 12),
         ],
         Expanded(
-          child: TextField(
-            controller: _entryController,
-            enabled: !_saving,
-            minLines: 1,
-            maxLines: 4,
-            onChanged: (_) => JournalActivityGuard.recordActivity(context),
-            decoration: InputDecoration(
-              hintText: calendar ? l10n.monthlyEventHint : l10n.monthlyTaskHint,
-              isDense: true,
+          child: Focus(
+            onKeyEvent: _handleComposerKeyEvent,
+            child: TextField(
+              controller: _entryController,
+              focusNode: _entryFocusNode,
+              autofocus:
+                  defaultTargetPlatform == TargetPlatform.linux &&
+                  _followingCurrentMonth,
+              enabled: !_saving,
+              minLines: 1,
+              maxLines: 4,
+              onChanged: (_) => JournalActivityGuard.recordActivity(context),
+              decoration: InputDecoration(
+                hintText: calendar
+                    ? l10n.monthlyEventHint
+                    : l10n.monthlyTaskHint,
+                isDense: true,
+              ),
             ),
           ),
         ),
@@ -522,6 +562,33 @@ class _MonthlyScreenState extends ConsumerState<MonthlyScreen>
         ),
       ],
     );
+  }
+
+  KeyEventResult _handleComposerKeyEvent(FocusNode node, KeyEvent event) {
+    if (event is KeyDownEvent &&
+        event.logicalKey == LogicalKeyboardKey.enter &&
+        HardwareKeyboard.instance.isControlPressed) {
+      unawaited(_capture());
+      return KeyEventResult.handled;
+    }
+    return KeyEventResult.ignored;
+  }
+
+  void _restoreComposerFocus() {
+    if (defaultTargetPlatform != TargetPlatform.linux ||
+        !_followingCurrentMonth ||
+        _saving ||
+        _entryActionId != null) {
+      return;
+    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted &&
+          _followingCurrentMonth &&
+          !_saving &&
+          _entryActionId == null) {
+        _entryFocusNode.requestFocus();
+      }
+    });
   }
 
   MonthlyJournalDataSource _dataSource() {
@@ -563,6 +630,9 @@ class _MonthlyScreenState extends ConsumerState<MonthlyScreen>
       );
     });
     _scheduleMonthRollover();
+    if (followingCurrentMonth) {
+      _restoreComposerFocus();
+    }
   }
 
   Future<void> _capture() async {
@@ -604,6 +674,7 @@ class _MonthlyScreenState extends ConsumerState<MonthlyScreen>
         _snapshotFuture = dataSource.load(formatJournalMonthStart(_month));
         _saving = false;
       });
+      _restoreComposerFocus();
     } catch (error, stackTrace) {
       _reportUnexpectedMonthlyError('capture', error, stackTrace);
       if (!mounted) {

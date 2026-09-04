@@ -6,7 +6,9 @@ import 'package:daymark/features/journal/data/future_log_repository.dart';
 import 'package:daymark/features/journal/domain/journal_domain.dart';
 import 'package:daymark/l10n/app_localizations.dart';
 import 'package:daymark/presentation/app_section_scope.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'entry_collection_reference_dialog.dart';
@@ -85,6 +87,7 @@ class _FutureScreenState extends ConsumerState<FutureScreen>
   static const int _visibleMonthCount = 6;
 
   final TextEditingController _entryController = TextEditingController();
+  final FocusNode _entryFocusNode = FocusNode();
 
   late DateTime _anchorMonth;
   late List<DateTime> _months;
@@ -125,6 +128,7 @@ class _FutureScreenState extends ConsumerState<FutureScreen>
         isFutureSectionActive &&
         !_wasFutureSectionActive) {
       _snapshotsFuture = _loadSnapshots();
+      _restoreComposerFocus();
     }
     _sectionScopeInitialized = true;
     _wasFutureSectionActive = isFutureSectionActive;
@@ -142,6 +146,7 @@ class _FutureScreenState extends ConsumerState<FutureScreen>
     WidgetsBinding.instance.removeObserver(this);
     _horizonRolloverTimer?.cancel();
     _entryController.dispose();
+    _entryFocusNode.dispose();
     super.dispose();
   }
 
@@ -385,15 +390,21 @@ class _FutureScreenState extends ConsumerState<FutureScreen>
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
             Expanded(
-              child: TextField(
-                controller: _entryController,
-                enabled: !_saving,
-                minLines: 1,
-                maxLines: 4,
-                onChanged: (_) => JournalActivityGuard.recordActivity(context),
-                decoration: InputDecoration(
-                  hintText: l10n.futureEntryHint,
-                  isDense: true,
+              child: Focus(
+                onKeyEvent: _handleComposerKeyEvent,
+                child: TextField(
+                  controller: _entryController,
+                  focusNode: _entryFocusNode,
+                  autofocus: defaultTargetPlatform == TargetPlatform.linux,
+                  enabled: !_saving,
+                  minLines: 1,
+                  maxLines: 4,
+                  onChanged: (_) =>
+                      JournalActivityGuard.recordActivity(context),
+                  decoration: InputDecoration(
+                    hintText: l10n.futureEntryHint,
+                    isDense: true,
+                  ),
                 ),
               ),
             ),
@@ -412,6 +423,29 @@ class _FutureScreenState extends ConsumerState<FutureScreen>
         ),
       ],
     );
+  }
+
+  KeyEventResult _handleComposerKeyEvent(FocusNode node, KeyEvent event) {
+    if (event is KeyDownEvent &&
+        event.logicalKey == LogicalKeyboardKey.enter &&
+        HardwareKeyboard.instance.isControlPressed) {
+      unawaited(_capture());
+      return KeyEventResult.handled;
+    }
+    return KeyEventResult.ignored;
+  }
+
+  void _restoreComposerFocus() {
+    if (defaultTargetPlatform != TargetPlatform.linux ||
+        _saving ||
+        _entryActionId != null) {
+      return;
+    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && !_saving && _entryActionId == null) {
+        _entryFocusNode.requestFocus();
+      }
+    });
   }
 
   FutureJournalDataSource _dataSource() {
@@ -460,6 +494,7 @@ class _FutureScreenState extends ConsumerState<FutureScreen>
         _snapshotsFuture = _loadSnapshots();
         _saving = false;
       });
+      _restoreComposerFocus();
     } catch (error, stackTrace) {
       _reportUnexpectedFutureError('capture', error, stackTrace);
       if (!mounted) {
@@ -577,6 +612,7 @@ class _FutureScreenState extends ConsumerState<FutureScreen>
       _snapshotsFuture = _loadSnapshots();
     });
     _scheduleHorizonRollover();
+    _restoreComposerFocus();
   }
 
   void _scheduleHorizonRollover() {
