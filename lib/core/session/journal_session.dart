@@ -1,8 +1,10 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:daymark/core/backup/encrypted_backup_service.dart';
 import 'package:daymark/core/crypto/journal_key_material.dart';
 import 'package:daymark/core/crypto/key_envelope.dart';
+import 'package:daymark/core/crypto/security_exception.dart';
 import 'package:daymark/core/database/daymark_database.dart';
 import 'package:daymark/core/database/encrypted_daymark_database.dart';
 import 'package:daymark/features/journal/application/journal_service.dart';
@@ -242,8 +244,8 @@ final class JournalSession {
   }
 }
 
-/// Creates, unlocks, and locks the single local journal used by the initial
-/// Daymark product flow.
+/// Creates, unlocks, locks, backs up, and restores the single local journal
+/// used by the initial Daymark product flow.
 ///
 /// An encrypted database without its key envelope, an envelope without its
 /// database, or a leftover creation marker is never repaired or overwritten
@@ -252,10 +254,13 @@ final class JournalSessionManager {
   JournalSessionManager({
     required this.files,
     KeyEnvelopeService? keyEnvelopeService,
-  }) : _keyEnvelopeService = keyEnvelopeService ?? KeyEnvelopeService();
+    EncryptedBackupService? backupService,
+  }) : _keyEnvelopeService = keyEnvelopeService ?? KeyEnvelopeService(),
+       _backupService = backupService ?? EncryptedBackupService();
 
   final JournalFiles files;
   final KeyEnvelopeService _keyEnvelopeService;
+  final EncryptedBackupService _backupService;
 
   JournalSession? _session;
 
@@ -263,6 +268,15 @@ final class JournalSessionManager {
     final JournalSession? session = _session;
     if (session != null && !session.isClosed) {
       return JournalUnlocked(session);
+    }
+
+    try {
+      await _backupService.recoverInterruptedRestore(
+        destinationJournalFile: files.databaseFile,
+        destinationKeyEnvelopeFile: files.keyEnvelopeFile,
+      );
+    } on BackupRestoreException {
+      return const JournalStorageProblem();
     }
 
     final bool databaseExists = await files.databaseFile.exists();
@@ -366,6 +380,56 @@ final class JournalSessionManager {
       }
       Error.throwWithStackTrace(error, stackTrace);
     }
+  }
+
+  Future<void> createBackup({
+    required File backupFile,
+    required String masterPassword,
+  }) async {
+    if (masterPassword.isEmpty) {
+      throw ArgumentError('A master password is required.');
+    }
+
+    final JournalSession? session = _session;
+    if (session == null || session.isClosed) {
+      throw StateError('An unlocked journal is required to create a backup.');
+    }
+
+    await session.run(() async {
+      await _backupService.createBackup(
+        journalFile: files.databaseFile,
+        backupFile: backupFile,
+        keyMaterial: session._keyMaterial,
+        encodedKeyEnvelope: await files.keyEnvelopeFile.readAsString(),
+        masterPassword: masterPassword,
+      );
+    });
+  }
+
+  Future<JournalSession> restoreBackup({
+    required File backupFile,
+    required String masterPassword,
+  }) async {
+    if (masterPassword.isEmpty) {
+      throw ArgumentError('A master password is required.');
+    }
+
+    final JournalAccessState accessState = await inspect();
+    if (accessState is! JournalLocked && accessState is! JournalNeedsCreation) {
+      throw StateError(
+        'A backup can only be restored while the journal is locked or absent.',
+      );
+    }
+
+    await files.ensureDirectory();
+    await _backupService.restoreBackup(
+      backupFile: backupFile,
+      destinationJournalFile: files.databaseFile,
+      destinationKeyEnvelopeFile: files.keyEnvelopeFile,
+      masterPassword: masterPassword,
+    );
+
+    return unlock(masterPassword: masterPassword);
   }
 
   Future<void> lock() async {

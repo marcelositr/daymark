@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -51,6 +52,34 @@ final class JournalSessionController extends AsyncNotifier<JournalAccessState> {
 
     try {
       final JournalSession session = await manager.unlock(
+        masterPassword: masterPassword,
+      );
+      state = AsyncData<JournalAccessState>(JournalUnlocked(session));
+    } catch (error, stackTrace) {
+      await _restoreStateAfterFailure(manager, error, stackTrace);
+    }
+  }
+
+  Future<void> createBackup({
+    required File backupFile,
+    required String masterPassword,
+  }) {
+    return _requireManager().createBackup(
+      backupFile: backupFile,
+      masterPassword: masterPassword,
+    );
+  }
+
+  Future<void> restoreBackup({
+    required File backupFile,
+    required String masterPassword,
+  }) async {
+    final JournalSessionManager manager = _requireManager();
+    state = const AsyncLoading<JournalAccessState>();
+
+    try {
+      final JournalSession session = await manager.restoreBackup(
+        backupFile: backupFile,
         masterPassword: masterPassword,
       );
       state = AsyncData<JournalAccessState>(JournalUnlocked(session));

@@ -13,6 +13,7 @@ This file is for user-visible behavior, data compatibility, security, packaging,
 - Relational Drift schema v1 with migration/invariant validation for the core Bullet Journal data model.
 - Pre-alpha master-password key-envelope and encrypted-journal persistence foundation.
 - Portable authenticated encrypted backup/restore foundation with rollback-safe recovery behavior.
+- User-facing encrypted backup creation and restore, with native file selection, password verification, locked/empty-state restore, and post-restore reopening only from committed validated files.
 - Semantic journal application services for capture, migration, scheduling, and collection references.
 - Encrypted journal creation, unlock, and explicit manual lock flow.
 - Functional Today/Daily Log with Rapid Logging for Task, Event, and Note entries.
@@ -35,6 +36,8 @@ This file is for user-visible behavior, data compatibility, security, packaging,
 - English is the canonical and fallback UI locale; an exact Brazilian Portuguese system locale selects Portuguese (Brazil).
 - Device-assisted secure-storage integration is deferred until the portable master-password/recovery security baseline is complete.
 - Android OS-managed app-data backup and device-transfer paths are explicitly excluded; portable migration is reserved for Daymark's encrypted backup/restore design.
+- Encrypted restore is available only while the journal is locked or absent, preventing replacement of files beneath a live encrypted database session.
+- The native file-selection dependency is pinned to `file_picker 12.1.3` for Linux/Android compatibility with Daymark's current Flutter and AGP 9 toolchain.
 - Journal access now remains behind one stable router/application root instead of replacing the root application when lock state changes.
 - Journal operations and session closing are serialized so manual or automatic lock does not close encrypted persistence underneath an in-flight journal operation.
 - Master-password creation and unlock reject an empty password before cryptographic work begins.
