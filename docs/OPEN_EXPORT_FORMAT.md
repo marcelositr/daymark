@@ -8,8 +8,12 @@ Open Export format version 1 shipped in public prerelease `v1.0.0-alpha.2` and i
 
 Creating an Open Export is an explicit user action that writes journal content outside Daymark's encrypted database.
 
+Before Daymark creates any plaintext representation, the user must re-enter the current master password. Reauthentication validates the existing authenticated key envelope with temporary key material that is destroyed immediately; it does not replace or reopen the live journal session.
+
 - JSON and Markdown exports are plaintext.
+- The UI may save the selected format to a file or copy it to the system clipboard.
 - Exported files are not protected by Daymark's journal encryption.
+- Clipboard contents are outside Daymark's encryption boundary and may be readable by other applications or retained by a clipboard manager.
 - Open Export remains clearly distinguished from the authenticated encrypted Backup / Restore flow.
 - Daymark does not create Open Export files automatically or transmit them to a remote service.
 - Open Export is not an import or disaster-recovery contract.

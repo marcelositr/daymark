@@ -401,6 +401,29 @@ final class JournalSessionManager {
     }
   }
 
+  Future<void> reauthenticate({required String masterPassword}) async {
+    if (masterPassword.isEmpty) {
+      throw ArgumentError('A master password is required.');
+    }
+
+    final JournalSession? session = _session;
+    if (session == null || session.isClosed) {
+      throw StateError('An unlocked journal is required for reauthentication.');
+    }
+
+    await session.run(() async {
+      JournalKeyMaterial? verificationMaterial;
+      try {
+        verificationMaterial = await _keyEnvelopeService.unwrap(
+          masterPassword: masterPassword,
+          encodedEnvelope: await files.keyEnvelopeFile.readAsString(),
+        );
+      } finally {
+        verificationMaterial?.destroy();
+      }
+    });
+  }
+
   Future<void> createBackup({
     required File backupFile,
     required String masterPassword,
