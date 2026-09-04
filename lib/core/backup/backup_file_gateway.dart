@@ -7,38 +7,40 @@ abstract interface class BackupFileGateway {
   Future<bool> saveBackup({
     required File sourceFile,
     required String suggestedName,
+    required String dialogTitle,
   });
 
-  Future<File?> pickBackup();
+  Future<File?> pickBackup({required String dialogTitle});
 }
 
 final class NativeBackupFileGateway implements BackupFileGateway {
   const NativeBackupFileGateway();
 
-  static const List<String> _extensions = <String>['daymark-backup'];
-
   @override
   Future<bool> saveBackup({
     required File sourceFile,
     required String suggestedName,
+    required String dialogTitle,
   }) async {
     final Uint8List bytes = await sourceFile.readAsBytes();
-    final String? destination = await FilePicker.saveFile(
-      dialogTitle: 'Save encrypted Daymark backup',
-      fileName: suggestedName,
-      type: FileType.custom,
-      allowedExtensions: _extensions,
-      bytes: bytes,
-    );
-    bytes.fillRange(0, bytes.length, 0);
-    return destination != null;
+    try {
+      final String? destination = await FilePicker.saveFile(
+        dialogTitle: dialogTitle,
+        fileName: suggestedName,
+        type: FileType.any,
+        bytes: bytes,
+      );
+      return destination != null;
+    } finally {
+      bytes.fillRange(0, bytes.length, 0);
+    }
   }
 
   @override
-  Future<File?> pickBackup() async {
+  Future<File?> pickBackup({required String dialogTitle}) async {
     final FilePickerResult? result = await FilePicker.pickFiles(
-      type: FileType.custom,
-      allowedExtensions: _extensions,
+      dialogTitle: dialogTitle,
+      type: FileType.any,
       allowMultiple: false,
       withData: false,
     );
