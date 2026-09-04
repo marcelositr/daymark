@@ -5,10 +5,12 @@ import 'package:daymark/core/session/journal_session.dart';
 import 'package:daymark/core/session/journal_session_controller.dart';
 import 'package:daymark/features/journal/data/search_repository.dart';
 import 'package:daymark/features/journal/domain/journal_domain.dart';
+import 'package:daymark/features/journal/presentation/source_navigation.dart';
 import 'package:daymark/l10n/app_localizations.dart';
 import 'package:daymark/presentation/app_section_scope.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 abstract interface class SearchJournalDataSource {
   Future<List<JournalSearchResult>> search(String query);
@@ -162,6 +164,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
         final JournalSearchResult result = _results[index];
         final bool discarded = result.taskState == JournalTaskState.discarded;
         return ListTile(
+          onTap: () => context.go(sourceLocationForSearchResult(result)),
           contentPadding: EdgeInsets.zero,
           leading: SizedBox(
             width: 24,

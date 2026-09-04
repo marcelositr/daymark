@@ -78,6 +78,14 @@ void main() {
     expect(find.textContaining('Future:'), findsOneWidget);
     expect(find.text('Collections: Radio'), findsOneWidget);
     expect(find.byIcon(Icons.more_vert), findsNothing);
+
+    final ListTile dailyTile = tester.widget<ListTile>(
+      find.ancestor(
+        of: find.text('Radio check'),
+        matching: find.byType(ListTile),
+      ),
+    );
+    expect(dailyTile.onTap, isNotNull);
   });
 
   testWidgets('shows a quiet empty state when no entry matches', (

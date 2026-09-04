@@ -105,9 +105,15 @@ final class _SessionMonthlyJournalDataSource
 }
 
 class MonthlyScreen extends ConsumerStatefulWidget {
-  const MonthlyScreen({this.initialMonth, this.now, super.key});
+  const MonthlyScreen({
+    this.initialMonth,
+    this.initialSection,
+    this.now,
+    super.key,
+  });
 
   final DateTime? initialMonth;
+  final JournalMonthlySection? initialSection;
   final DateTime Function()? now;
 
   @override
@@ -123,7 +129,7 @@ class _MonthlyScreenState extends ConsumerState<MonthlyScreen>
   late int _selectedDay;
   late bool _followingCurrentMonth;
   Timer? _monthRolloverTimer;
-  JournalMonthlySection _section = JournalMonthlySection.calendar;
+  late JournalMonthlySection _section;
   bool _saving = false;
   String? _entryActionId;
 
@@ -131,6 +137,7 @@ class _MonthlyScreenState extends ConsumerState<MonthlyScreen>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    _section = widget.initialSection ?? JournalMonthlySection.calendar;
     final DateTime now = _now();
     final DateTime currentMonth = DateTime(now.year, now.month);
     final DateTime seed = widget.initialMonth ?? now;

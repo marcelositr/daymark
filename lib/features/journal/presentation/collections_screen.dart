@@ -8,6 +8,7 @@ import 'package:daymark/l10n/app_localizations.dart';
 import 'package:daymark/presentation/app_section_scope.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import 'journal_activity_guard.dart';
 
@@ -27,6 +28,11 @@ abstract interface class CollectionsJournalDataSource {
   Future<void> completeTask({required String entryId});
 
   Future<void> discardTask({required String entryId});
+
+  Future<void> removeReference({
+    required String collectionId,
+    required String entryId,
+  });
 }
 
 final Provider<CollectionsJournalDataSource>
@@ -83,10 +89,23 @@ final class _SessionCollectionsJournalDataSource
   Future<void> discardTask({required String entryId}) {
     return _session.discardTask(entryId: entryId);
   }
+
+  @override
+  Future<void> removeReference({
+    required String collectionId,
+    required String entryId,
+  }) {
+    return _session.removeEntryReferenceFromCollection(
+      collectionId: collectionId,
+      entryId: entryId,
+    );
+  }
 }
 
 class CollectionsScreen extends ConsumerStatefulWidget {
-  const CollectionsScreen({super.key});
+  const CollectionsScreen({this.initialCollectionId, super.key});
+
+  final String? initialCollectionId;
 
   @override
   ConsumerState<CollectionsScreen> createState() => _CollectionsScreenState();
@@ -108,7 +127,12 @@ class _CollectionsScreenState extends ConsumerState<CollectionsScreen> {
   @override
   void initState() {
     super.initState();
+    _selectedCollectionId = widget.initialCollectionId;
     _collectionsFuture = _dataSource().list();
+    final String? collectionId = _selectedCollectionId;
+    if (collectionId != null) {
+      _collectionFuture = _dataSource().load(collectionId);
+    }
   }
 
   @override
@@ -358,14 +382,17 @@ class _CollectionsScreenState extends ConsumerState<CollectionsScreen> {
               padding: EdgeInsets.only(
                 bottom: index == collection.references.length - 1 ? 0 : 6,
               ),
-              child: _buildReference(collection.references[index]),
+              child: _buildReference(l10n, collection.references[index]),
             ),
         ],
       ],
     );
   }
 
-  Widget _buildReference(CollectionReferenceEntry entry) {
+  Widget _buildReference(
+    AppLocalizations l10n,
+    CollectionReferenceEntry entry,
+  ) {
     final bool discarded = entry.taskState == JournalTaskState.discarded;
     final TextStyle? contentStyle = Theme.of(context).textTheme.bodyLarge;
     final TextStyle? markerStyle = Theme.of(context).textTheme.titleMedium;
@@ -390,6 +417,17 @@ class _CollectionsScreenState extends ConsumerState<CollectionsScreen> {
                 ? contentStyle?.copyWith(decoration: TextDecoration.lineThrough)
                 : contentStyle,
           ),
+        ),
+        PopupMenuButton<_CollectionReferenceAction>(
+          enabled: !_saving,
+          tooltip: l10n.referenceActions,
+          onSelected: (_) => unawaited(_removeReference(entry)),
+          itemBuilder: (context) => [
+            PopupMenuItem<_CollectionReferenceAction>(
+              value: _CollectionReferenceAction.remove,
+              child: Text(l10n.removeCollectionReference),
+            ),
+          ],
         ),
       ],
     );
@@ -458,6 +496,10 @@ class _CollectionsScreenState extends ConsumerState<CollectionsScreen> {
   }
 
   void _backToList() {
+    if (widget.initialCollectionId != null) {
+      context.go('/collections');
+      return;
+    }
     setState(() {
       _selectedCollectionId = null;
       _collectionFuture = null;
@@ -545,6 +587,38 @@ class _CollectionsScreenState extends ConsumerState<CollectionsScreen> {
     }
   }
 
+  Future<void> _removeReference(CollectionReferenceEntry entry) async {
+    final String? collectionId = _selectedCollectionId;
+    if (collectionId == null || _saving) {
+      return;
+    }
+
+    final AppLocalizations l10n = AppLocalizations.of(context);
+    setState(() => _saving = true);
+    try {
+      await _dataSource().removeReference(
+        collectionId: collectionId,
+        entryId: entry.id,
+      );
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _collectionFuture = _dataSource().load(collectionId);
+        _saving = false;
+      });
+    } catch (error, stackTrace) {
+      _reportUnexpectedCollectionsError('reference removal', error, stackTrace);
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.removeCollectionReferenceFailed)),
+      );
+      setState(() => _saving = false);
+    }
+  }
+
   Future<void> _lock() async {
     try {
       await ref.read(journalSessionControllerProvider.notifier).lock();
@@ -555,6 +629,8 @@ class _CollectionsScreenState extends ConsumerState<CollectionsScreen> {
 }
 
 enum _CollectionTaskAction { complete, discard }
+
+enum _CollectionReferenceAction { remove }
 
 String _entrySymbol(JournalEntryType type, JournalTaskState? taskState) =>
     switch (type) {

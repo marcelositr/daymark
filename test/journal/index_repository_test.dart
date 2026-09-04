@@ -112,6 +112,49 @@ void main() {
       expect(row.read<int>('count'), 1);
     },
   );
+  test(
+    'moves and removes Index items while keeping compact ordinals',
+    () async {
+      final String dailyId = await service.createLog(
+        kind: JournalLogKind.daily,
+        periodStart: '2026-09-03',
+      );
+      final String monthlyId = await service.createLog(
+        kind: JournalLogKind.monthly,
+        periodStart: '2026-09-01',
+      );
+      final String collectionId = await service.createCollection(
+        title: 'Radio',
+      );
+
+      await index.addLog(dailyId);
+      await index.addLog(monthlyId);
+      await index.addCollection(collectionId);
+
+      var items = await index.list();
+      final String dailyIndexItemId = items[0].id;
+      final String monthlyIndexItemId = items[1].id;
+
+      await index.move(dailyIndexItemId, 2);
+      items = await index.list();
+
+      expect(items.map((item) => item.targetId), <String>[
+        monthlyId,
+        collectionId,
+        dailyId,
+      ]);
+      expect(items.map((item) => item.ordinal), <int>[0, 1, 2]);
+
+      await index.remove(monthlyIndexItemId);
+      items = await index.list();
+
+      expect(items.map((item) => item.targetId), <String>[
+        collectionId,
+        dailyId,
+      ]);
+      expect(items.map((item) => item.ordinal), <int>[0, 1]);
+    },
+  );
 }
 
 final class _IdSequence {

@@ -116,5 +116,14 @@
   "searchAction": "Search",
   "searchPrompt": "Enter text to search your journal.",
   "searchNoResults": "No matching entries.",
-  "searchFailed": "Could not search the journal."
+  "searchFailed": "Could not search the journal.",
+  "futureHistoryReadOnly": "This Future Log is read-only.",
+  "referenceActions": "Reference actions",
+  "removeCollectionReference": "Remove reference",
+  "removeCollectionReferenceFailed": "Could not remove this Collection reference.",
+  "indexItemActions": "Index item actions",
+  "moveIndexItemUp": "Move up",
+  "moveIndexItemDown": "Move down",
+  "removeIndexItem": "Remove from Index",
+  "indexItemUpdateFailed": "Could not update this Index item."
 }

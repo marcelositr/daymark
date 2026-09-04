@@ -232,12 +232,38 @@ void main() {
 
     await tester.pumpWidget(const SizedBox.shrink());
   });
+  testWidgets('Monthly can open directly on the requested section', (
+    tester,
+  ) async {
+    final _MemoryMonthlyJournal dataSource = _MemoryMonthlyJournal(
+      taskEntries: [
+        const MonthlyLogEntry(
+          id: 'source-task',
+          type: JournalEntryType.task,
+          taskState: JournalTaskState.open,
+          content: 'Direct source task',
+          ordinal: 0,
+          section: JournalMonthlySection.tasks,
+          calendarDate: null,
+        ),
+      ],
+    );
+
+    await _pumpMonthly(
+      tester,
+      dataSource,
+      initialSection: JournalMonthlySection.tasks,
+    );
+
+    expect(find.text('Direct source task'), findsOneWidget);
+  });
 }
 
 Future<void> _pumpMonthly(
   WidgetTester tester,
-  _MemoryMonthlyJournal dataSource,
-) async {
+  _MemoryMonthlyJournal dataSource, {
+  JournalMonthlySection? initialSection,
+}) async {
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
@@ -249,6 +275,7 @@ Future<void> _pumpMonthly(
         home: Scaffold(
           body: MonthlyScreen(
             initialMonth: DateTime(2026, 9, 15),
+            initialSection: initialSection,
             now: () => DateTime(2026, 9, 15),
           ),
         ),

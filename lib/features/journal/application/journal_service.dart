@@ -40,6 +40,16 @@ final class JournalService {
     );
   }
 
+  Future<void> removeReferenceFromCollection({
+    required String collectionId,
+    required String entryId,
+  }) {
+    return _repository.removeCollectionReference(
+      collectionId: collectionId,
+      entryId: entryId,
+    );
+  }
+
   Future<String> migrate({
     required String sourceEntryId,
     required JournalEntryOwner destinationOwner,

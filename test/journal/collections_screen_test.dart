@@ -102,21 +102,70 @@ void main() {
     final Text content = tester.widget<Text>(find.text('Second task'));
     expect(content.style?.decoration, TextDecoration.lineThrough);
   });
+  testWidgets('Collection can open directly from a source route', (
+    tester,
+  ) async {
+    final _MemoryCollectionsJournal dataSource = _MemoryCollectionsJournal(
+      seedReferences: <CollectionReferenceEntry>[
+        const CollectionReferenceEntry(
+          id: 'linked',
+          type: JournalEntryType.note,
+          taskState: null,
+          content: 'Direct linked note',
+          ordinal: 0,
+        ),
+      ],
+    );
+
+    await _pumpCollections(tester, dataSource, initialCollectionId: 'work');
+
+    expect(find.text('Work'), findsOneWidget);
+    expect(find.text('Direct linked note'), findsOneWidget);
+  });
+
+  testWidgets('Collection reference can be removed without editing its Entry', (
+    tester,
+  ) async {
+    final _MemoryCollectionsJournal dataSource = _MemoryCollectionsJournal(
+      seedReferences: <CollectionReferenceEntry>[
+        const CollectionReferenceEntry(
+          id: 'linked',
+          type: JournalEntryType.note,
+          taskState: null,
+          content: 'Removable link',
+          ordinal: 0,
+        ),
+      ],
+    );
+
+    await _pumpCollections(tester, dataSource, initialCollectionId: 'work');
+
+    await tester.tap(find.byTooltip('Reference actions'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Remove reference'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Removable link'), findsNothing);
+    expect(dataSource.referenceCount('work'), 0);
+  });
 }
 
 Future<void> _pumpCollections(
   WidgetTester tester,
-  _MemoryCollectionsJournal dataSource,
-) async {
+  _MemoryCollectionsJournal dataSource, {
+  String? initialCollectionId,
+}) async {
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
         collectionsJournalDataSourceProvider.overrideWithValue(dataSource),
       ],
-      child: const MaterialApp(
+      child: MaterialApp(
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
-        home: Scaffold(body: CollectionsScreen()),
+        home: Scaffold(
+          body: CollectionsScreen(initialCollectionId: initialCollectionId),
+        ),
       ),
     ),
   );
@@ -195,6 +244,30 @@ final class _MemoryCollectionsJournal implements CollectionsJournalDataSource {
   @override
   Future<void> discardTask({required String entryId}) async {
     _transition(entryId, JournalTaskState.discarded);
+  }
+
+  @override
+  Future<void> removeReference({
+    required String collectionId,
+    required String entryId,
+  }) async {
+    final List<CollectionReferenceEntry> references =
+        _references[collectionId]!;
+    references.removeWhere((entry) => entry.id == entryId);
+    for (int index = 0; index < references.length; index++) {
+      final CollectionReferenceEntry source = references[index];
+      references[index] = CollectionReferenceEntry(
+        id: source.id,
+        type: source.type,
+        taskState: source.taskState,
+        content: source.content,
+        ordinal: index,
+      );
+    }
+  }
+
+  int referenceCount(String collectionId) {
+    return _references[collectionId]?.length ?? 0;
   }
 
   void _transition(String entryId, JournalTaskState state) {

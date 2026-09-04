@@ -158,6 +158,86 @@ final class IndexRepository {
     return _addTarget(collectionId: collectionId);
   }
 
+  Future<void> remove(String itemId) {
+    return _database.transaction(() async {
+      final existing = await _database
+          .customSelect(
+            'SELECT 1 FROM index_items WHERE id = ?',
+            variables: <Variable<Object>>[Variable.withString(itemId)],
+          )
+          .getSingleOrNull();
+      if (existing == null) {
+        throw JournalNotFoundException('Index item', itemId);
+      }
+
+      await _database.customStatement(
+        'DELETE FROM index_items WHERE id = ?',
+        <Object>[itemId],
+      );
+      await _rewriteOrdinals(await _orderedIds());
+    });
+  }
+
+  Future<void> move(String itemId, int newOrdinal) {
+    return _database.transaction(() async {
+      final List<String> orderedIds = await _orderedIds();
+      final int currentOrdinal = orderedIds.indexOf(itemId);
+      if (currentOrdinal < 0) {
+        throw JournalNotFoundException('Index item', itemId);
+      }
+      if (newOrdinal < 0 || newOrdinal >= orderedIds.length) {
+        throw RangeError.range(
+          newOrdinal,
+          0,
+          orderedIds.length - 1,
+          'newOrdinal',
+        );
+      }
+      if (newOrdinal == currentOrdinal) {
+        return;
+      }
+
+      orderedIds
+        ..removeAt(currentOrdinal)
+        ..insert(newOrdinal, itemId);
+      await _rewriteOrdinals(orderedIds);
+    });
+  }
+
+  Future<List<String>> _orderedIds() async {
+    final rows = await _database
+        .customSelect('SELECT id FROM index_items ORDER BY ordinal, id')
+        .get();
+    return <String>[for (final row in rows) row.read<String>('id')];
+  }
+
+  Future<void> _rewriteOrdinals(List<String> orderedIds) async {
+    if (orderedIds.isEmpty) {
+      return;
+    }
+
+    final maxRow = await _database
+        .customSelect(
+          'SELECT COALESCE(MAX(ordinal), -1) AS max_ordinal FROM index_items',
+        )
+        .getSingle();
+    final int temporaryBase =
+        maxRow.read<int>('max_ordinal') + orderedIds.length + 1;
+
+    for (int index = 0; index < orderedIds.length; index++) {
+      await _database.customStatement(
+        'UPDATE index_items SET ordinal = ? WHERE id = ?',
+        <Object>[temporaryBase + index, orderedIds[index]],
+      );
+    }
+    for (int index = 0; index < orderedIds.length; index++) {
+      await _database.customStatement(
+        'UPDATE index_items SET ordinal = ? WHERE id = ?',
+        <Object>[index, orderedIds[index]],
+      );
+    }
+  }
+
   Future<void> _addTarget({String? logId, String? collectionId}) {
     return _database.transaction(() async {
       if ((logId == null) == (collectionId == null)) {

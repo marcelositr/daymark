@@ -19,4 +19,12 @@ extension JournalIndexSession on JournalSession {
   Future<void> addCollectionToIndex(String collectionId) {
     return run(() => IndexRepository(database).addCollection(collectionId));
   }
+
+  Future<void> moveIndexItem(String itemId, int newOrdinal) {
+    return run(() => IndexRepository(database).move(itemId, newOrdinal));
+  }
+
+  Future<void> removeIndexItem(String itemId) {
+    return run(() => IndexRepository(database).remove(itemId));
+  }
 }

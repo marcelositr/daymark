@@ -187,6 +187,18 @@ final class JournalSession {
     );
   }
 
+  Future<void> removeEntryReferenceFromCollection({
+    required String entryId,
+    required String collectionId,
+  }) {
+    return run(
+      () => collections.removeReference(
+        collectionId: collectionId,
+        entryId: entryId,
+      ),
+    );
+  }
+
   Future<void> migrateTaskToCollection({
     required String entryId,
     required String collectionId,

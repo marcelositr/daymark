@@ -65,6 +65,55 @@ void main() {
     expect(find.textContaining('Daily:'), findsOneWidget);
     expect(find.textContaining('Monthly:'), findsOneWidget);
   });
+  testWidgets('Index items can be deliberately reordered and removed', (
+    tester,
+  ) async {
+    final _MemoryIndexJournal dataSource = _MemoryIndexJournal(
+      items: <IndexItem>[
+        const IndexItem(
+          id: 'index-1',
+          ordinal: 0,
+          targetKind: IndexTargetKind.collection,
+          targetId: 'first',
+          collectionTitle: 'First',
+        ),
+        const IndexItem(
+          id: 'index-2',
+          ordinal: 1,
+          targetKind: IndexTargetKind.collection,
+          targetId: 'second',
+          collectionTitle: 'Second',
+        ),
+      ],
+    );
+
+    await _pumpIndex(tester, dataSource);
+
+    final ListTile firstTile = tester.widget<ListTile>(
+      find.ancestor(
+        of: find.text('Collections: First'),
+        matching: find.byType(ListTile),
+      ),
+    );
+    expect(firstTile.onTap, isNotNull);
+
+    await tester.tap(find.byTooltip('Index item actions').first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Move down'));
+    await tester.pumpAndSettle();
+
+    expect(dataSource.items.first.id, 'index-2');
+    expect(dataSource.items.last.id, 'index-1');
+
+    await tester.tap(find.byTooltip('Index item actions').last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Remove from Index'));
+    await tester.pumpAndSettle();
+
+    expect(dataSource.items, hasLength(1));
+    expect(dataSource.items.single.id, 'index-2');
+    expect(dataSource.items.single.ordinal, 0);
+  });
 }
 
 Future<void> _pumpIndex(
@@ -116,5 +165,37 @@ final class _MemoryIndexJournal implements IndexJournalDataSource {
         collectionTitle: candidate.collectionTitle,
       ),
     );
+  }
+
+  @override
+  Future<void> move({required String itemId, required int newOrdinal}) async {
+    final int current = items.indexWhere((item) => item.id == itemId);
+    if (current < 0) {
+      throw StateError('Missing Index item.');
+    }
+    final IndexItem item = items.removeAt(current);
+    items.insert(newOrdinal, item);
+    _normalizeOrdinals();
+  }
+
+  @override
+  Future<void> remove({required String itemId}) async {
+    items.removeWhere((item) => item.id == itemId);
+    _normalizeOrdinals();
+  }
+
+  void _normalizeOrdinals() {
+    for (int index = 0; index < items.length; index++) {
+      final IndexItem source = items[index];
+      items[index] = IndexItem(
+        id: source.id,
+        ordinal: index,
+        targetKind: source.targetKind,
+        targetId: source.targetId,
+        logKind: source.logKind,
+        periodStart: source.periodStart,
+        collectionTitle: source.collectionTitle,
+      );
+    }
   }
 }

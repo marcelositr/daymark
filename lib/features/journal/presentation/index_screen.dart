@@ -1,11 +1,15 @@
+import 'dart:async';
+
 import 'package:daymark/core/session/journal_index_session.dart';
 import 'package:daymark/core/session/journal_session.dart';
 import 'package:daymark/core/session/journal_session_controller.dart';
 import 'package:daymark/features/journal/data/index_repository.dart';
 import 'package:daymark/features/journal/domain/journal_domain.dart';
+import 'package:daymark/features/journal/presentation/source_navigation.dart';
 import 'package:daymark/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 abstract interface class IndexJournalDataSource {
   Future<List<IndexItem>> list();
@@ -13,6 +17,10 @@ abstract interface class IndexJournalDataSource {
   Future<List<IndexCandidate>> candidates();
 
   Future<void> add(IndexCandidate candidate);
+
+  Future<void> move({required String itemId, required int newOrdinal});
+
+  Future<void> remove({required String itemId});
 }
 
 final Provider<IndexJournalDataSource> indexJournalDataSourceProvider =
@@ -47,6 +55,16 @@ final class _SessionIndexJournalDataSource implements IndexJournalDataSource {
         candidate.targetId,
       ),
     };
+  }
+
+  @override
+  Future<void> move({required String itemId, required int newOrdinal}) {
+    return _session.moveIndexItem(itemId, newOrdinal);
+  }
+
+  @override
+  Future<void> remove({required String itemId}) {
+    return _session.removeIndexItem(itemId);
   }
 }
 
@@ -124,6 +142,32 @@ class _IndexScreenState extends ConsumerState<IndexScreen> {
                         contentPadding: EdgeInsets.zero,
                         leading: Icon(_iconFor(item.targetKind, item.logKind)),
                         title: Text(_labelForItem(item, l10n)),
+                        onTap: _saving
+                            ? null
+                            : () =>
+                                  context.go(sourceLocationForIndexItem(item)),
+                        trailing: PopupMenuButton<_IndexItemAction>(
+                          enabled: !_saving,
+                          tooltip: l10n.indexItemActions,
+                          onSelected: (action) =>
+                              unawaited(_applyItemAction(items, index, action)),
+                          itemBuilder: (context) => [
+                            if (index > 0)
+                              PopupMenuItem<_IndexItemAction>(
+                                value: _IndexItemAction.moveUp,
+                                child: Text(l10n.moveIndexItemUp),
+                              ),
+                            if (index < items.length - 1)
+                              PopupMenuItem<_IndexItemAction>(
+                                value: _IndexItemAction.moveDown,
+                                child: Text(l10n.moveIndexItemDown),
+                              ),
+                            PopupMenuItem<_IndexItemAction>(
+                              value: _IndexItemAction.remove,
+                              child: Text(l10n.removeIndexItem),
+                            ),
+                          ],
+                        ),
                       );
                     },
                   );
@@ -237,6 +281,54 @@ class _IndexScreenState extends ConsumerState<IndexScreen> {
     }
   }
 
+  Future<void> _applyItemAction(
+    List<IndexItem> items,
+    int index,
+    _IndexItemAction action,
+  ) async {
+    if (_saving) {
+      return;
+    }
+
+    final IndexJournalDataSource dataSource = _dataSource();
+    final IndexItem item = items[index];
+    final AppLocalizations l10n = AppLocalizations.of(context);
+
+    setState(() => _saving = true);
+    try {
+      switch (action) {
+        case _IndexItemAction.moveUp:
+          await dataSource.move(itemId: item.id, newOrdinal: index - 1);
+        case _IndexItemAction.moveDown:
+          await dataSource.move(itemId: item.id, newOrdinal: index + 1);
+        case _IndexItemAction.remove:
+          await dataSource.remove(itemId: item.id);
+      }
+
+      if (mounted) {
+        setState(() {
+          _itemsFuture = dataSource.list();
+        });
+      }
+    } catch (error, stackTrace) {
+      FlutterError.reportError(
+        FlutterErrorDetails(
+          exception: error,
+          stack: stackTrace,
+          library: 'daymark',
+          context: ErrorDescription('while updating an Index item'),
+        ),
+      );
+      if (mounted) {
+        _showError(l10n.indexItemUpdateFailed);
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _saving = false);
+      }
+    }
+  }
+
   String _labelForItem(IndexItem item, AppLocalizations l10n) {
     return switch (item.targetKind) {
       IndexTargetKind.collection =>
@@ -303,3 +395,5 @@ class _IndexScreenState extends ConsumerState<IndexScreen> {
       ..showSnackBar(SnackBar(content: Text(message)));
   }
 }
+
+enum _IndexItemAction { moveUp, moveDown, remove }
