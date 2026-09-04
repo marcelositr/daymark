@@ -111,9 +111,10 @@ final class _BackupDialogState extends ConsumerState<BackupDialog> {
 
     File? temporaryBackup;
     try {
+      final String backupFileName = _backupFileName(DateTime.now());
       final Directory tempDirectory = await getTemporaryDirectory();
       temporaryBackup = File(
-        '${tempDirectory.path}${Platform.pathSeparator}${_backupFileName(DateTime.now())}.tmp',
+        '${tempDirectory.path}${Platform.pathSeparator}$backupFileName.tmp',
       );
 
       await ref
@@ -124,7 +125,7 @@ final class _BackupDialogState extends ConsumerState<BackupDialog> {
           .read(backupFileGatewayProvider)
           .saveBackup(
             sourceFile: temporaryBackup,
-            suggestedName: _backupFileName(DateTime.now()),
+            suggestedName: backupFileName,
             dialogTitle: l10n.encryptedBackupTitle,
           );
       if (!saved) {
