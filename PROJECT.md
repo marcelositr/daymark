@@ -13,8 +13,10 @@ This is Daymark's canonical living handoff. Read this file and `AGENTS.md` befor
 - Post-merge `main` CI #475 passed on exact release source SHA `5c073c6bbbe298c15f975740a5499f2b9a0c98ba`.
 - Annotated tag `v1.0.0-alpha.2` points to that release source commit.
 - GitHub Release `Daymark 1.0.0-alpha.2` is published as a prerelease with the final Linux archive, signed Android APK, and `SHA256SUMS`.
-- No next product slice is selected yet. New product work must start from current `main` on a new short-lived branch after this post-release documentation alignment is merged.
-- The completed `release/1.0.0-alpha.2` branch is historical cleanup material, not an active integration line.
+- Post-alpha.2 documentation audit merged via PR #33 as current `main` commit `76ef920d2c5d7ad56471b053d3446b530363c079`.
+- Current `main` CI #477 passed on exact SHA `76ef920d2c5d7ad56471b053d3446b530363c079`.
+- Next product slice selected: navigation and organization, to begin on `feat/navigation-and-organization` after this checkpoint alignment is merged.
+- The completed `release/1.0.0-alpha.2` branch is retained as historical reference/backup and is not an active integration line.
 - Runtime targets: Linux and Android.
 - Pinned toolchain: Flutter 3.47.2 / Dart 3.13.2.
 - Merge policy: never merge without explicit user approval; squash merge is the default.
@@ -231,48 +233,31 @@ The local safety directory created during this migration should be retained thro
 - PR #30: explicit plaintext Open Export to deterministic JSON and human-readable Markdown. Squash `fecc5ea4b63297de0a8b1eb9da5c93e1ecf562e3`.
 - PR #31: device-local System / Light / Dark Appearance selection. Squash `5184f519eed723221206ce529c4f0e0a2fed8bcf`.
 - PR #32: alpha.2 packaging/signing hardening, legacy `journal_metadata` repair, release validation, and release documentation. Squash `5c073c6bbbe298c15f975740a5499f2b9a0c98ba`.
+- PR #33: post-alpha.2 full documentation audit/alignment. Squash `76ef920d2c5d7ad56471b053d3446b530363c079`.
 
 ## Next development state
 
-The vacation-ready stabilization cycle is complete. Do not keep extending its release branch.
+The post-alpha.2 documentation audit is complete and merged through PR #33. Current `main` is `76ef920d2c5d7ad56471b053d3446b530363c079`, and CI #477 passed on that exact SHA.
 
-Before starting the next product slice:
+The accelerated post-alpha.2 execution plan is deliberately limited to four branches:
 
-1. merge the post-alpha.2 documentation audit after its exact-head Ready CI and explicit user approval;
-2. synchronize local `main` with GitHub;
-3. remove the completed local/remote `release/1.0.0-alpha.2` branch when no longer needed for reference;
-4. keep the annotated release tag and GitHub Release immutable;
-5. select one coherent next slice and branch from then-current `main`.
+1. `chore/post-alpha2-alignment` - documentation-only correction of this living checkpoint. No product code.
+2. `feat/navigation-and-organization` - direct source navigation from Search/Index, Index reorder/remove, and Collection-reference removal.
+3. `feat/reflection-and-daily-ux` - richer Reflection, Linux keyboard/focus improvements, practical accessibility, and only the Settings needed by those flows.
+4. `feat/security-and-next-release` - OS-level immediate lock hooks, device-assisted/biometric unlock, compatibility/migration work if required, backup/restore/export regression coverage, physical Linux/Android validation, and preparation of the next prerelease.
 
-No `1.0.0-alpha.3` feature scope has been selected yet. Do not infer one from chat history or implement several deferred items together.
+Execution rules for this accelerated plan:
 
-Candidate later slices, still deferred until deliberately selected:
+- prefer local focused validation during development and avoid repeated CI merely for iteration;
+- run full Ready CI once a branch is genuinely reviewable, because `merge-gate` remains mandatory;
+- never trade away security, persistence, compatibility, or exact-head evidence for speed;
+- retain merged feature/release branches as historical backup/reference if desired, but never reuse them as integration lines;
+- do not split work merely for ceremony; split only when an independent security, migration, or review boundary makes isolation materially safer;
+- merge only after exact-head CI is green and explicit user approval.
 
-- direct source navigation from Search/Index;
-- richer Reflection workflows;
-- OS-level immediate lock hooks;
-- device-assisted/biometric unlock;
-- Collection-reference removal;
-- Index reorder/remove;
+Still deferred beyond this plan:
+
 - cloud/sync;
-- broader Settings complexity;
+- broader Settings complexity unrelated to the selected flows;
 - large refactors;
 - AGP 9 built-in Kotlin migration unless it becomes a blocker.
-
-## CI and handoff traps
-
-- Ready PRs require quality/full tests, Linux, Android, dependency review, and `merge-gate` on the exact final head.
-- CI evidence is SHA-specific; a green superseded run validates nothing newer.
-- Documentation-only commits change the PR head and must still receive the proportionate final validation required by policy.
-- A red formatter result is mechanical evidence about the pinned Dart formatter, not permission to hand-reflow source by guesswork.
-- Generate localization before analyzer/tests when ARB files change.
-- Retained navigation freshness and persistence correctness are separate requirements.
-- Do not add `flutter clean` as generic CI/local hygiene.
-- Do not claim the backup UI/file-picker handoff is streaming end-to-end unless the implementation actually is; current native save handoff may buffer the already-encrypted completed container.
-- Do not expose signing secrets or journal credentials in commands, issues, PRs, logs, or chat.
-
-## Open questions
-
-There is no release blocker open for `v1.0.0-alpha.2`; that release is published.
-
-The next product priority is intentionally unselected. Choose it deliberately after the documentation audit rather than carrying the stabilization roadmap forward automatically.
