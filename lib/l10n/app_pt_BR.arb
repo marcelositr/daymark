@@ -72,7 +72,7 @@
   "referenceEntryTitle": "Referenciar em Coleção",
   "referenceEntryFailed": "Não foi possível adicionar esta referência à Coleção.",
   "collectionReferences": "Referências",
-  "indexLoadFailed": "Não foi possível carregar o Índndice.",
+  "indexLoadFailed": "Não foi possível carregar o Índice.",
   "emptyIndex": "Nada indexado ainda.",
   "addIndexItem": "Adicionar ao Índice",
   "indexCandidatesLoadFailed": "Não foi possível carregar as estruturas disponíveis para o Índice.",
