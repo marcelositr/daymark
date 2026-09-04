@@ -7,9 +7,9 @@ This is Daymark's canonical living handoff. Read this file and `AGENTS.md` befor
 - Phase: pre-alpha, core Bullet Journal flows in active development.
 - Integration branch: `main` only.
 - Current merged `main`: `6a7fa2e0167099f0b975f5479ab12ef37a1883c7` (`feat(journal): add basic local search (#25)`).
-- Post-merge main CI #439 is green on that exact SHA, including quality/tests, Linux, and Android.
+- Post-merge `main` CI #439 is green on that exact SHA.
 - Active branch/PR: `feat/daily-history` / PR #26, `feat(journal): browse Daily history`.
-- PR #26 remains Draft until exact-head Draft CI, complete-suite validation, and manual Linux validation are complete.
+- PR #26 has passed manual Linux validation and is ready for the full non-Draft gate before squash merge.
 - Runtime targets: Linux and Android.
 - Pinned toolchain: Flutter 3.47.2 / Dart 3.13.2.
 - Merge policy: never merge without explicit user approval; squash merge is the default.
@@ -57,7 +57,7 @@ Therefore:
 - `AppSectionScope` is the current presentation-level activation signal;
 - do not solve freshness by destroying all tabs, polling continuously, or adding an unrelated global cache.
 
-This rule currently applies to Future after scheduling, Collections after migration/references, and Search after source Task-state changes.
+This rule first mattered for Future after scheduling, then Collections after migration/references, and PR #25 applies it to Search by rerunning the last submitted query on reactivation.
 
 ## Stable domain and persistence baseline
 
@@ -80,8 +80,7 @@ Durable rules:
 - Task states are open, completed, migrated, scheduled, and discarded.
 - Events and Notes do not acquire Task state.
 - Every Entry has exactly one owning placement.
-- Daily belongs to one method date; historical Daily lookup is non-creating and read-only in the current product.
-- Monthly Calendar/Tasks placement and date invariants are enforced; historical Monthly lookup is non-creating/read-only.
+- Monthly Calendar/Tasks placement and date invariants are enforced.
 - Future is month-addressed, not a second day-level calendar.
 - A Collection is a simple method-native owning container, not a configurable workspace.
 - Collection references do not move the source Entry and remain distinct from migration.
@@ -90,6 +89,8 @@ Durable rules:
 - Movement preserves the historical source and creates a fresh destination Entry plus lineage; do not move ownership in place.
 - Index deliberately catalogs an existing Log or Collection and never duplicates Entry content.
 - Search is transient read-only retrieval over existing Entries and is never an owner or persistent Index source.
+- Historical Monthly lookup is non-mutating; viewing a missing past month must not create a Log or Index candidate.
+- Historical Daily lookup is non-mutating; viewing a missing past day must not create a Log or Index candidate.
 - Cross-table semantic writes remain transactional through repository/service boundaries.
 - `JournalSession` serializes unlocked journal work and owns encrypted persistence/key lifetime.
 
@@ -109,7 +110,47 @@ Current foundation includes:
 
 PRs #20 through #26 do not change schema version, crypto, key lifecycle, backup format, dependency set, or platform contracts.
 
-## Recent merged baseline
+## Merged product baseline
+
+### PR #13
+
+Encrypted create/unlock/manual-lock flow and functional Today/Daily Log with Rapid Logging Task/Event/Note, serialized session, persistence, and day rollover.
+
+### PR #14
+
+Automatic five-minute inactivity lock. Squash: `d93563184c01ef406398619212410c540d00712a`.
+
+### PR #15
+
+Deliberate Task completion/discard. Squash: `b3af861dc00b81402d27cbdec39e3c99212c6590`.
+
+Task symbols established: open `•`, completed `×`, migrated `>`, scheduled `<`, discarded historical `•` with strike-through.
+
+### PR #16
+
+Current-month Monthly Log with Calendar and Tasks. Squash: `c93b78380f0efdd545d533db49b30ab2f907426b`.
+
+### PR #17
+
+Rolling six-month Future Log. Squash: `8a9a74bb5158159818822487e71fcc220a0acbf8`.
+
+### PR #18
+
+Deliberate scheduling (`<`) from Today/Monthly into real Future months. Squash: `03ef4d187845ff13128f28298336b540b3237e9e`.
+
+Important method decision: Today -> current Monthly is not a valid shortcut for `>`.
+
+### PR #20
+
+Basic Collections. Squash: `08199af85df7d10ba36b226d97b390da3acffbb9`.
+
+### PR #21
+
+Deliberate Task migration (`>`) from Today/Monthly into an explicitly selected existing Collection. Squash: `89c1907d17d0507fd84c403c7343afc2ccbbd8da`.
+
+### PR #22
+
+Deliberate read-only Collection references from chronological entries. Squash: `23fbc3e0b8d3e62f8db8ddc1ad403835e8fc5eee`.
 
 ### PR #23
 
@@ -121,13 +162,13 @@ Read-only historical Monthly browsing. Squash: `04daa185a6db3cc2a8588ab71a1327a9
 
 ### PR #25
 
-Basic local read-only Search. Squash: `6a7fa2e0167099f0b975f5479ab12ef37a1883c7`.
+Basic local Search. Squash: `6a7fa2e0167099f0b975f5479ab12ef37a1883c7`.
 
-- searches existing Entry content without FTS/schema v2;
-- reports real Daily/Monthly/Future/Collection context;
-- Unicode-aware case-insensitive matching keeps accents literal;
-- retained Search refresh cannot overwrite a newer explicit query;
-- 8 focused Search tests and 140 complete-suite tests passed before merge;
+- explicit user-submitted read-only queries;
+- Unicode-aware case-insensitive literal substring matching with literal accents;
+- result context for Daily, Monthly, Future, and Collection owners;
+- no FTS/schema change, Search cache, persisted query history, or Search-to-Index side effect;
+- retained Search refreshes the last submitted query on reactivation without letting an older refresh overwrite a newer query;
 - manual Linux validation passed;
 - Ready CI #438 green;
 - post-merge main CI #439 green.
@@ -140,46 +181,32 @@ PR: #26, `feat(journal): browse Daily history`.
 
 Implemented scope:
 
-- Today remains the interactive current Daily Log;
-- Today gains a History action that opens yesterday;
-- real `/daily/:date` route represents a historical Daily method date;
-- historical screen browses backward/forward among past dates but never forward into Today;
-- historical Daily display is read-only: no composer, complete/discard, migrate, schedule, reference, or other mutation actions;
-- missing historical date stays absent and shows a quiet empty state;
-- `DailyLogRepository.find(...)` is non-creating;
-- `JournalDailyHistorySession.findDailyLog(...)` serializes historical lookup through the unlocked session;
-- viewing an absent historical day must not create a Log or Index candidate;
-- existing historical Task/Event/Note symbols and discarded strike-through remain visible;
+- real `/daily/:date` historical route inside the Today branch;
+- History action from Today opens yesterday;
+- historical days can be browsed backward and forward while never advancing into Today;
+- Today remains the current interactive Rapid Logging surface;
+- historical Daily Logs are read-only and expose no capture, Task, migration, scheduling, reference, completion, or discard actions;
+- missing historical days render a quiet empty state and do not create a Daily Log;
+- `DailyLogRepository.find(...)` is non-creating and exposed through serialized `JournalDailyHistorySession` work;
+- viewing a missing historical day does not create an Index candidate;
+- existing Entry symbols and discarded strike-through remain visible in history;
 - EN, `pt`, and `pt_BR` copy added;
-- no schema/crypto/backup/dependency/platform-contract change.
+- no schema, crypto, backup-format, dependency, or platform-contract change.
 
-Validation lineage:
+Validation:
 
-- focused finalizer applied the Today launcher with exact markers and pinned Dart formatting;
-- first analyzer pass found one test-only `isNotNull` import collision between Drift and matcher;
-- import was disambiguated without changing product behavior;
-- finalizer rerun passed analyzer and all focused Daily-history tests, then removed its temporary workflow/trigger;
-- README, PRODUCT, DOMAIN, ARCHITECTURE, and CHANGELOG are aligned with the implemented Daily-history behavior;
-- temporary documentation helper was removed; no helper should remain in the final PR diff;
-- exact-head Draft CI and complete-suite validation remain before manual Linux validation.
-
-Explicit non-goals:
-
-- no direct Index/Search navigation in PR #26;
-- no historical editing or reflection workflow;
-- no generic date picker/calendar workspace;
-- no schema or FTS changes.
+- focused finalizer: pinned formatter and analyzer green;
+- focused Daily-history set: **7 tests passed**;
+- complete Daymark suite: **145 tests passed**;
+- temporary validation/finalizer workflows removed from final diff;
+- exact-head Draft CI #448 green before the temporary full-suite validation cleanup commit;
+- manual Linux validation passed on final clean head `39090a6ad2338cb684b8c8a3bee73d6fa5bd60a9`;
+- user explicitly authorized squash merge after the full non-Draft gate;
+- full Ready CI remains the final pre-merge requirement.
 
 ## Next work after PR #26
 
-Keep subsequent slices separate. Strong candidates:
-
-1. direct navigation from Index/Search into real existing structures/entries, now using genuine Daily historical routes rather than fake current-screen substitutions;
-2. focused Reflection behavior after its method semantics are deliberately specified;
-3. backup/restore UI and explicit open export flows;
-4. OS lock integration, keyboard/accessibility refinements, Android/Linux polish, packaging, and final release audits.
-
-Do not bundle Search into Index. Do not turn retrieval into another owning workspace. Do not create a Log merely to make a navigation target exist.
+Do not start another PR until explicitly requested after PR #26 merge. When work resumes, likely candidates remain direct retrieval navigation, Reflection, backup/restore UI, exports, OS lock integration, accessibility/keyboard refinement, platform polish, packaging, and release audits.
 
 ## CI and handoff traps
 
@@ -188,4 +215,4 @@ Do not bundle Search into Index. Do not turn retrieval into another owning works
 - Commits created by `github-actions[bot]` may show `action_required`; use a useful normal commit for exact-head evidence rather than treating that status as code failure.
 - Temporary workflow probes must not remain in the final PR diff.
 - `StatefulShellRoute.indexedStack` retains screens; section navigation is not a remount lifecycle.
-- Manual product testing remains important for lifecycle freshness, navigation, persistence, and false-success/false-error UI behavior.
+- Manual product testing remains important for lifecycle freshness, compact/desktop navigation, persistence, and false-success/false-error UI behavior.
