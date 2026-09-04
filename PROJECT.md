@@ -6,14 +6,17 @@ This is Daymark's canonical living handoff. Read this file and `AGENTS.md` befor
 
 - Phase: pre-alpha, core Bullet Journal flows are implemented and the project is in the vacation-ready stabilization cycle.
 - Integration branch: `main` only.
-- Current merged `main`: `b6d8ed5904d5e587cec91ed597b297b2c75672b5`, produced by the squash merge of documentation-alignment PR #27.
-- Active product branch: `feat/backup-restore-ui`.
-- Latest implementation/validated dependency head before final documentation: `37e5664e9edb4c9365abb8466faa557f2f6c5a39`.
-- User-facing encrypted backup/restore is implemented and has passed focused automated validation, Linux and Android debug builds, and the real disposable Linux backup/restore flow.
-- The next planned product slice after this branch is open export.
+- Current merged `main`: `e4659c14e84759150060e4f834a1a2fc50b20910`, squash merge of PR #28 `feat(backup): add user-facing encrypted backup restore`.
+- PR #28 exact Ready head: `a7fd2dfd5b408b0285ac88a7bf610041cf8c299d`.
+- PR #28 Ready CI #464 passed `quality`, Linux build, Android build, dependency review, and `merge-gate` on that exact head.
+- Post-merge `main` CI #465 started on exact merged SHA `e4659c14e84759150060e4f834a1a2fc50b20910`; its final result was still pending at this documentation checkpoint.
+- User-facing encrypted backup/restore is now merged into `main` and passed real disposable Linux backup/restore validation before merge.
+- Next planned product slice: **Open Export**.
 - Runtime targets: Linux and Android.
 - Pinned toolchain: Flutter 3.47.2 / Dart 3.13.2.
-- Local validation host details are recorded in `docs/LOCAL_ENVIRONMENT.md`; they are evidence, not product requirements.
+- Primary local validation host details: `docs/LOCAL_ENVIRONMENT.md`.
+- Local terminal execution contract: `docs/LOCAL_EXECUTION.md`.
+- Local performance benchmark protocol and baseline: `docs/PERFORMANCE_BENCHMARK.md`.
 - Merge policy: never merge without explicit user approval; squash merge is the default.
 - Production Argon2id baseline: 19 MiB / 2 iterations / p=1 / 32-byte output.
 - Stabilization target: have a vacation-ready prerelease completed no later than 2026-09-06, preferably by 2026-09-05, without weakening architecture, security, persistence, tests, or merge protection.
@@ -37,37 +40,51 @@ Daymark is a faithful digital Bullet Journal, not a generic productivity suite.
 - PR titles use Conventional Commit form.
 - The user makes every merge decision. Never enable auto-merge or merge implicitly.
 - The agent owns implementation design, Git/GitHub operations available through connected tooling, test design, command construction, and diagnosis of returned evidence.
-- When local execution is faster or GitHub Actions/API evidence is degraded, the user may act as an execution bridge for formatter, analyzer, tests, builds, and manual product checks using complete agent-provided command blocks.
+- When local execution is faster or GitHub Actions/API evidence is degraded, the user may act as an execution bridge using complete agent-provided command blocks.
 - Local execution does not transfer debugging responsibility to the user. The agent interprets failures and decides the next safe step.
-- Local-first validation may replace routine Draft-CI iteration, but it does not weaken the final repository merge gate. The live `main` ruleset still requires the exact `merge-gate` status before merge.
-- Use the pinned local Dart formatter early, before spending time on expensive tests. If ARB resources changed, run `flutter gen-l10n` before formatter/analyzer/tests that compile localization-dependent code.
+- Local-first validation may replace routine Draft-CI iteration, but it never weakens the final Ready PR merge gate.
+- Use the pinned formatter early. If ARB resources changed, run `flutter gen-l10n` before formatter/analyzer/tests that compile localization-dependent code.
 - Keep `PROJECT.md` current and `CHANGELOG.md` release-facing.
 - Treat formatter output from the pinned Dart version as authoritative.
 - Treat CI evidence as SHA-specific. A green superseded run does not validate a newer head.
 - Distinguish mechanical CI/test-harness failures from product defects before changing behavior.
 - Never weaken security, persistence invariants, tests, or CI merely to make a check green.
 - Remove temporary workflow probes/scripts before Ready.
-- User shell blocks must be safe for an interactive shell and must not end with a bare `exit`.
+- User shell blocks must follow `docs/LOCAL_EXECUTION.md`.
 - Do not invent fake product destinations or temporary domain concepts to unblock UI.
 - Do not duplicate repository/service semantics inside widgets/providers.
 
 ## Local-first stabilization loop
 
-During the current stabilization cycle, use this default sequence for each substantive branch unless the change is too small to justify every step:
+For each substantive branch unless the change is too small to justify every step:
 
 1. start from exact current `main` and create one short-lived branch with one coherent responsibility;
 2. implement and add/update focused tests at the correct layer;
 3. if localization changed, run `flutter gen-l10n` first;
 4. run the pinned Dart formatter immediately and incorporate its exact output before expensive validation;
 5. run analyzer and focused tests;
-6. when the slice appears correct, run the complete Flutter suite and the locally available native build(s);
+6. when the slice appears correct, run the complete Flutter suite and the locally relevant native build(s);
 7. run the real manual user flow when persistence, lifecycle, navigation, rendering, import/export, backup/restore, or platform behavior is involved;
-8. if any result is surprising, diagnose before changing production behavior and repeat the proportionate local checks;
+8. diagnose surprising results before changing production behavior;
 9. align documentation on the final branch head;
-10. use GitHub full Ready CI once the branch is reviewable, treating it as final independent merge evidence rather than the routine development runner;
+10. use GitHub full Ready CI once the branch is reviewable;
 11. merge only after the exact final head is green and the user explicitly approves squash merge.
 
-If GitHub Actions or the API is slow, delayed, or incomplete, continue independent local/product work that does not depend on the missing evidence. When the missing fact blocks merge, ask the user only for the smallest concrete CI/job reference needed. Never infer a green result.
+If GitHub Actions or the API is slow, delayed, or incomplete, continue independent local/product work that does not depend on the missing evidence. `gh` is available on the local validation host as a fallback for GitHub status inspection. Never infer a green result.
+
+## Local performance rule
+
+Normal development should preserve warm incremental state. Do not use `flutter clean` as routine hygiene.
+
+A controlled benchmark is a separate diagnostic workflow defined in `docs/PERFORMANCE_BENCHMARK.md`. The 2026-09-04 baseline showed:
+
+- full Flutter suite: 54.99 s;
+- Linux debug rebuild: 9.37 s;
+- Linux warm incremental: 4.30 s;
+- Android debug rebuild: 140.96 s;
+- Android warm incremental: 31.71 s.
+
+The Android rebuild already reached roughly 390% sampled CPU on the four-core local host and pushed the machine into about 0.94 GiB of swap. Therefore future Gradle caching, parallelism, or heap tuning must be A/B measured rather than enabled by assumption.
 
 ## Critical retained-navigation lifecycle rule
 
@@ -100,7 +117,7 @@ Schema v1 contains:
 Durable rules:
 
 - Task, Event, and Note are distinct entry types.
-- Task states are open, completed, migrated, scheduled, and discarded.
+- Task states are open/completed/migrated/scheduled/discarded.
 - Events and Notes do not acquire Task state.
 - Every Entry has exactly one owning placement.
 - Monthly Calendar/Tasks placement and date invariants are enforced.
@@ -112,14 +129,13 @@ Durable rules:
 - Movement preserves the historical source and creates a fresh destination Entry plus lineage; do not move ownership in place.
 - Index deliberately catalogs an existing Log or Collection and never duplicates Entry content.
 - Search is transient read-only retrieval over existing Entries and is never an owner or persistent Index source.
-- Historical Monthly lookup is non-mutating; viewing a missing past month must not create a Log or Index candidate.
-- Historical Daily lookup is non-mutating; viewing a missing past day must not create a Log or Index candidate.
+- Historical Monthly and Daily lookups are non-mutating.
 - Cross-table semantic writes remain transactional through repository/service boundaries.
 - `JournalSession` serializes unlocked journal work and owns encrypted persistence/key lifetime.
 
 ## Security / backup baseline
 
-Do not casually modify these contracts. The current security contract lives in `SECURITY.md`; `docs/SECURITY_FOUNDATION.md` is the historical PR #7 validation record. Backup-format details live in `docs/BACKUP_FORMAT.md`, with architecture boundaries in `docs/ARCHITECTURE.md`.
+The current security contract lives in `SECURITY.md`; `docs/SECURITY_FOUNDATION.md` is the historical PR #7 validation record. Backup-format details live in `docs/BACKUP_FORMAT.md`, with architecture boundaries in `docs/ARCHITECTURE.md`.
 
 Current foundation includes:
 
@@ -131,147 +147,72 @@ Current foundation includes:
 - Android OS backup/device-transfer exclusion;
 - portable authenticated encrypted backup with integrity and rollback/recovery protections.
 
-PRs #20 through #26 do not change schema version, crypto, key lifecycle, backup format, dependency set, or platform contracts.
-
 ## Merged product baseline
 
-### PR #13
+- PR #13: encrypted create/unlock/manual-lock flow plus functional Today/Daily Rapid Logging.
+- PR #14: automatic five-minute inactivity lock. Squash `d93563184c01ef406398619212410c540d00712a`.
+- PR #15: deliberate Task completion/discard. Squash `b3af861dc00b81402d27cbdec39e3c99212c6590`.
+- PR #16: current-month Monthly Log. Squash `c93b78380f0efdd545d533db49b30ab2f907426b`.
+- PR #17: rolling six-month Future Log. Squash `8a9a74bb5158159818822487e71fcc220a0acbf8`.
+- PR #18: deliberate scheduling (`<`) into Future. Squash `03ef4d187845ff13128f28298336b540b3237e9e`.
+- PR #20: basic Collections. Squash `08199af85df7d10ba36b226d97b390da3acffbb9`.
+- PR #21: deliberate Task migration (`>`) into an existing Collection. Squash `89c1907d17d0507fd84c403c7343afc2ccbbd8da`.
+- PR #22: read-only Collection references. Squash `23fbc3e0b8d3e62f8db8ddc1ad403835e8fc5eee`.
+- PR #23: basic deliberate Index. Squash `1a05c1cd71c2f442a538d21b2263ed39ed09efbe`.
+- PR #24: read-only historical Monthly browsing. Squash `04daa185a6db3cc2a8588ab71a1327a91f893639`.
+- PR #25: basic local Search. Squash `6a7fa2e0167099f0b975f5479ab12ef37a1883c7`.
+- PR #26: read-only Daily history. Squash `ab6b194e155cc225b4dc4ee1f82e202565eaeac2`.
+- PR #27: local-first stabilization handoff alignment. Squash `b6d8ed5904d5e587cec91ed597b297b2c75672b5`.
+- PR #28: user-facing encrypted backup/restore. Squash `e4659c14e84759150060e4f834a1a2fc50b20910`.
 
-Encrypted create/unlock/manual-lock flow and functional Today/Daily Log with Rapid Logging Task/Event/Note, serialized session, persistence, and day rollover.
-
-### PR #14
-
-Automatic five-minute inactivity lock. Squash: `d93563184c01ef406398619212410c540d00712a`.
-
-### PR #15
-
-Deliberate Task completion/discard. Squash: `b3af861dc00b81402d27cbdec39e3c99212c6590`.
-
-Task symbols established: open `•`, completed `×`, migrated `>`, scheduled `<`, discarded historical `•` with strike-through.
-
-### PR #16
-
-Current-month Monthly Log with Calendar and Tasks. Squash: `c93b78380f0efdd545d533db49b30ab2f907426b`.
-
-### PR #17
-
-Rolling six-month Future Log. Squash: `8a9a74bb5158159818822487e71fcc220a0acbf8`.
-
-### PR #18
-
-Deliberate scheduling (`<`) from Today/Monthly into real Future months. Squash: `03ef4d187845ff13128f28298336b540b3237e9e`.
-
-Important method decision: Today -> current Monthly is not a valid shortcut for `>`.
-
-### PR #20
-
-Basic Collections. Squash: `08199af85df7d10ba36b226d97b390da3acffbb9`.
-
-### PR #21
-
-Deliberate Task migration (`>`) from Today/Monthly into an explicitly selected existing Collection. Squash: `89c1907d17d0507fd84c403c7343afc2ccbbd8da`.
-
-### PR #22
-
-Deliberate read-only Collection references from chronological entries. Squash: `23fbc3e0b8d3e62f8db8ddc1ad403835e8fc5eee`.
-
-### PR #23
-
-Basic deliberate Index of existing Logs and Collections. Squash: `1a05c1cd71c2f442a538d21b2263ed39ed09efbe`.
-
-### PR #24
-
-Read-only historical Monthly browsing. Squash: `04daa185a6db3cc2a8588ab71a1327a91f893639`.
-
-### PR #25
-
-Basic local Search. Squash: `6a7fa2e0167099f0b975f5479ab12ef37a1883c7`.
-
-- explicit user-submitted read-only queries;
-- Unicode-aware case-insensitive literal substring matching with literal accents;
-- result context for Daily, Monthly, Future, and Collection owners;
-- no FTS/schema change, Search cache, persisted query history, or Search-to-Index side effect;
-- retained Search refreshes the last submitted query on reactivation without letting an older refresh overwrite a newer query;
-- manual Linux validation passed;
-- Ready CI #438 green;
-- post-merge main CI #439 green.
-
-### PR #26
-
-Read-only Daily history. Squash: `ab6b194e155cc225b4dc4ee1f82e202565eaeac2`.
-
-Implemented scope:
-
-- real `/daily/:date` historical route inside the Today branch;
-- History action from Today opens yesterday;
-- historical days can be browsed backward and forward while never advancing into Today;
-- Today remains the current interactive Rapid Logging surface;
-- historical Daily Logs are read-only and expose no capture, Task, migration, scheduling, reference, completion, or discard actions;
-- missing historical days render a quiet empty state and do not create a Daily Log;
-- `DailyLogRepository.find(...)` is non-creating and exposed through serialized `JournalDailyHistorySession` work;
-- viewing a missing historical day does not create an Index candidate;
-- existing Entry symbols and discarded strike-through remain visible in history;
-- EN, `pt`, and `pt_BR` copy added;
-- no schema, crypto, backup-format, dependency, or platform-contract change.
-
-Validation:
-
-- focused Daily-history validation and complete Daymark suite passed during development;
-- manual Linux validation passed on the final implementation/documentation line;
-- full Ready CI #455 green on final PR head `ab155f3a3439346be009a4224b1e5b1864f897d7`;
-- squash merge produced `main` SHA `ab6b194e155cc225b4dc4ee1f82e202565eaeac2`;
-- post-merge `main` CI #456 green on that exact SHA.
-
-## Active stabilization slice: encrypted backup/restore
-
-User-facing encrypted backup/restore is complete on `feat/backup-restore-ui`.
+### PR #28 backup/restore checkpoint
 
 Implemented behavior:
 
-- an unlocked journal can create a portable authenticated encrypted Daymark backup;
-- creation requires the current master password before the journal snapshot is exported;
-- Linux uses a native save-file path without buffering the entire encrypted container in memory;
-- Android uses the platform file-picker boundary required by its document provider flow;
+- unlocked journals can create a portable authenticated encrypted Daymark backup after master-password verification;
+- Linux save-file flow copies the encrypted container without buffering the full file;
+- Android uses the platform file-picker/document-provider boundary;
 - restore is exposed only when the journal is locked or absent, never over a live encrypted database session;
-- restore requires the backup password and validates authentication, compatibility, database integrity, foreign keys, and staged files before replacing the existing journal;
-- a failed or wrongly authenticated restore leaves the existing journal locked and unchanged;
-- a successful restore reopens only from the committed restored database/key-envelope pair;
-- interrupted restore recovery is performed before normal locked-journal inspection;
-- backup/restore errors are localized and raw cryptographic/filesystem errors are not shown to the user;
-- EN, `pt`, and `pt_BR` strings are present;
-- presentation tests use a fake file gateway while session/backup tests continue to exercise the real persistence and cryptographic boundaries.
-
-Dependency note:
-
-- `file_picker` is pinned to `12.1.3`;
-- the initial `11.0.3` choice compiled on Linux but failed Android under Daymark's AGP 9.1 / Gradle 9.3 line because its Android plugin registration was incompatible with that setup;
-- `12.1.3` resolves through the federated Android/Linux implementations and passed both local target builds.
+- restore validates authentication, compatibility, database integrity, foreign keys, and staged files before replacement;
+- wrong password or failed restore leaves the existing journal locked and unchanged;
+- successful restore reopens only from the committed database/key-envelope pair;
+- interrupted restore recovery runs before normal locked-journal inspection;
+- backup/restore errors are localized and raw crypto/filesystem errors are not shown to the user;
+- `file_picker` is pinned to `12.1.3` for compatibility with the current AGP 9 / Gradle 9 toolchain.
 
 Validation evidence:
 
-- pinned formatter and analyzer passed;
-- focused backup/restore presentation, session, service, and recovery tests passed;
-- the complete Flutter test suite passed before the file-picker compatibility correction;
-- after resolving `file_picker 12.1.3`, focused backup/restore tests, Android debug build, and Linux debug build passed on implementation head `37e5664e9edb4c9365abb8466faa557f2f6c5a39`;
-- a real Linux test used an isolated disposable XDG data/config/cache root;
-- that manual test created `ANTES DO BACKUP`, created an encrypted backup, then created `DEPOIS DO BACKUP`;
-- after locking, a wrong restore password was rejected and the journal remained locked;
-- restoring with the correct password recovered `ANTES DO BACKUP` and removed the post-backup `DEPOIS DO BACKUP` state;
-- a second application launch started locked, unlocked successfully, and preserved the restored snapshot;
-- both manual application executions exited normally;
-- the final Ready PR still requires exact-head full CI and repository `merge-gate`.
+- formatter, analyzer, focused backup/restore tests, complete Flutter suite, Linux debug build, and Android debug build passed locally;
+- manual Linux restore used an isolated disposable XDG root;
+- the manual flow proved snapshot rollback semantics, wrong-password rejection, auto-unlock after correct restore, and restored-state persistence across a second launch;
+- Ready CI #464 passed on exact head `a7fd2dfd5b408b0285ac88a7bf610041cf8c299d` including `merge-gate`;
+- squash merge produced `main` SHA `e4659c14e84759150060e4f834a1a2fc50b20910`.
+
+## Next product slice: Open Export
+
+Open Export is the next P0 stabilization slice.
+
+Expected boundary:
+
+- explicit user action only;
+- structured JSON for machine-readable portability;
+- Markdown for human-readable archival use;
+- clear warning that exported files are plaintext and no longer protected by Daymark's encrypted journal storage;
+- technically and conceptually separate from encrypted backup;
+- deterministic/versioned output where appropriate;
+- preserve stable IDs, owners, states, and relationships needed for meaningful portability;
+- tests for escaping, Unicode, states, and relationships;
+- no cloud/sync semantics and no hidden automatic export.
 
 ## Vacation-ready stabilization plan
 
-The goal is not to rush to a nominal stable `1.0.0`. The goal is a trustworthy end-to-end prerelease that can be used intensively during the user's vacation, with September 6 as the final safety boundary and September 5 preferred if the required work closes cleanly.
-
 Priority order:
 
-1. **User-facing encrypted backup/restore**: completed on `feat/backup-restore-ui`; final Ready CI / merge-gate remains before integration.
-2. **Open export**: provide explicit human-readable/non-proprietary export, expected to cover structured JSON plus Markdown, with clear plaintext-boundary messaging and no confusion with encrypted backup.
-3. **Appearance selection**: expose the already-supported System / Light / Dark choice without turning settings into a configuration surface.
-4. **Release hardening**: packaging/versioning, Android release signing setup, Linux and Android release builds, installation/upgrade smoke tests, dependency/security review, documentation alignment, and a complete real backup/restore test on disposable/controlled data before relying on the prerelease for daily use.
-5. **Final stabilization only**: after the above closes, fix blockers and regressions. Do not add unrelated features simply because time remains.
+1. **User-facing encrypted backup/restore**: merged in PR #28.
+2. **Open export**: next active product slice.
+3. **Appearance selection**: expose System / Light / Dark without turning settings into a configuration surface.
+4. **Release hardening**: packaging/versioning, Android release signing setup, Linux and Android release builds, installation/upgrade smoke tests, dependency/security review, documentation alignment, and final controlled recovery validation.
+5. **Final stabilization only**: after the above closes, fix blockers and regressions; do not add unrelated features merely because time remains.
 
 Explicitly deferrable when they threaten stability or the date boundary:
 
@@ -282,15 +223,13 @@ Explicitly deferrable when they threaten stability or the date boundary:
 - accessibility/keyboard refinement beyond release-blocking defects;
 - cloud/sync or other out-of-scope product expansion.
 
-A feature is not entitled to ship merely because it appeared on an older roadmap. For the current stabilization cycle it must materially improve safe daily use, portability, recovery, or release readiness without creating disproportionate risk.
-
 ## CI and handoff traps
 
-- Local-first is the preferred development feedback loop during the current stabilization cycle when it is faster or GitHub is degraded.
-- Draft PRs may still run `dev-check`, but repeated remote Draft iterations are not required when equivalent pinned local checks are available and recorded.
-- Ready PRs still require quality/full tests, Linux, Android, dependency review, and `merge-gate` on the exact final head because the live ruleset requires `merge-gate`.
-- A red formatter is mechanical evidence, not automatically a product defect. Apply the pinned Dart formatter early rather than guessing reflow.
-- Commits created by `github-actions[bot]` may show `action_required`; use a useful normal commit for exact-head evidence rather than treating that status as code failure.
+- Local-first is the preferred development feedback loop when it is faster or GitHub is degraded.
+- Draft PRs may run `dev-check`; repeated remote Draft iterations are not required when equivalent pinned local checks are available and recorded.
+- Ready PRs still require quality/full tests, Linux, Android, dependency review, and `merge-gate` on the exact final head.
+- A red formatter is mechanical evidence, not automatically a product defect.
+- Commits created by `github-actions[bot]` may show `action_required`; do not treat that status alone as code failure.
 - Temporary workflow probes must not remain in the final PR diff.
 - `StatefulShellRoute.indexedStack` retains screens; section navigation is not a remount lifecycle.
 - Manual product testing remains important for lifecycle freshness, compact/desktop navigation, persistence, backup/restore, import/export, and false-success/false-error UI behavior.
