@@ -174,7 +174,7 @@ class _AppShellState extends State<AppShell> {
         );
       },
     );
-    if (!mounted || action == null) {
+    if (!mounted || !context.mounted || action == null) {
       return;
     }
     if (action == _backupAction) {

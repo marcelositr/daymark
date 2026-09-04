@@ -415,8 +415,7 @@ final class JournalSessionManager {
     }
 
     final JournalAccessState accessState = await inspect();
-    if (accessState is! JournalLocked &&
-        accessState is! JournalNeedsCreation) {
+    if (accessState is! JournalLocked && accessState is! JournalNeedsCreation) {
       throw StateError(
         'A backup can only be restored while the journal is locked or absent.',
       );

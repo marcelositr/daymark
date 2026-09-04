@@ -19,9 +19,8 @@ Future<void> showBackupDialog(BuildContext context) async {
 
   if (saved == true && context.mounted) {
     final AppLocalizations l10n = AppLocalizations.of(context);
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(l10n.backupSaved)),
-    );
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(l10n.backupSaved)));
   }
 }
 

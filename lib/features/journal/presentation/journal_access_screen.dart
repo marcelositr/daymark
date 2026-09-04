@@ -267,9 +267,7 @@ class _JournalAccessScreenState extends ConsumerState<JournalAccessScreen> {
     }
   }
 
-  Future<void> _restoreBackup({
-    required bool replacingExistingJournal,
-  }) async {
+  Future<void> _restoreBackup({required bool replacingExistingJournal}) async {
     final AppLocalizations l10n = AppLocalizations.of(context);
     setState(() => _errorMessage = null);
 
@@ -312,9 +310,7 @@ class _JournalAccessScreenState extends ConsumerState<JournalAccessScreen> {
           .restoreBackup(backupFile: backupFile, masterPassword: password);
     } on BackupAuthenticationException {
       if (mounted) {
-        setState(
-          () => _errorMessage = l10n.restoreBackupAuthenticationFailed,
-        );
+        setState(() => _errorMessage = l10n.restoreBackupAuthenticationFailed);
       }
     } on BackupFormatException {
       if (mounted) {
@@ -347,8 +343,7 @@ final class _RestorePasswordDialog extends StatefulWidget {
   final bool replacingExistingJournal;
 
   @override
-  State<_RestorePasswordDialog> createState() =>
-      _RestorePasswordDialogState();
+  State<_RestorePasswordDialog> createState() => _RestorePasswordDialogState();
 }
 
 final class _RestorePasswordDialogState extends State<_RestorePasswordDialog> {
