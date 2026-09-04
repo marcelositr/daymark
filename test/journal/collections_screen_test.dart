@@ -87,14 +87,14 @@ void main() {
     await tester.pump();
     await tester.pump();
 
-    await tester.tap(find.text('•').first);
+    await tester.tap(find.text('First task'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Complete'));
     await tester.pump();
     await tester.pump();
     expect(find.text('×'), findsOneWidget);
 
-    await tester.tap(find.text('•'));
+    await tester.tap(find.text('Second task'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Discard'));
     await tester.pump();

@@ -58,7 +58,7 @@ Earlier Daily Logs may be opened through a dedicated **read-only historical rout
 
 A historical day that has never existed therefore appears empty without becoming persisted state or an Index candidate. Historical navigation may move between earlier dates but must not advance into Today as though the current Daily Log were historical. Returning to Today restores the normal interactive Rapid Logging surface.
 
-This history surface is retrieval, not a generic calendar workspace or reflection engine. Direct Index/Search navigation to a historical Daily route is intentionally deferred to a focused retrieval-navigation slice now that a real Daily historical destination exists.
+This history surface is retrieval, not a generic calendar workspace or reflection engine. Search and Index source navigation use the real historical Daily route for past dates while the current Daily Log continues to resolve to Today.
 
 ### Monthly Log
 
@@ -73,7 +73,7 @@ Earlier Monthly Logs may be browsed month by month in **read-only historical mod
 
 A historical month that has never existed therefore appears empty without becoming persisted state or an Index candidate. Returning to the current month restores the normal interactive Monthly behavior.
 
-This history surface is retrieval, not a reflection engine or generic agenda. Future editing of historical Monthly Logs, direct Index/Search navigation to an arbitrary historical month, and richer Monthly reflection remain separate product decisions.
+This history surface is retrieval, not a reflection engine or generic agenda. Search and Index source navigation may open the requested existing Monthly Log through the real Monthly route. Future editing of historical Monthly Logs and richer Monthly reflection remain separate product decisions.
 
 ### Future Log
 
@@ -102,22 +102,24 @@ Collections deliberately do not gain Kanban fields, arbitrary properties, dashbo
 
 A **Collection reference** does not move or copy the source entry. The source remains owned by its original Daily, Monthly, or Future Log with the same stable Entry identity and Task state. The Collection displays that entry as a reference only, and Task actions are not exposed through the reference. The user must deliberately choose an existing Collection; Daymark does not auto-select or create a Collection as a side effect.
 
-Removing references, navigating from a reference back to its source, and referencing Collection-owned entries from inside Collections remain separate product decisions.
+Removing a Collection reference is supported and never deletes or mutates its source Entry. Navigating from a Collection reference back to its source and referencing Collection-owned entries from inside Collections remain separate product decisions.
 
 ### Index
 
 The Index is a deliberate Bullet Journal catalog of existing journal structures. It is persisted independently from Search and never duplicates Entry content.
 
-The first Index surface supports:
+The current Index surface supports:
 
 - listing indexed Logs and Collections in deliberate Index order;
 - adding an existing Daily, Monthly, or Future Log to the Index;
 - adding an existing Collection to the Index;
-- excluding a structure once it has already been indexed.
+- excluding a structure once it has already been indexed;
+- deliberately reordering or removing Index items;
+- opening an indexed structure through its real product route.
 
 Adding something to the Index does not move it, copy it, change Entry ownership, alter Task state, or create a new Log or Collection. Daymark never auto-indexes every structure merely because the software can discover it.
 
-The initial Index appends new items in the order the user chooses them. Reordering, removing Index items, and navigating an Index row directly to an arbitrary historical Log remain separate focused slices. Direct navigation must use real product routes rather than pretending the current Today/Monthly/Future screens can represent an arbitrary historical target.
+New Index items append in the order the user chooses them and may later be deliberately reordered or removed. Opening an Index row always uses a real product route; historical Daily and Future targets use their read-only historical routes, and Monthly resolves the requested month without pretending the current Today/Monthly/Future surfaces represent a different owner.
 
 Search remains a separate retrieval mechanism. A Search result does not become a persistent Index item unless the user makes an explicit future product action that says so.
 
@@ -132,9 +134,10 @@ The first Search surface:
 - shows the result's real Entry type/Task state and owning Daily, Monthly, Future, or Collection context;
 - remains read-only and exposes no Task, migration, scheduling, reference, or ownership actions;
 - presents a quiet prompt before a query and a quiet empty state when nothing matches;
-- refreshes the last submitted query when the retained Search section becomes active again so Task state does not remain stale after work elsewhere.
+- refreshes the last submitted query when the retained Search section becomes active again so Task state does not remain stale after work elsewhere;
+- opens a result through the real route of its owning Daily, Monthly, Future, or Collection context.
 
-Search does not create Entries, Collection references, or Index items. It does not persist query history, maintain a Search cache, or introduce a relevance/ranking engine in this slice. Direct navigation from a result to its source, Collection-title search, richer filtering, and any future full-text indexing remain separate product decisions.
+Search does not create Entries, Collection references, or Index items. It does not persist query history, maintain a Search cache, or introduce a relevance/ranking engine in this slice. Collection-title search, richer filtering, and any future full-text indexing remain separate product decisions.
 
 ### Migration and scheduling
 

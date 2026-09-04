@@ -138,7 +138,7 @@ void main() {
 
     await _pumpFuture(tester, dataSource);
 
-    await tester.tap(find.text('•'));
+    await tester.tap(find.text('Book lodging'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Complete'));
     await tester.pumpAndSettle();

@@ -54,7 +54,7 @@ void main() {
     expect(dataSource.taskEntries.single.taskState, JournalTaskState.open);
     expect(find.text('•'), findsOneWidget);
 
-    await tester.tap(find.text('•'));
+    await tester.tap(find.text('Renew documents'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Complete'));
     await tester.pump();

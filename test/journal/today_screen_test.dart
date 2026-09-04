@@ -34,7 +34,7 @@ void main() {
     await tester.pumpWidget(const SizedBox.shrink());
   });
 
-  testWidgets('Today completes an open Task through the task marker', (
+  testWidgets('Today completes an open Task through the entry row', (
     tester,
   ) async {
     final _MemoryTodayJournal dataSource = _MemoryTodayJournal(
@@ -51,8 +51,8 @@ void main() {
 
     await _pumpToday(tester, dataSource);
 
-    expect(find.text('•'), findsOneWidget);
-    await tester.tap(find.text('•'));
+    expect(find.text('Finish report'), findsOneWidget);
+    await tester.tap(find.text('Finish report'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Complete'));
     await tester.pump();

@@ -402,6 +402,36 @@ void main() {
     expect(placementCount.read<int>('count'), 0);
   });
 
+  test('capture undo refuses a Task after its state changes', () async {
+    final String dailyLog = await service.createLog(
+      kind: JournalLogKind.daily,
+      periodStart: '2026-09-04',
+    );
+    final String entry = await service.capture(
+      type: JournalEntryType.task,
+      content: 'Already decided',
+      owner: JournalLogOwner(logId: dailyLog),
+    );
+
+    await database.customStatement(
+      'UPDATE entries SET task_state = ? WHERE id = ?',
+      <Object?>['completed', entry],
+    );
+
+    expect(
+      () => service.undoCapture(entryId: entry),
+      throwsA(isA<JournalInvariantException>()),
+    );
+
+    final row = await database
+        .customSelect(
+          'SELECT task_state FROM entries WHERE id = ?',
+          variables: <Variable<Object>>[Variable.withString(entry)],
+        )
+        .getSingle();
+    expect(row.read<String>('task_state'), 'completed');
+  });
+
   test('capture undo refuses an entry after a reference', () async {
     final String dailyLog = await service.createLog(
       kind: JournalLogKind.daily,
