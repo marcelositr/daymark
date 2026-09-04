@@ -4,20 +4,20 @@ This is Daymark's canonical living handoff. Read this file and `AGENTS.md` befor
 
 ## Current state
 
-- Phase: pre-alpha, core Bullet Journal flows are implemented and the project is entering a focused vacation-ready stabilization cycle.
+- Phase: pre-alpha, core Bullet Journal flows are implemented and the project is in the vacation-ready stabilization cycle.
 - Integration branch: `main` only.
-- Current merged `main` before documentation-alignment PR #27: `ab6b194e155cc225b4dc4ee1f82e202565eaeac2` (`feat(journal): browse Daily history (#26)`).
-- PR #26 full Ready CI #455 is green on final head `ab155f3a3439346be009a4224b1e5b1864f897d7`.
-- Post-merge `main` CI #456 is green on exact merged SHA `ab6b194e155cc225b4dc4ee1f82e202565eaeac2`.
-- Documentation-alignment PR #27, `docs: align local-first stabilization handoff`, was created from that exact `main` SHA to synchronize repository state, workflow, stabilization scope, and historical-document labeling before the next product slice.
-- No product PR is active at this checkpoint. After PR #27 is integrated, the next planned product slice is user-facing encrypted backup/restore.
-- The user explicitly authorized applying PR #27 to `main` once the exact final head satisfies the required merge gate.
+- Current merged `main`: `b6d8ed5904d5e587cec91ed597b297b2c75672b5`, produced by the squash merge of documentation-alignment PR #27.
+- Active product branch: `feat/backup-restore-ui`.
+- Latest implementation/validated dependency head before final documentation: `37e5664e9edb4c9365abb8466faa557f2f6c5a39`.
+- User-facing encrypted backup/restore is implemented and has passed focused automated validation, Linux and Android debug builds, and the real disposable Linux backup/restore flow.
+- The next planned product slice after this branch is open export.
 - Runtime targets: Linux and Android.
 - Pinned toolchain: Flutter 3.47.2 / Dart 3.13.2.
+- Local validation host details are recorded in `docs/LOCAL_ENVIRONMENT.md`; they are evidence, not product requirements.
 - Merge policy: never merge without explicit user approval; squash merge is the default.
 - Production Argon2id baseline: 19 MiB / 2 iterations / p=1 / 32-byte output.
 - Stabilization target: have a vacation-ready prerelease completed no later than 2026-09-06, preferably by 2026-09-05, without weakening architecture, security, persistence, tests, or merge protection.
-- Last updated: 2026-09-03 (America/Sao_Paulo).
+- Last updated: 2026-09-04 (America/Sao_Paulo).
 
 ## Product doctrine
 
@@ -222,13 +222,52 @@ Validation:
 - squash merge produced `main` SHA `ab6b194e155cc225b4dc4ee1f82e202565eaeac2`;
 - post-merge `main` CI #456 green on that exact SHA.
 
+## Active stabilization slice: encrypted backup/restore
+
+User-facing encrypted backup/restore is complete on `feat/backup-restore-ui`.
+
+Implemented behavior:
+
+- an unlocked journal can create a portable authenticated encrypted Daymark backup;
+- creation requires the current master password before the journal snapshot is exported;
+- Linux uses a native save-file path without buffering the entire encrypted container in memory;
+- Android uses the platform file-picker boundary required by its document provider flow;
+- restore is exposed only when the journal is locked or absent, never over a live encrypted database session;
+- restore requires the backup password and validates authentication, compatibility, database integrity, foreign keys, and staged files before replacing the existing journal;
+- a failed or wrongly authenticated restore leaves the existing journal locked and unchanged;
+- a successful restore reopens only from the committed restored database/key-envelope pair;
+- interrupted restore recovery is performed before normal locked-journal inspection;
+- backup/restore errors are localized and raw cryptographic/filesystem errors are not shown to the user;
+- EN, `pt`, and `pt_BR` strings are present;
+- presentation tests use a fake file gateway while session/backup tests continue to exercise the real persistence and cryptographic boundaries.
+
+Dependency note:
+
+- `file_picker` is pinned to `12.1.3`;
+- the initial `11.0.3` choice compiled on Linux but failed Android under Daymark's AGP 9.1 / Gradle 9.3 line because its Android plugin registration was incompatible with that setup;
+- `12.1.3` resolves through the federated Android/Linux implementations and passed both local target builds.
+
+Validation evidence:
+
+- pinned formatter and analyzer passed;
+- focused backup/restore presentation, session, service, and recovery tests passed;
+- the complete Flutter test suite passed before the file-picker compatibility correction;
+- after resolving `file_picker 12.1.3`, focused backup/restore tests, Android debug build, and Linux debug build passed on implementation head `37e5664e9edb4c9365abb8466faa557f2f6c5a39`;
+- a real Linux test used an isolated disposable XDG data/config/cache root;
+- that manual test created `ANTES DO BACKUP`, created an encrypted backup, then created `DEPOIS DO BACKUP`;
+- after locking, a wrong restore password was rejected and the journal remained locked;
+- restoring with the correct password recovered `ANTES DO BACKUP` and removed the post-backup `DEPOIS DO BACKUP` state;
+- a second application launch started locked, unlocked successfully, and preserved the restored snapshot;
+- both manual application executions exited normally;
+- the final Ready PR still requires exact-head full CI and repository `merge-gate`.
+
 ## Vacation-ready stabilization plan
 
 The goal is not to rush to a nominal stable `1.0.0`. The goal is a trustworthy end-to-end prerelease that can be used intensively during the user's vacation, with September 6 as the final safety boundary and September 5 preferred if the required work closes cleanly.
 
 Priority order:
 
-1. **User-facing encrypted backup/restore**: connect the already-tested encrypted backup/restore service to the existing session lifecycle and explicit file-selection UX without changing the backup format or cryptographic design.
+1. **User-facing encrypted backup/restore**: completed on `feat/backup-restore-ui`; final Ready CI / merge-gate remains before integration.
 2. **Open export**: provide explicit human-readable/non-proprietary export, expected to cover structured JSON plus Markdown, with clear plaintext-boundary messaging and no confusion with encrypted backup.
 3. **Appearance selection**: expose the already-supported System / Light / Dark choice without turning settings into a configuration surface.
 4. **Release hardening**: packaging/versioning, Android release signing setup, Linux and Android release builds, installation/upgrade smoke tests, dependency/security review, documentation alignment, and a complete real backup/restore test on disposable/controlled data before relying on the prerelease for daily use.
