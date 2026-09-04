@@ -98,6 +98,53 @@ Before any public distribution, test the signed release APK on physical Android 
 - install the next build over the existing installation when testing an upgrade path;
 - confirm existing encrypted journal data remains readable after the upgrade.
 
+## Current alpha.2 validation evidence
+
+The latest locally validated release candidates were produced after the `journal_metadata` compatibility repair and supersede every earlier alpha.2 artifact built before that repair.
+
+Validated source head before final documentation-only commits:
+
+```text
+b39be30c8e5635f93dddc5f6a2b07632e8a472ec
+```
+
+Release artifact SHA-256 values:
+
+```text
+490ce7c62126e8b9d5e9e78a3727f68c131e60ef197d0673d174ea0d44def9c4  daymark-1.0.0-alpha.2-linux-x64.tar.gz
+96f69264a4fc0fead8d31893f96aac428db341303abdfab929daaee5760f20f0  daymark-1.0.0-alpha.2-android.apk
+```
+
+Android release certificate SHA-256:
+
+```text
+44342dcd1343643bc56da2545ec10e5624fc2e49d1bcc3b418f4f9ab160e1b88
+```
+
+Physical Android validation used a Multilaser `M7_3G_PLUS` running Android 8.1.0 / SDK 27. The real pre-existing `1.0.0-alpha.1` debug installation was first identified by version and certificate, then updated with a current-code debug build carrying the same debug certificate solely to create a portable migration backup. Before removing that debug installation, the backup was copied to the host and a second raw safety snapshot preserved the encrypted database, key envelope, and device preferences. The raw database did not expose the plaintext SQLite header.
+
+The migration backup was then restored into the clean signed, non-debuggable alpha.2 release. Existing journal data, lock/unlock, Appearance persistence, backup creation, and same-release `adb install -r` retention were verified. The migration backup SHA-256 is:
+
+```text
+febbd3b2247ae9a434470ee1a6458b8bd7e14d0a49e5cea75b8629803255cdff
+```
+
+Physical Android Open Export validation passed for both formats. Markdown passed the format/version/schema header, explicit plaintext warning, complete section set, and UTF-8 validation. Its validation copy SHA-256 is:
+
+```text
+ada5a36771280785f57417f17e4d6baeaeb0720618b28e97d3ba1fe7454b206f
+```
+
+The first physical JSON validation exposed a real compatibility defect: the migrated alpha.1 journal had no `journal_metadata` row even though the data-model contract requires exactly one. Alpha.2 now initializes that singleton for new journals and idempotently repairs it on unlock for legacy journals with zero rows, while more than one row still fails closed. Focused metadata/session/export/backup tests, analyzer, the full Flutter suite, Linux release build, Android configuration refresh, and signed Android release build passed after the repair.
+
+The repaired release was installed over the signed alpha.2 test installation without losing data. A new physical JSON Open Export then contained exactly one UUID-v7 metadata row and passed format v1 / schema v1 validation. Its SHA-256 is:
+
+```text
+c6c0b7b37466c91486f7793fd714ed7033acfa46c707e2e13fa5eb965e27d91e
+```
+
+The release branch still requires exact-head Ready CI and explicit user approval before merge, tagging, or publication. Documentation-only commits after the validated build head do not retroactively change artifact bytes, but the final release process must preserve the exact source/artifact mapping in the PR and GitHub Release notes.
+
 ## Artifact identity and checksums
 
 The Flutter application version is defined in `pubspec.yaml`. Android's version code comes from the build number after `+` and must increase monotonically for distributable Android artifacts.
