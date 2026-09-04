@@ -24,13 +24,17 @@ final class NativeBackupFileGateway implements BackupFileGateway {
   }) async {
     final Uint8List bytes = await sourceFile.readAsBytes();
     try {
-      final String? destination = await FilePicker.saveFile(
-        dialogTitle: dialogTitle,
-        fileName: suggestedName,
-        type: FileType.any,
-        bytes: bytes,
-      );
-      return destination != null;
+      try {
+        final String? destination = await FilePicker.saveFile(
+          dialogTitle: dialogTitle,
+          fileName: suggestedName,
+          type: FileType.any,
+          bytes: bytes,
+        );
+        return destination != null;
+      } on Exception {
+        throw const BackupFileSelectionException();
+      }
     } finally {
       bytes.fillRange(0, bytes.length, 0);
     }
@@ -38,12 +42,17 @@ final class NativeBackupFileGateway implements BackupFileGateway {
 
   @override
   Future<File?> pickBackup({required String dialogTitle}) async {
-    final FilePickerResult? result = await FilePicker.pickFiles(
-      dialogTitle: dialogTitle,
-      type: FileType.any,
-      allowMultiple: false,
-      withData: false,
-    );
+    final FilePickerResult? result;
+    try {
+      result = await FilePicker.pickFiles(
+        dialogTitle: dialogTitle,
+        type: FileType.any,
+        allowMultiple: false,
+        withData: false,
+      );
+    } on Exception {
+      throw const BackupFileSelectionException();
+    }
     if (result == null) {
       return null;
     }
