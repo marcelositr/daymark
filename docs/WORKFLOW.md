@@ -49,6 +49,8 @@ A pull request should have one coherent responsibility. Small supporting refacto
 
 Open a Draft PR early when visible CI feedback will reduce risk. Draft does not mean low quality; it means the branch is still inside the implementation/diagnostic loop and is not yet asking for full merge validation.
 
+A Draft PR is useful, but it is not required as the primary development runner when the user has explicitly agreed to execute the pinned local validation ladder and that path is faster or more reliable. The final Ready/non-Draft CI remains mandatory whenever repository rules require it.
+
 ### PR title
 
 Use Conventional Commit style so the squash commit has a useful history:
@@ -95,7 +97,9 @@ AI agents must never merge a PR unless the user explicitly requests the merge.
 
 ## Staged implementation and validation
 
-Daymark uses a staged validation flow so cheap, high-signal checks happen before expensive builds and so CI failures are diagnosed rather than patched blindly.
+Daymark uses a staged validation flow so cheap, high-signal checks happen before expensive builds and so failures are diagnosed rather than patched blindly.
+
+Local validation and GitHub CI are complementary. Local validation is the preferred fast feedback path when it is available and agreed with the user. GitHub Ready CI is the independent final merge gate where required by repository rules.
 
 ### 1. Baseline before edits
 
@@ -111,11 +115,16 @@ If inherited work has repeated corrective commits, contradictory CI/manual resul
 
 Do not treat a PR number or branch name as sufficient evidence of current state. Verify whether the PR is Draft, Ready, merged, closed, superseded, or still open.
 
-### 2. Draft PR as the development gate
+### 2. Development feedback path
 
-Create or keep the PR as Draft while implementation is still changing materially.
+Keep implementation inside a short-lived branch while it is changing materially.
 
-The repository's Draft `dev-check` is intentionally lightweight and should remain fast enough to use as an implementation feedback loop. It validates:
+There are two valid development-feedback paths:
+
+1. **Local-first**: use the user's pinned local toolchain as the primary implementation loop when explicitly agreed. This is preferred during the current stabilization cycle and whenever GitHub Actions/API latency would add delay without adding signal.
+2. **Draft-CI-assisted**: open/keep a Draft PR early when remote feedback is useful, local execution is unavailable, or a GitHub-only condition needs evidence.
+
+The repository's Draft `dev-check` validates:
 
 - locked dependency resolution;
 - localization generation;
@@ -129,7 +138,7 @@ Do not weaken these checks to accommodate a branch. Fix the underlying source, g
 
 If ARB localization resources changed, local validation must run `flutter gen-l10n` before analyzer/tests that compile presentation code. Missing generated getters are not evidence that production UI should be rewritten.
 
-Focused tests may be run during Draft development whenever they are useful to prove behavior or diagnose a failure. The full suite and native builds are merge gates, not substitutes for targeted reasoning.
+Focused tests should be run during development whenever they are useful to prove behavior or diagnose a failure. The complete suite and native builds are finalization gates, not substitutes for targeted reasoning.
 
 ### 3. Test at the correct layer
 
@@ -148,7 +157,7 @@ A widget-test failure must be classified before production changes are made. Off
 
 ### 4. Diagnose failures before changing behavior
 
-When a command, test, or CI job fails:
+When a command, test, build, or CI job fails:
 
 1. preserve the exact failure output and exit code;
 2. identify the last operation that definitely completed;
@@ -160,7 +169,7 @@ When a command, test, or CI job fails:
 
 Repeated speculative fixes are a signal to stop and re-audit the affected slice.
 
-Formatter-only failures are mechanical. Reproduce them with the Dart version supplied by the pinned Flutter toolchain rather than guessing reflow by eye. If a temporary CI probe is required because the agent cannot execute the pinned formatter, it must be removed before the PR is reviewable.
+Formatter-only failures are mechanical. Reproduce them with the Dart version supplied by the pinned Flutter toolchain rather than guessing reflow by eye. During local-first work, run the formatter before expensive tests/builds so formatter reflow cannot become a late CI round trip. Temporary CI formatter probes are a fallback only and must be removed before the PR is reviewable.
 
 ### 5. Local validation ladder
 
@@ -168,16 +177,18 @@ Before requesting full merge validation, run the applicable local checks in this
 
 1. locked dependency resolution and required generators;
 2. generated-artifact/reproducibility checks;
-3. formatter;
+3. pinned formatter;
 4. analyzer;
 5. focused tests for changed behavior;
 6. complete test suite;
-7. native build for the locally available target;
-8. manual application flow when lifecycle, persistence, input, rendering, or platform behavior is involved.
+7. native build for the locally available target(s);
+8. manual application flow when lifecycle, persistence, input, rendering, import/export, backup/restore, or platform behavior is involved.
 
 For risky lifecycle/persistence work, manual validation should exercise the full user path rather than only the happy-path screen. Examples include create -> capture -> lock -> wrong unlock -> correct unlock -> restart -> persistence verification.
 
 For cross-surface writes, manual validation must also verify **immediate visibility before lock/restart**. A successful database write is not enough if a retained destination section still shows a stale in-memory snapshot until the session is rebuilt.
+
+Backup/restore, migration, clean-install, upgrade, or other destructive tests must use disposable/controlled data unless the user explicitly chooses otherwise after understanding the risk.
 
 When an AI agent cannot execute a required local step, it should provide the user a complete copy-paste block with stop conditions, expected success markers, and a clear request for the resulting output. Do not require the user to invent debugging commands.
 
@@ -218,11 +229,11 @@ A non-Draft PR runs the full validation tier:
 - dependency review;
 - `merge-gate`, which requires the merge-tier jobs to succeed.
 
-The live `main` ruleset requires the exact `merge-gate` status. A PR is not merge-eligible until that check succeeds.
+The live `main` ruleset requires the exact `merge-gate` status. Local green evidence cannot replace that required status. A PR is not merge-eligible until the required check succeeds on the exact final head.
 
 CI evidence is head-SHA-specific. A green run from a superseded implementation head does not validate a later documentation or code head.
 
-If GitHub Actions or an API is delayed or returns incomplete data, do not infer success. Wait for reliable evidence or ask the user for the smallest missing CI/job reference needed to continue.
+If GitHub Actions or an API is delayed or returns incomplete data, do not infer success. Continue independent work that does not depend on the missing evidence. When the missing fact blocks merge, ask the user for the smallest concrete CI/job reference needed to continue.
 
 ### 8. Explicit merge decision
 
@@ -330,6 +341,19 @@ There is no automatic time-based promotion from RC to stable.
 `1.0.0` is published only after deliberate approval that the RC line has been tested sufficiently.
 
 Stable releases require release notes, a version tag, a GitHub Release, reproducible source state, and documented compatibility expectations.
+
+## Time-bounded stabilization cycles
+
+A time-bounded stabilization target may be recorded in `PROJECT.md` when there is a concrete operational reason to produce a trustworthy prerelease by a specific date.
+
+A date target does not weaken engineering gates. Instead:
+
+- freeze or narrow scope;
+- favor small, vertically complete branches;
+- use local-first validation to remove avoidable remote latency;
+- defer nonessential roadmap work rather than landing risky breadth;
+- reserve the final day for blockers, release checks, controlled backup/restore, clean-install/upgrade, and packaging verification;
+- do not promote to stable merely because the calendar target arrived.
 
 ## Release checklist
 

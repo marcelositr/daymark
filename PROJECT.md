@@ -4,16 +4,19 @@ This is Daymark's canonical living handoff. Read this file and `AGENTS.md` befor
 
 ## Current state
 
-- Phase: pre-alpha, core Bullet Journal flows in active development.
+- Phase: pre-alpha, core Bullet Journal flows are implemented and the project is entering a focused vacation-ready stabilization cycle.
 - Integration branch: `main` only.
-- Current merged `main`: `6a7fa2e0167099f0b975f5479ab12ef37a1883c7` (`feat(journal): add basic local search (#25)`).
-- Post-merge `main` CI #439 is green on that exact SHA.
-- Active branch/PR: `feat/daily-history` / PR #26, `feat(journal): browse Daily history`.
-- PR #26 has passed manual Linux validation and is ready for the full non-Draft gate before squash merge.
+- Current merged `main` before documentation-alignment PR #27: `ab6b194e155cc225b4dc4ee1f82e202565eaeac2` (`feat(journal): browse Daily history (#26)`).
+- PR #26 full Ready CI #455 is green on final head `ab155f3a3439346be009a4224b1e5b1864f897d7`.
+- Post-merge `main` CI #456 is green on exact merged SHA `ab6b194e155cc225b4dc4ee1f82e202565eaeac2`.
+- Documentation-alignment PR #27, `docs: align local-first stabilization handoff`, was created from that exact `main` SHA to synchronize repository state, workflow, stabilization scope, and historical-document labeling before the next product slice.
+- No product PR is active at this checkpoint. After PR #27 is integrated, the next planned product slice is user-facing encrypted backup/restore.
+- The user explicitly authorized applying PR #27 to `main` once the exact final head satisfies the required merge gate.
 - Runtime targets: Linux and Android.
 - Pinned toolchain: Flutter 3.47.2 / Dart 3.13.2.
 - Merge policy: never merge without explicit user approval; squash merge is the default.
 - Production Argon2id baseline: 19 MiB / 2 iterations / p=1 / 32-byte output.
+- Stabilization target: have a vacation-ready prerelease completed no later than 2026-09-06, preferably by 2026-09-05, without weakening architecture, security, persistence, tests, or merge protection.
 - Last updated: 2026-09-03 (America/Sao_Paulo).
 
 ## Product doctrine
@@ -33,10 +36,12 @@ Daymark is a faithful digital Bullet Journal, not a generic productivity suite.
 - `main` is the only permanent integration branch. Use short-lived branches and PRs.
 - PR titles use Conventional Commit form.
 - The user makes every merge decision. Never enable auto-merge or merge implicitly.
-- Repository/API/CI work is assistant-owned. Do not use the user as a routine CI, formatter, or test runner.
-- Ask the user to run locally only when genuine product/platform behavior needs manual validation.
+- The agent owns implementation design, Git/GitHub operations available through connected tooling, test design, command construction, and diagnosis of returned evidence.
+- When local execution is faster or GitHub Actions/API evidence is degraded, the user may act as an execution bridge for formatter, analyzer, tests, builds, and manual product checks using complete agent-provided command blocks.
+- Local execution does not transfer debugging responsibility to the user. The agent interprets failures and decides the next safe step.
+- Local-first validation may replace routine Draft-CI iteration, but it does not weaken the final repository merge gate. The live `main` ruleset still requires the exact `merge-gate` status before merge.
+- Use the pinned local Dart formatter early, before spending time on expensive tests. If ARB resources changed, run `flutter gen-l10n` before formatter/analyzer/tests that compile localization-dependent code.
 - Keep `PROJECT.md` current and `CHANGELOG.md` release-facing.
-- Run `flutter gen-l10n` after ARB changes.
 - Treat formatter output from the pinned Dart version as authoritative.
 - Treat CI evidence as SHA-specific. A green superseded run does not validate a newer head.
 - Distinguish mechanical CI/test-harness failures from product defects before changing behavior.
@@ -45,6 +50,24 @@ Daymark is a faithful digital Bullet Journal, not a generic productivity suite.
 - User shell blocks must be safe for an interactive shell and must not end with a bare `exit`.
 - Do not invent fake product destinations or temporary domain concepts to unblock UI.
 - Do not duplicate repository/service semantics inside widgets/providers.
+
+## Local-first stabilization loop
+
+During the current stabilization cycle, use this default sequence for each substantive branch unless the change is too small to justify every step:
+
+1. start from exact current `main` and create one short-lived branch with one coherent responsibility;
+2. implement and add/update focused tests at the correct layer;
+3. if localization changed, run `flutter gen-l10n` first;
+4. run the pinned Dart formatter immediately and incorporate its exact output before expensive validation;
+5. run analyzer and focused tests;
+6. when the slice appears correct, run the complete Flutter suite and the locally available native build(s);
+7. run the real manual user flow when persistence, lifecycle, navigation, rendering, import/export, backup/restore, or platform behavior is involved;
+8. if any result is surprising, diagnose before changing production behavior and repeat the proportionate local checks;
+9. align documentation on the final branch head;
+10. use GitHub full Ready CI once the branch is reviewable, treating it as final independent merge evidence rather than the routine development runner;
+11. merge only after the exact final head is green and the user explicitly approves squash merge.
+
+If GitHub Actions or the API is slow, delayed, or incomplete, continue independent local/product work that does not depend on the missing evidence. When the missing fact blocks merge, ask the user only for the smallest concrete CI/job reference needed. Never infer a green result.
 
 ## Critical retained-navigation lifecycle rule
 
@@ -57,7 +80,7 @@ Therefore:
 - `AppSectionScope` is the current presentation-level activation signal;
 - do not solve freshness by destroying all tabs, polling continuously, or adding an unrelated global cache.
 
-This rule first mattered for Future after scheduling, then Collections after migration/references, and PR #25 applies it to Search by rerunning the last submitted query on reactivation.
+This rule first mattered for Future after scheduling, then Collections after migration/references, and Search reruns the last submitted query on reactivation. Any future cross-surface write must preserve the same immediate-freshness rule.
 
 ## Stable domain and persistence baseline
 
@@ -96,7 +119,7 @@ Durable rules:
 
 ## Security / backup baseline
 
-Do not casually modify these contracts. Authoritative details live in `SECURITY.md`, `docs/SECURITY_FOUNDATION.md`, `docs/BACKUP_FORMAT.md`, and `docs/ARCHITECTURE.md`.
+Do not casually modify these contracts. The current security contract lives in `SECURITY.md`; `docs/SECURITY_FOUNDATION.md` is the historical PR #7 validation record. Backup-format details live in `docs/BACKUP_FORMAT.md`, with architecture boundaries in `docs/ARCHITECTURE.md`.
 
 Current foundation includes:
 
@@ -173,11 +196,9 @@ Basic local Search. Squash: `6a7fa2e0167099f0b975f5479ab12ef37a1883c7`.
 - Ready CI #438 green;
 - post-merge main CI #439 green.
 
-## Active PR #26: read-only Daily history
+### PR #26
 
-Branch: `feat/daily-history`.
-
-PR: #26, `feat(journal): browse Daily history`.
+Read-only Daily history. Squash: `ab6b194e155cc225b4dc4ee1f82e202565eaeac2`.
 
 Implemented scope:
 
@@ -195,24 +216,43 @@ Implemented scope:
 
 Validation:
 
-- focused finalizer: pinned formatter and analyzer green;
-- focused Daily-history set: **7 tests passed**;
-- complete Daymark suite: **145 tests passed**;
-- temporary validation/finalizer workflows removed from final diff;
-- exact-head Draft CI #448 green before the temporary full-suite validation cleanup commit;
-- manual Linux validation passed on final clean head `39090a6ad2338cb684b8c8a3bee73d6fa5bd60a9`;
-- user explicitly authorized squash merge after the full non-Draft gate;
-- full Ready CI remains the final pre-merge requirement.
+- focused Daily-history validation and complete Daymark suite passed during development;
+- manual Linux validation passed on the final implementation/documentation line;
+- full Ready CI #455 green on final PR head `ab155f3a3439346be009a4224b1e5b1864f897d7`;
+- squash merge produced `main` SHA `ab6b194e155cc225b4dc4ee1f82e202565eaeac2`;
+- post-merge `main` CI #456 green on that exact SHA.
 
-## Next work after PR #26
+## Vacation-ready stabilization plan
 
-Do not start another PR until explicitly requested after PR #26 merge. When work resumes, likely candidates remain direct retrieval navigation, Reflection, backup/restore UI, exports, OS lock integration, accessibility/keyboard refinement, platform polish, packaging, and release audits.
+The goal is not to rush to a nominal stable `1.0.0`. The goal is a trustworthy end-to-end prerelease that can be used intensively during the user's vacation, with September 6 as the final safety boundary and September 5 preferred if the required work closes cleanly.
+
+Priority order:
+
+1. **User-facing encrypted backup/restore**: connect the already-tested encrypted backup/restore service to the existing session lifecycle and explicit file-selection UX without changing the backup format or cryptographic design.
+2. **Open export**: provide explicit human-readable/non-proprietary export, expected to cover structured JSON plus Markdown, with clear plaintext-boundary messaging and no confusion with encrypted backup.
+3. **Appearance selection**: expose the already-supported System / Light / Dark choice without turning settings into a configuration surface.
+4. **Release hardening**: packaging/versioning, Android release signing setup, Linux and Android release builds, installation/upgrade smoke tests, dependency/security review, documentation alignment, and a complete real backup/restore test on disposable/controlled data before relying on the prerelease for daily use.
+5. **Final stabilization only**: after the above closes, fix blockers and regressions. Do not add unrelated features simply because time remains.
+
+Explicitly deferrable when they threaten stability or the date boundary:
+
+- direct source navigation from Search/Index;
+- richer Reflection workflows;
+- OS-level immediate lock hooks;
+- device-assisted/biometric unlock;
+- accessibility/keyboard refinement beyond release-blocking defects;
+- cloud/sync or other out-of-scope product expansion.
+
+A feature is not entitled to ship merely because it appeared on an older roadmap. For the current stabilization cycle it must materially improve safe daily use, portability, recovery, or release readiness without creating disproportionate risk.
 
 ## CI and handoff traps
 
-- Draft PRs run `dev-check`; Ready PRs run quality/full tests, Linux, Android, dependency review, and `merge-gate`.
-- A red formatter is mechanical evidence, not automatically a product defect.
+- Local-first is the preferred development feedback loop during the current stabilization cycle when it is faster or GitHub is degraded.
+- Draft PRs may still run `dev-check`, but repeated remote Draft iterations are not required when equivalent pinned local checks are available and recorded.
+- Ready PRs still require quality/full tests, Linux, Android, dependency review, and `merge-gate` on the exact final head because the live ruleset requires `merge-gate`.
+- A red formatter is mechanical evidence, not automatically a product defect. Apply the pinned Dart formatter early rather than guessing reflow.
 - Commits created by `github-actions[bot]` may show `action_required`; use a useful normal commit for exact-head evidence rather than treating that status as code failure.
 - Temporary workflow probes must not remain in the final PR diff.
 - `StatefulShellRoute.indexedStack` retains screens; section navigation is not a remount lifecycle.
-- Manual product testing remains important for lifecycle freshness, compact/desktop navigation, persistence, and false-success/false-error UI behavior.
+- Manual product testing remains important for lifecycle freshness, compact/desktop navigation, persistence, backup/restore, import/export, and false-success/false-error UI behavior.
+- If GitHub Actions/API results are delayed or incomplete, do not infer success. Continue independent work where safe, then request only the smallest missing evidence when a merge decision is blocked.

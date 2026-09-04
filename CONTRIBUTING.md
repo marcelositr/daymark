@@ -87,7 +87,7 @@ A build compiling is not sufficient validation for persistence, backup, recovery
 
 When ARB resources change, run `flutter gen-l10n` before analyzer/tests that compile localized presentation code.
 
-Use the Dart formatter supplied by the pinned Flutter toolchain rather than guessing formatting changes manually.
+Use the Dart formatter supplied by the pinned Flutter toolchain rather than guessing formatting changes manually. Run it before expensive tests/builds when Dart source or tests changed.
 
 A failing test must be classified before changing production code. Test-harness problems such as off-screen widgets, ambiguous finders, incorrect scrolling helpers, or invalid fakes are not production defects.
 
@@ -97,7 +97,9 @@ The detailed incident-derived failure-prevention rules are mandatory and live in
 
 ## Local validation through the user
 
-When an AI agent needs the user to execute local Linux/Android commands, the agent remains responsible for the diagnostic design.
+When the user has explicitly agreed to execute Daymark validation locally, that local path may be the primary development feedback loop, especially when the pinned local toolchain/hardware is faster or more representative than delayed GitHub Actions.
+
+The AI agent remains responsible for the diagnostic design, command construction, expected results, and interpretation of returned evidence. Local execution must not turn the user into the debugger for agent-generated changes.
 
 Pasteable command blocks must be safe for an interactive shell:
 
@@ -105,9 +107,15 @@ Pasteable command blocks must be safe for an interactive shell:
 - no accidental shell-closing guard patterns;
 - syntactically complete `if ...; then ...; else ...; fi` when conditional flow is needed;
 - printed exit codes and expected success markers;
-- exact branch/head checks when validation is SHA-sensitive.
+- exact branch/head checks when validation is SHA-sensitive;
+- required generators before compilation-dependent checks;
+- pinned formatter before expensive tests/builds when applicable.
 
-Do not ask the user to expose passwords, journal plaintext, keys, envelopes, or recovery material.
+Use focused tests during implementation, then the complete suite and applicable native builds when the slice is believed complete. Destructive backup/restore, migration, clean-install, or upgrade checks should use controlled/disposable data unless the user explicitly chooses otherwise.
+
+Local green evidence can replace routine Draft-CI iteration, but it does not bypass required repository checks. If `main` requires `merge-gate`, the exact final PR head must still pass that gate before merge.
+
+Do not ask the user to expose passwords, journal plaintext, keys, envelopes, recovery material, signing secrets, or other sensitive data.
 
 ## Dependencies
 

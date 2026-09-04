@@ -1,5 +1,11 @@
 # Security foundation validation
 
+## Status
+
+This document is the historical validation record for security-foundation PR #7. It preserves the scope, evidence, and decisions established by that cycle and is not the canonical source for Daymark's current feature/implementation status.
+
+For the current project state, read `PROJECT.md`. For the current security contract, read `SECURITY.md`. Later work has implemented capabilities that this historical record correctly lists as outside PR #7, including automatic inactivity locking and the encrypted portable backup/restore container.
+
 ## Purpose
 
 This document defines the focused implementation and validation cycle that turns Daymark's security architecture into tested engineering constraints.
@@ -37,9 +43,11 @@ This security-foundation PR does not implement:
 - synchronization;
 - journal product screens.
 
+These bullets describe the boundary of PR #7, not the current repository feature set. Automatic inactivity locking and the encrypted backup/restore container were implemented in later work; device-assisted unlock remains deferred.
+
 Device-assisted unlock remains a convenience layer and will be connected only after the portable master-password/recovery path works independently.
 
-The encrypted Daymark backup container is the next focused security task. This cycle establishes the security boundaries it must obey but does not quietly expand into a full backup subsystem.
+The encrypted Daymark backup container was the next focused security task after this cycle. Its current authoritative format/safety contract lives in `docs/BACKUP_FORMAT.md`.
 
 ## Validated implementation baseline
 
@@ -255,13 +263,11 @@ SQLite3MultipleCiphers currently receives the raw key through SQL `PRAGMA key`, 
 
 This limitation must not be "fixed" by introducing unsafe FFI without a measured need and a separately reviewed safety case.
 
-## Key/session boundary for later locking
+## Key/session boundary established for later lifecycle work
 
 `JournalKeyMaterial` is the narrow owner of unlocked journal key material and exposes an explicit destroy lifecycle.
 
-Later manual/automatic lock work must own that object through a session-level abstraction rather than global/static state. Locking must close or invalidate the encrypted database session and drop application references to unlocked key material deterministically as far as the Dart/Flutter runtime permits.
-
-The UI, timeout policy, Android lifecycle integration, and Linux session-lock integration remain later tasks.
+PR #7 established that later manual/automatic lock work must own that object through a session-level abstraction rather than global/static state. Subsequent work implemented `JournalSession`, manual locking, and automatic inactivity locking under that constraint. Current lifecycle details therefore live in `PROJECT.md`, `docs/ARCHITECTURE.md`, and `SECURITY.md` rather than being redefined here.
 
 ## Test boundary
 
@@ -279,12 +285,14 @@ Tests distinguish:
 
 ## PR #7 completion gates
 
-The implementation and physical benchmark evidence are established. Before the PR can be considered for merge:
+This section records the historical completion gate for PR #7 and is retained as validation history rather than current work.
 
-1. keep `SECURITY.md`, `docs/ARCHITECTURE.md`, `docs/ARGON2_BENCHMARK.md`, `PROJECT.md`, README status, and the PR checklist aligned with the frozen initial KDF decision and Android backup boundary;
-2. obtain final green CI on the reviewed head;
-3. complete user review;
-4. merge only after the user explicitly requests it.
+The implementation and physical benchmark evidence were established before merge. The reviewed cycle required:
+
+1. keeping `SECURITY.md`, `docs/ARCHITECTURE.md`, `docs/ARGON2_BENCHMARK.md`, `PROJECT.md`, README status, and the PR checklist aligned with the frozen initial KDF decision and Android backup boundary;
+2. final green CI on the reviewed head;
+3. user review;
+4. merge only after explicit user request.
 
 ## Review rule
 
