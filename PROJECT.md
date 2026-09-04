@@ -6,11 +6,12 @@ This is Daymark's canonical living handoff. Read this file and `AGENTS.md` befor
 
 - Phase: pre-alpha, core Bullet Journal flows are implemented and the project is entering a focused vacation-ready stabilization cycle.
 - Integration branch: `main` only.
-- Current merged `main`: `ab6b194e155cc225b4dc4ee1f82e202565eaeac2` (`feat(journal): browse Daily history (#26)`).
+- Current merged `main` before documentation-alignment PR #27: `ab6b194e155cc225b4dc4ee1f82e202565eaeac2` (`feat(journal): browse Daily history (#26)`).
 - PR #26 full Ready CI #455 is green on final head `ab155f3a3439346be009a4224b1e5b1864f897d7`.
 - Post-merge `main` CI #456 is green on exact merged SHA `ab6b194e155cc225b4dc4ee1f82e202565eaeac2`.
-- Active branch: `docs/local-first-release-handoff`, created from that exact `main` SHA to synchronize repository handoff/workflow documentation before the next product slice.
-- No product PR is active while this documentation alignment is in progress.
+- Documentation-alignment PR #27, `docs: align local-first stabilization handoff`, was created from that exact `main` SHA to synchronize repository state, workflow, stabilization scope, and historical-document labeling before the next product slice.
+- No product PR is active at this checkpoint. After PR #27 is integrated, the next planned product slice is user-facing encrypted backup/restore.
+- The user explicitly authorized applying PR #27 to `main` once the exact final head satisfies the required merge gate.
 - Runtime targets: Linux and Android.
 - Pinned toolchain: Flutter 3.47.2 / Dart 3.13.2.
 - Merge policy: never merge without explicit user approval; squash merge is the default.
@@ -118,7 +119,7 @@ Durable rules:
 
 ## Security / backup baseline
 
-Do not casually modify these contracts. Authoritative details live in `SECURITY.md`, `docs/SECURITY_FOUNDATION.md`, `docs/BACKUP_FORMAT.md`, and `docs/ARCHITECTURE.md`.
+Do not casually modify these contracts. The current security contract lives in `SECURITY.md`; `docs/SECURITY_FOUNDATION.md` is the historical PR #7 validation record. Backup-format details live in `docs/BACKUP_FORMAT.md`, with architecture boundaries in `docs/ARCHITECTURE.md`.
 
 Current foundation includes:
 
