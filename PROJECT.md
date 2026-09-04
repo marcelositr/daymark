@@ -6,12 +6,16 @@ This is Daymark's canonical living handoff. Read this file and `AGENTS.md` befor
 
 - Phase: pre-alpha, core Bullet Journal flows are implemented and the project is in the vacation-ready stabilization cycle.
 - Integration branch: `main` only.
-- Current merged `main`: `e4659c14e84759150060e4f834a1a2fc50b20910`, squash merge of PR #28 `feat(backup): add user-facing encrypted backup restore`.
+- Current merged `main`: `75380a863a64dd6d6e2b56f5fde2879ca517c2f4`, squash merge of PR #29 `docs: close backup restore benchmark checkpoint`.
+- PR #29 exact Ready head: `f95a62cc41b1cd2e51dc29e341aa00657c4a4408`.
+- PR #29 Ready CI #467 passed quality, Linux, Android, dependency review, and `merge-gate`.
 - PR #28 exact Ready head: `a7fd2dfd5b408b0285ac88a7bf610041cf8c299d`.
 - PR #28 Ready CI #464 passed `quality`, Linux build, Android build, dependency review, and `merge-gate` on that exact head.
 - Post-merge `main` CI #465 passed on exact merged SHA `e4659c14e84759150060e4f834a1a2fc50b20910`.
 - User-facing encrypted backup/restore is now merged into `main` and passed real disposable Linux backup/restore validation before merge.
-- Next planned product slice: **Open Export**.
+- Active product branch: `feat/open-export`.
+- Open Export implementation and manual Linux validation are complete; final full validation and Ready CI remain before integration.
+- Next planned product slice after Open Export: **Appearance selection**.
 - Runtime targets: Linux and Android.
 - Pinned toolchain: Flutter 3.47.2 / Dart 3.13.2.
 - Primary local validation host details: `docs/LOCAL_ENVIRONMENT.md`.
@@ -164,6 +168,7 @@ Current foundation includes:
 - PR #26: read-only Daily history. Squash `ab6b194e155cc225b4dc4ee1f82e202565eaeac2`.
 - PR #27: local-first stabilization handoff alignment. Squash `b6d8ed5904d5e587cec91ed597b297b2c75672b5`.
 - PR #28: user-facing encrypted backup/restore. Squash `e4659c14e84759150060e4f834a1a2fc50b20910`.
+- PR #29: post-backup documentation and local performance benchmark. Squash `75380a863a64dd6d6e2b56f5fde2879ca517c2f4`.
 
 ### PR #28 backup/restore checkpoint
 
@@ -189,9 +194,9 @@ Validation evidence:
 - squash merge produced `main` SHA `e4659c14e84759150060e4f834a1a2fc50b20910`;
 - post-merge `main` CI #465 passed on that exact merged SHA.
 
-## Next product slice: Open Export
+## Active stabilization slice: Open Export
 
-Open Export is the next P0 stabilization slice.
+Open Export is implemented on `feat/open-export`.
 
 Expected boundary:
 
@@ -205,12 +210,26 @@ Expected boundary:
 - tests for escaping, Unicode, states, and relationships;
 - no cloud/sync semantics and no hidden automatic export.
 
+Implementation and validation:
+
+- machine-readable `daymark-open-export` JSON format version 1;
+- human-readable Markdown rendering of the same consistent snapshot;
+- stable IDs, Task states, owners, ordinals, migration lineage, Collection references, signifiers, and Index relationships are preserved;
+- output is deterministic and contains no volatile export timestamp;
+- Unicode and Markdown scalar/fence escaping are covered by focused tests;
+- UI clearly warns that JSON and Markdown are plaintext and no longer protected by Daymark encryption;
+- Open Export remains separate from encrypted backup and restore;
+- no dependency, schema, cryptographic-format, or backup-format change;
+- focused analyzer/tests and Linux debug build passed during implementation;
+- real disposable Linux validation passed for JSON, Markdown, Unicode, Collection ownership, and the plaintext warning;
+- final full local validation and exact-head Ready CI remain before merge.
+
 ## Vacation-ready stabilization plan
 
 Priority order:
 
 1. **User-facing encrypted backup/restore**: merged in PR #28.
-2. **Open export**: next active product slice.
+2. **Open export**: implemented on `feat/open-export`; final validation and merge remain.
 3. **Appearance selection**: expose System / Light / Dark without turning settings into a configuration surface.
 4. **Release hardening**: packaging/versioning, Android release signing setup, Linux and Android release builds, installation/upgrade smoke tests, dependency/security review, documentation alignment, and final controlled recovery validation.
 5. **Final stabilization only**: after the above closes, fix blockers and regressions; do not add unrelated features merely because time remains.
