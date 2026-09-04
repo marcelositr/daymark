@@ -445,9 +445,9 @@ final class JournalSessionManager {
 
   Future<void> _ensureJournalMetadata(DaymarkDatabase database) async {
     await database.transaction(() async {
-      final rows = await database.customSelect(
-        'SELECT id FROM journal_metadata ORDER BY id LIMIT 2',
-      ).get();
+      final rows = await database
+          .customSelect('SELECT id FROM journal_metadata ORDER BY id LIMIT 2')
+          .get();
 
       if (rows.length > 1) {
         throw StateError('Journal metadata contains more than one row.');

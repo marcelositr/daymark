@@ -39,9 +39,11 @@ void main() {
       masterPassword: 'metadata creation password',
     );
 
-    final rows = await created.database.customSelect(
-      'SELECT id, singleton, created_at, updated_at FROM journal_metadata',
-    ).get();
+    final rows = await created.database
+        .customSelect(
+          'SELECT id, singleton, created_at, updated_at FROM journal_metadata',
+        )
+        .get();
 
     expect(rows, hasLength(1));
     final row = rows.single.data;
@@ -66,9 +68,9 @@ void main() {
     final JournalSession reopened = await manager.unlock(
       masterPassword: 'metadata creation password',
     );
-    final reopenedRows = await reopened.database.customSelect(
-      'SELECT id FROM journal_metadata',
-    ).get();
+    final reopenedRows = await reopened.database
+        .customSelect('SELECT id FROM journal_metadata')
+        .get();
 
     expect(reopenedRows, hasLength(1));
     expect(reopenedRows.single.data['id'], id);
@@ -86,9 +88,9 @@ void main() {
     );
 
     await created.database.customStatement('DELETE FROM journal_metadata');
-    final beforeLock = await created.database.customSelect(
-      'SELECT id FROM journal_metadata',
-    ).get();
+    final beforeLock = await created.database
+        .customSelect('SELECT id FROM journal_metadata')
+        .get();
     expect(beforeLock, isEmpty);
 
     await manager.lock();
@@ -96,9 +98,9 @@ void main() {
       masterPassword: 'legacy metadata password',
     );
 
-    final metadataRows = await reopened.database.customSelect(
-      'SELECT id FROM journal_metadata',
-    ).get();
+    final metadataRows = await reopened.database
+        .customSelect('SELECT id FROM journal_metadata')
+        .get();
     expect(metadataRows, hasLength(1));
 
     final loaded = await reopened.loadDailyLog('2026-09-04');
