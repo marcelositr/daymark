@@ -131,7 +131,10 @@ final class _OpenExportDialogState extends ConsumerState<OpenExportDialog> {
       );
       _setError(l10n.openExportFailed);
     } finally {
-      bytes?.fillRange(0, bytes.length, 0);
+      final Uint8List? buffer = bytes;
+      if (buffer != null) {
+        buffer.fillRange(0, buffer.length, 0);
+      }
     }
   }
 
