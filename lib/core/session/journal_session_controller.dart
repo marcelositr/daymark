@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:daymark/core/export/open_export_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'journal_files.dart';
@@ -67,6 +68,20 @@ final class JournalSessionController extends AsyncNotifier<JournalAccessState> {
     return _requireManager().createBackup(
       backupFile: backupFile,
       masterPassword: masterPassword,
+    );
+  }
+
+  Future<OpenExportDocument> createOpenExport({
+    required OpenExportFormat format,
+  }) {
+    final JournalAccessState? accessState = state.value;
+    if (accessState is! JournalUnlocked) {
+      throw StateError('An unlocked journal is required to create an export.');
+    }
+
+    final JournalSession session = accessState.session;
+    return session.run(
+      () => OpenExportService(session.database).create(format: format),
     );
   }
 

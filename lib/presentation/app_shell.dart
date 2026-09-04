@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../features/journal/presentation/backup_dialog.dart';
+import '../features/journal/presentation/open_export_dialog.dart';
 import '../l10n/app_localizations.dart';
 import 'app_section_scope.dart';
 
@@ -16,6 +17,7 @@ class AppShell extends StatefulWidget {
 
 class _AppShellState extends State<AppShell> {
   static const int _backupAction = 6;
+  static const int _exportAction = 7;
 
   late final ValueNotifier<int> _currentSectionIndex;
 
@@ -86,10 +88,20 @@ class _AppShellState extends State<AppShell> {
                     onDestinationSelected: _goToBranch,
                     trailing: Padding(
                       padding: const EdgeInsets.only(top: 16),
-                      child: IconButton(
-                        onPressed: () => showBackupDialog(context),
-                        tooltip: l10n.backup,
-                        icon: const Icon(Icons.backup_outlined),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            onPressed: () => showBackupDialog(context),
+                            tooltip: l10n.backup,
+                            icon: const Icon(Icons.backup_outlined),
+                          ),
+                          IconButton(
+                            onPressed: () => showOpenExportDialog(context),
+                            tooltip: l10n.openExport,
+                            icon: const Icon(Icons.file_download_outlined),
+                          ),
+                        ],
                       ),
                     ),
                     destinations: [
@@ -169,6 +181,11 @@ class _AppShellState extends State<AppShell> {
                 title: Text(l10n.backup),
                 onTap: () => Navigator.of(sheetContext).pop(_backupAction),
               ),
+              ListTile(
+                leading: const Icon(Icons.file_download_outlined),
+                title: Text(l10n.openExport),
+                onTap: () => Navigator.of(sheetContext).pop(_exportAction),
+              ),
             ],
           ),
         );
@@ -179,6 +196,10 @@ class _AppShellState extends State<AppShell> {
     }
     if (action == _backupAction) {
       await showBackupDialog(context);
+      return;
+    }
+    if (action == _exportAction) {
+      await showOpenExportDialog(context);
       return;
     }
     _goToBranch(action);

@@ -14,6 +14,7 @@ This file is for user-visible behavior, data compatibility, security, packaging,
 - Pre-alpha master-password key-envelope and encrypted-journal persistence foundation.
 - Portable authenticated encrypted backup/restore foundation with rollback-safe recovery behavior.
 - User-facing encrypted backup creation and restore, with native file selection, password verification, locked/empty-state restore, and post-restore reopening only from committed validated files.
+- Explicit Open Export to deterministic versioned JSON and human-readable Markdown, preserving stable IDs, ownership, states, relationships, and Unicode.
 - Semantic journal application services for capture, migration, scheduling, and collection references.
 - Encrypted journal creation, unlock, and explicit manual lock flow.
 - Functional Today/Daily Log with Rapid Logging for Task, Event, and Note entries.
@@ -71,4 +72,5 @@ This file is for user-visible behavior, data compatibility, security, packaging,
 - Representative Linux and physical Android profile-mode benchmarks were recorded for Argon2id parameter selection.
 - The initial Argon2id production baseline is frozen at 19 MiB memory, 2 iterations, parallelism 1, and 32-byte output; parameters remain explicit in each key envelope for future strengthening and compatibility handling.
 - Unlocked journal sessions own the encrypted database and mutable journal-key material; closing the session closes persistence before key destruction.
+- Open Export is an explicit plaintext security boundary: exported JSON and Markdown are not encrypted and are deliberately distinct from Daymark encrypted backup.
 - The inactivity guard fails closed if the wall clock moves backwards relative to the last recorded journal interaction.
