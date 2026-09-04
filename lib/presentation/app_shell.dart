@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../features/journal/presentation/backup_dialog.dart';
 import '../l10n/app_localizations.dart';
 import 'app_section_scope.dart';
 
@@ -14,6 +15,8 @@ class AppShell extends StatefulWidget {
 }
 
 class _AppShellState extends State<AppShell> {
+  static const int _backupAction = 6;
+
   late final ValueNotifier<int> _currentSectionIndex;
 
   @override
@@ -81,6 +84,14 @@ class _AppShellState extends State<AppShell> {
                     selectedIndex: navigationShell.currentIndex,
                     labelType: NavigationRailLabelType.all,
                     onDestinationSelected: _goToBranch,
+                    trailing: Padding(
+                      padding: const EdgeInsets.only(top: 16),
+                      child: IconButton(
+                        onPressed: () => showBackupDialog(context),
+                        tooltip: l10n.backup,
+                        icon: const Icon(Icons.backup_outlined),
+                      ),
+                    ),
                     destinations: [
                       NavigationRailDestination(
                         icon: const Icon(Icons.today_outlined),
@@ -135,7 +146,7 @@ class _AppShellState extends State<AppShell> {
   }
 
   Future<void> _showMore(BuildContext context, AppLocalizations l10n) async {
-    final int? branchIndex = await showModalBottomSheet<int>(
+    final int? action = await showModalBottomSheet<int>(
       context: context,
       useSafeArea: true,
       builder: (sheetContext) {
@@ -153,14 +164,24 @@ class _AppShellState extends State<AppShell> {
                 title: Text(l10n.index),
                 onTap: () => Navigator.of(sheetContext).pop(5),
               ),
+              ListTile(
+                leading: const Icon(Icons.backup_outlined),
+                title: Text(l10n.backup),
+                onTap: () => Navigator.of(sheetContext).pop(_backupAction),
+              ),
             ],
           ),
         );
       },
     );
-    if (branchIndex != null && mounted) {
-      _goToBranch(branchIndex);
+    if (!mounted || action == null) {
+      return;
     }
+    if (action == _backupAction) {
+      await showBackupDialog(context);
+      return;
+    }
+    _goToBranch(action);
   }
 
   void _goToBranch(int index) {
