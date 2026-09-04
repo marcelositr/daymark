@@ -64,14 +64,14 @@ For substantive feature, repair, lifecycle, persistence, security, or architectu
 1. **Establish a trustworthy baseline.** Confirm the intended base branch, current PR state, relevant CI, clean working state, pinned toolchain, and existing tests before editing.
 2. **Audit before repairing when evidence is contradictory.** If a branch has repeated fix commits, CI/manual behavior disagree, or the architecture is suspect, diagnose first. Prefer an isolated worktree or equivalent read-only inspection. Do not mix diagnosis and speculative fixes.
 3. **Choose the smallest healthy branch boundary.** Normal work starts from current `main`. If inherited work is structurally unsound, preserve it as reference and rebuild only the affected slice from a healthy base rather than stacking patches indefinitely.
-4. **Open a Draft PR early when CI feedback is useful.** Draft CI is the cheap feedback loop for dependency resolution, generation, stale generated artifacts, formatting, and static analysis. Keep heavy validation for the ready-for-review stage unless a focused test is needed to diagnose a failure.
+4. **Choose the fastest trustworthy feedback path.** A Draft PR remains useful when remote CI feedback is reliable or when a GitHub-only check is needed. When the user has explicitly agreed to local execution, pinned local formatter/analyzer/tests/builds may be the primary development loop instead of repeated Draft-CI pushes. This does not remove the final Ready CI or repository `merge-gate` requirement.
 5. **Implement and test at the correct layer.** Presentation/widget tests should not perform real filesystem, expensive KDF/crypto, or encrypted SQLite work merely to reach the UI. Use controlled in-memory boundaries for presentation behavior and separate real persistence/session/integration tests for filesystem, cryptography, database, and lifecycle behavior.
 6. **Treat failures as evidence.** Capture the exact failing command, exit code, last completed step, and diagnostic output. Reduce the problem with the smallest useful probe. Never weaken security, invariants, tests, or CI just to turn a check green.
-7. **Validate progressively.** Prefer this order: generation/reproducibility -> formatting/static analysis -> focused tests -> complete test suite -> native builds -> manual product flow where platform behavior matters. A later green stage does not erase an unexplained earlier failure.
+7. **Validate progressively.** Prefer this order: required generation/reproducibility -> pinned formatter -> static analysis -> focused tests -> complete test suite -> native builds -> manual product flow where platform behavior matters. Run the formatter early so mechanical reflow does not waste a later test/build cycle. A later green stage does not erase an unexplained earlier failure.
 8. **Remove diagnostic scaffolding.** Temporary workflows, probes, logging, and experiments used to locate a problem must be removed or deliberately promoted into maintainable tests before the PR is considered ready.
 9. **Align documentation before final review.** Update `PROJECT.md` and any authoritative product/domain/architecture/security/workflow document while the implementation context is still fresh.
 10. **Run full merge validation only from a reviewable state.** Mark the PR ready after the implementation, documentation, and applicable local/manual validation are coherent. Then require the repository's full non-Draft CI and `merge-gate` before asking for merge approval.
-11. **Merge only on explicit user approval.** Green CI means eligible for review/merge, not automatically merged.
+11. **Merge only on explicit user approval.** Green local checks and green CI mean eligible for review/merge, not automatically merged.
 
 This ladder is a default, not bureaucracy. Tiny documentation or mechanical changes can use a proportionate subset, but skipping a layer must never hide uncertainty about persistence, lifecycle, security, migration, or user-data behavior.
 
@@ -89,9 +89,9 @@ The informational message saying that `l10n.yaml` options are being used is expe
 
 ### Use the pinned formatter, do not guess its reflow
 
-Formatting is defined by the Dart version supplied by the pinned Flutter toolchain. If CI reports formatter-only changes, reproduce formatting with the exact pinned Dart version.
+Formatting is defined by the Dart version supplied by the pinned Flutter toolchain. Apply that formatter before expensive validation whenever Dart source/tests changed.
 
-Do not hand-edit formatting repeatedly based on visual guesses. If the agent cannot run the pinned formatter locally, a temporary diagnostic workflow may print the exact diff, but that workflow must be removed before the PR is reviewable.
+Do not hand-edit formatting repeatedly based on visual guesses. If the agent cannot execute the pinned formatter itself and the user has agreed to local execution, provide a complete safe command block and treat the user's returned formatter diff/output as authoritative local evidence. A temporary CI formatter probe is a fallback, not the preferred routine path, and must be removed before the PR is reviewable.
 
 ### Distinguish a test-harness defect from a production defect
 
@@ -158,16 +158,23 @@ Record which evidence belongs to the implementation head, then run the proportio
 
 ## Local/manual validation with the user
 
-When a required validation can only be performed in the user's environment or on hardware the agent cannot access:
+When the user has explicitly agreed to act as a local execution bridge, local validation is a first-class development path rather than an exceptional last resort. This is especially appropriate when the user's pinned toolchain/hardware is faster or more representative than delayed GitHub Actions.
+
+The agent remains responsible for deciding what to run and interpreting the evidence. The user must not be required to invent debugging commands or diagnose agent-generated failures.
+
+For local execution:
 
 - provide complete copy-paste command blocks rather than fragments;
 - include a clean-worktree or other safety stop when destructive or branch-sensitive commands are involved;
 - state the expected success markers and what output should be returned;
 - ask the user to stop at the first unexpected result instead of improvising repairs;
 - prefer one bounded diagnostic block at a time when the result determines the next step;
-- do not ask the user to expose passwords, key envelopes, journal plaintext, recovery material, or other secrets.
+- run required generators before compilation checks and the pinned formatter before expensive tests/builds;
+- use focused tests during implementation, then complete suite/native builds when the slice is believed complete;
+- reserve destructive backup/restore, migration, clean-install, or upgrade checks for controlled/disposable data unless the user explicitly chooses otherwise;
+- do not ask the user to expose passwords, key envelopes, journal plaintext, recovery material, signing secrets, or other secrets.
 
-The user is an execution bridge for local evidence, not a substitute debugger. The agent remains responsible for interpreting the result and deciding the next safe step.
+Local green evidence can replace routine remote development iteration, but it cannot be used to bypass a required repository status check. If the `main` ruleset requires `merge-gate`, the exact final PR head still needs that gate before merge.
 
 ## Tool and API degradation
 
@@ -178,6 +185,7 @@ When required evidence is missing, stale, contradictory, or an API operation fai
 - do not guess the unseen CI result or repository state;
 - retry only when doing so is safe and likely to resolve a transient read problem;
 - continue with independent work that does not depend on the missing fact;
+- prefer agreed local validation for development work that does not require GitHub-only evidence;
 - when the missing fact blocks a decision, stop at that boundary and ask the user for the smallest concrete reference needed, such as a CI run result, job log, commit SHA, or terminal output;
 - never merge, rewrite history, or make a security/data-integrity decision based on assumed tool state.
 
@@ -190,6 +198,8 @@ Before introducing a feature or abstraction, verify that it belongs under `docs/
 Do not introduce speculative architecture for features outside current scope. Prefer the smallest design that preserves known future portability and security requirements.
 
 Do not create temporary product concepts solely to unblock a UI. In particular, destination-selection UI for migration/scheduling must use real method-native destinations rather than invented placeholder containers.
+
+During a time-bounded stabilization/release cycle recorded in `PROJECT.md`, do not pull deferred roadmap items forward merely because time remains. Prefer stable completion, portability, recovery, packaging, and blocker fixes over speculative breadth.
 
 ## Security discipline
 
