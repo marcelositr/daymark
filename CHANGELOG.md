@@ -6,6 +6,12 @@ This file is for user-visible behavior, data compatibility, security, packaging,
 
 ## Unreleased
 
+No release-facing changes have been recorded since `v1.0.0-alpha.2`.
+
+## [1.0.0-alpha.2] - 2026-09-04
+
+First controlled distributable Daymark prerelease for Linux and Android.
+
 ### Added
 
 - Initial project foundation and pre-development documentation.
@@ -49,7 +55,7 @@ This file is for user-visible behavior, data compatibility, security, packaging,
 - Portuguese parent localization resources include the journal-access, Daily Log, Monthly Log, Future Log, Collection, migration, reference, Index, and Search strings used by the Brazilian Portuguese locale.
 - Compact navigation keeps four core journal destinations directly visible and groups Search and Index under a minimal More sheet, while expanded desktop navigation exposes both directly.
 - Human and AI contributors follow a staged validation workflow that prefers the fastest trustworthy feedback path: pinned local-first generation/formatting/analysis/tests/builds when explicitly agreed, Draft CI when remote evidence is useful, then full exact-head non-Draft CI / `merge-gate` and explicit user merge approval.
-- AI handoff guidance now records concrete failure-prevention rules for localization generation, pinned formatting, widget-test diagnosis, safe interactive-shell command blocks, temporary CI probes, SHA-specific validation evidence, retained-navigation refresh behavior, and local-first execution without transferring debugging responsibility to the user.
+- AI handoff guidance records concrete failure-prevention rules for localization generation, pinned formatting, widget-test diagnosis, safe interactive-shell command blocks, temporary CI probes, SHA-specific validation evidence, retained-navigation refresh behavior, and local-first execution without transferring debugging responsibility to the user.
 - Returning from application background re-evaluates the inactivity deadline immediately instead of trusting a platform timer to have continued firing while suspended.
 - Task terminal actions preserve the original journal entry and change only its Task state, keeping journal history visible.
 - Future Log is explicitly month-addressed rather than a second day-level calendar, preserving the method-native distinction between Monthly and Future surfaces.
@@ -58,20 +64,20 @@ This file is for user-visible behavior, data compatibility, security, packaging,
 
 ### Fixed
 
-- Journal creation now initializes the required singleton `journal_metadata` record, and unlocking an older pre-alpha journal with that row missing repairs it idempotently without replacing existing encrypted journal content; multiple metadata rows still fail closed as corruption.
+- Journal creation initializes the required singleton `journal_metadata` record, and unlocking an older pre-alpha journal with that row missing repairs it idempotently without replacing existing encrypted journal content; multiple metadata rows still fail closed as corruption.
 - Replaced the first Today regression-test approach, which mixed real filesystem/cryptographic I/O into a Flutter widget test, with an isolated in-memory presentation boundary.
 - Unexpected journal-access and capture failures retain diagnostic stack information without logging passwords, journal contents, or raw exception messages.
 - Mobile text editing explicitly counts as journal activity even when an input method does not emit Flutter hardware-key events.
 - Focused Future Log persistence rejects non-Future owners before capture, preventing an incorrect caller from silently writing through the wrong product boundary.
-- Retained Future navigation now reloads its month snapshots when the Future section becomes active, so Tasks scheduled from Today or Monthly appear immediately without requiring lock, restart, or screen remount.
-- Retained Collections navigation now reloads its list, owned entries, and references when the section becomes active, so migrations or references created from another retained section appear without requiring lock, restart, or screen remount.
+- Retained Future navigation reloads its month snapshots when the Future section becomes active, so Tasks scheduled from Today or Monthly appear immediately without requiring lock, restart, or screen remount.
+- Retained Collections navigation reloads its list, owned entries, and references when the section becomes active, so migrations or references created from another retained section appear without requiring lock, restart, or screen remount.
 - Retained Search reruns the last submitted query when its section becomes active, so result Task state reflects changes made elsewhere without polling or persisting Search history.
-- Search case-insensitive matching now handles Unicode case changes such as `RÁDIO` and `rádio` while keeping accents literal.
+- Search case-insensitive matching handles Unicode case changes such as `RÁDIO` and `rádio` while keeping accents literal.
 - A completed retained Search refresh can no longer overwrite the result of a newer explicitly submitted query.
 
 ### Security
 
-- The `1.0.0-alpha.2` Android candidate uses a dedicated non-debug release signing key kept outside Git; physical-device migration validation preserved encrypted journal data while moving from the earlier debug-signed alpha.1 lineage into the release-signed alpha.2 installation through the portable encrypted backup boundary.
+- The `1.0.0-alpha.2` Android release uses a dedicated non-debug release signing key kept outside Git; physical-device migration validation preserved encrypted journal data while moving from the earlier debug-signed alpha.1 development lineage into the release-signed alpha.2 installation through the portable encrypted backup boundary.
 - Journal persistence uses SQLite3MultipleCiphers ChaCha20-Poly1305 with random per-journal key material instead of plaintext SQLite.
 - Master passwords protect the random journal key through Argon2id and XChaCha20-Poly1305 rather than being used directly as database passwords.
 - Key-envelope and encrypted-database tests cover wrong credentials, corrupted authenticated data, incorrect database keys, unkeyed SQLite access, and representative plaintext leakage.
@@ -80,3 +86,10 @@ This file is for user-visible behavior, data compatibility, security, packaging,
 - Unlocked journal sessions own the encrypted database and mutable journal-key material; closing the session closes persistence before key destruction.
 - Open Export is an explicit plaintext security boundary: exported JSON and Markdown are not encrypted and are deliberately distinct from Daymark encrypted backup.
 - The inactivity guard fails closed if the wall clock moves backwards relative to the last recorded journal interaction.
+
+### Release validation
+
+- Final distributed Linux x64 archive SHA-256: `490ce7c62126e8b9d5e9e78a3727f68c131e60ef197d0673d174ea0d44def9c4`.
+- Final distributed signed Android APK SHA-256: `96f69264a4fc0fead8d31893f96aac428db341303abdfab929daaee5760f20f0`.
+- Android release certificate SHA-256: `44342dcd1343643bc56da2545ec10e5624fc2e49d1bcc3b418f4f9ab160e1b88`.
+- Linux release smoke testing, physical Android migration/restore/reinstall testing, JSON/Markdown Open Export validation, exact-head Ready CI, and post-merge `main` CI passed before publication.

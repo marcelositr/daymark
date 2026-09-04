@@ -2,16 +2,19 @@
 
 Open Export is Daymark's explicit plaintext portability boundary. It is separate from encrypted backup and is not a recovery format.
 
+Open Export format version 1 shipped in public prerelease `v1.0.0-alpha.2` and is now a compatibility-sensitive machine-readable boundary. Future incompatible structural changes require a new Open Export format version; existing version-1 fields must not be silently reinterpreted.
+
 ## Security boundary
 
 Creating an Open Export is an explicit user action that writes journal content outside Daymark's encrypted database.
 
 - JSON and Markdown exports are plaintext.
 - Exported files are not protected by Daymark's journal encryption.
-- Open Export must remain clearly distinguished from the authenticated encrypted backup/restore flow.
+- Open Export remains clearly distinguished from the authenticated encrypted Backup / Restore flow.
 - Daymark does not create Open Export files automatically or transmit them to a remote service.
+- Open Export is not an import or disaster-recovery contract.
 
-Users who need protected recovery should use encrypted backup instead.
+Users who need protected recovery or migration should use encrypted Backup instead.
 
 ## JSON format v1
 
@@ -37,6 +40,8 @@ Records are emitted in explicit deterministic orders. The export does not includ
 
 JSON strings use standard JSON escaping and UTF-8 when written by the UI.
 
+A normal unlocked journal has exactly one `journalMetadata` row. Alpha.2 initializes this singleton for new journals and repairs older development journals with zero rows on unlock before journal work proceeds; more than one row remains corruption and fails closed rather than being silently exported as an arbitrary identity.
+
 ## Markdown format v1
 
 Markdown is a human-readable rendering of the same snapshot used for JSON. It begins with the Open Export identifier, format version, database schema version, and an explicit plaintext warning.
@@ -49,10 +54,14 @@ Markdown is intended for reading and archival portability. It is not an import o
 
 A single export is created inside a database transaction, so every table in that export reflects one consistent journal snapshot.
 
-Open Export does not mutate journal data, create Logs, alter Task state, create Index items, or change ownership.
+Open Export does not mutate journal data, create Logs, alter Task state, create Index items, change ownership, or alter the encrypted backup state.
 
 ## Compatibility
 
 `formatVersion` governs the Open Export structure. `databaseSchemaVersion` records the source journal schema separately.
 
-Future incompatible changes to the machine-readable contract require a new Open Export format version. Existing version-1 keys must not be silently reinterpreted.
+Version 1 is published in `v1.0.0-alpha.2` with database schema version 1.
+
+A future Daymark release may add a new Open Export format version, but it must not silently reinterpret the meaning of version-1 keys. If backward machine readability is claimed, compatibility must be explicit and tested.
+
+Open Export compatibility does not imply that a version-1 JSON file can be restored into Daymark. Restore compatibility belongs exclusively to the encrypted backup format and database migration contracts.

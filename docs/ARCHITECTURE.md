@@ -2,9 +2,11 @@
 
 ## Status
 
-This document defines Daymark's architectural constraints. Concrete package versions may evolve through reviewed dependency updates, but the boundaries and technology choices below are intentional.
+This document defines Daymark's current architectural constraints. Concrete package versions may evolve through reviewed dependency updates, but the boundaries and technology choices below are intentional.
 
 The committed `pubspec.lock` is authoritative for the exact resolved dependency set on the current development line.
+
+`v1.0.0-alpha.2` is the first controlled distributable prerelease. Its persisted schema/security/backup formats are now compatibility-sensitive boundaries rather than unreleased implementation details.
 
 ## Current toolchain baseline
 
@@ -18,7 +20,7 @@ Current baseline:
 
 Flutter 3.47.2 is pinned in `.flutter-version` and `pubspec.yaml`. Future toolchain changes require a reviewed update rather than silently following the stable channel.
 
-Android should target Flutter's supported Android baseline rather than deliberately supporting versions the framework itself no longer supports. At the current review point, API 24 is the minimum supported Flutter deployment level.
+Android should target Flutter's supported Android baseline rather than deliberately supporting versions the framework itself no longer supports. API 24 is the minimum deployment level in the current architecture.
 
 Future architectural targets may include Windows, macOS, and iOS. Web is not an initial target.
 
@@ -26,17 +28,20 @@ Future architectural targets may include Windows, macOS, and iOS. Web is not an 
 
 Daymark remains a single Flutter application until a concrete reason exists to split it into multiple packages.
 
-Do not create a speculative monorepo, plugin system, shared-server package, or independent domain package merely because those structures might someday be useful.
+Do not create a speculative monorepo, plugin system, server package, or independent domain package merely because those structures might someday be useful.
 
-The codebase is domain-centric:
+The codebase is domain-centric. Current core responsibilities include:
 
 ```text
 lib/
 ├── app/
 ├── core/
+│   ├── backup/
 │   ├── crypto/
 │   ├── database/
-│   └── session/
+│   ├── export/
+│   ├── session/
+│   └── settings/
 └── features/
     └── journal/
         ├── domain/
@@ -45,13 +50,19 @@ lib/
         └── presentation/
 ```
 
-Daily Log, Monthly Log, Future Log, Migration, Collections, Index, and Search belong to one coherent journal domain rather than pretending they are unrelated products.
+Exact subdirectory names may evolve, but these boundaries matter:
 
-Framework and platform details remain at the edges. Domain logic must not depend on Flutter widgets, Android APIs, Linux desktop APIs, filesystem paths, windowing systems, keyrings, or routing libraries.
+- journal domain semantics stay independent of Flutter/platform APIs;
+- cryptography and encrypted persistence stay below presentation code;
+- Backup / Restore and Open Export are separate portability boundaries;
+- non-secret device/application preferences such as Appearance do not become journal-domain rows merely for convenience;
+- platform file selection remains an edge integration, not a domain service.
+
+Daily Log, Monthly Log, Future Log, Migration, Collections, Index, and Search belong to one coherent journal domain rather than pretending they are unrelated products.
 
 ## Domain concepts
 
-The authoritative semantic rules are defined in `docs/DOMAIN.md`.
+The authoritative semantic rules are defined in `docs/DOMAIN.md`; the relational contract is `docs/DATA_MODEL.md`.
 
 The model revolves around:
 
@@ -69,15 +80,13 @@ The model revolves around:
 
 Entry type, task state, signifiers, storage location, Collection references, and migration lineage are separate concerns.
 
-The schema follows domain behavior rather than screens or rendered Bullet symbols. The authoritative relational contract is `docs/DATA_MODEL.md`.
-
 ## UI foundation
 
-Daymark uses Flutter's Material 3 widgets and theming as a technical foundation, not as a requirement to look like a stock Material application.
+Daymark uses Flutter Material 3 widgets/theming as a technical foundation, not as a requirement to look like a stock Material application.
 
-The product visual identity is a minimal dotted-notebook page with light, dark, and system theme modes. It is not a freeform canvas, page-layout editor, or drawing application.
+The visual identity is a minimal dotted-notebook page with System / Light / Dark appearance. It is not a freeform canvas, page-layout editor, or drawing application.
 
-The same product identity is shared across Linux and Android, but layouts are adaptive:
+Layouts are adaptive:
 
 - compact layouts optimize for fast mobile capture;
 - expanded layouts may use wider navigation and keyboard-oriented workflows;
@@ -87,23 +96,23 @@ Avoid external UI/theme frameworks until a specific unmet requirement proves the
 
 ## State management and dependency wiring
 
-Use Riverpod 3.x for application/presentation state, dependency wiring, and asynchronous state where Flutter's local widget state is insufficient.
+Use Riverpod 3.x for application/presentation state, dependency wiring, and asynchronous state where local widget state is insufficient.
 
 Rules:
 
 - use Riverpod without code generation;
 - do not put domain behavior inside providers merely because providers are convenient;
-- keep transient widget-only state local to widgets when appropriate;
+- keep transient widget-only state local when appropriate;
 - use explicit repositories and application services for business operations;
 - prefer fakes/in-memory implementations in tests over heavy mocking frameworks.
 
-Riverpod is infrastructure. It must not become the domain model.
+Riverpod is infrastructure, not the domain model.
 
-## Routing
+## Routing and retained navigation
 
-Use `go_router` 18.x for application-level routing and navigation state.
+Use `go_router` 18.x for application routing/navigation state.
 
-Primary navigation:
+Primary concepts:
 
 ```text
 Today
@@ -114,29 +123,29 @@ Search
 Index
 ```
 
-Index remains a distinct method structure even when its entry point differs between compact and expanded layouts. Expanded layouts expose Search and Index directly in the navigation rail. Compact layouts keep Today, Monthly, Future, and Collections as direct bottom destinations and expose Search and Index through a minimal More sheet rather than crowding six bottom items.
+Expanded layouts expose all six directly. Compact layouts keep Today, Monthly, Future, and Collections directly visible and expose Search/Index through a minimal More entry. Grouping those controls never merges Search and Index semantically.
 
-Settings and contextual reflection flows are secondary navigation rather than permanent top-level destinations.
+The top-level journal shell uses `StatefulShellRoute.indexedStack`; branch widgets may remain mounted while another section is active. A destination therefore must not assume `initState()` runs when the user returns.
 
-Route names and persisted domain values remain language-neutral.
+`AppShell` publishes active top-level section state through `AppSectionScope`. A retained screen whose cached snapshot can be changed elsewhere reloads on reactivation. This currently protects:
 
-The top-level journal shell uses `StatefulShellRoute.indexedStack`, so branch widgets may remain mounted while another section is active. This retained state is intentional for navigation continuity, but it creates a lifecycle requirement: a destination screen must not assume `initState()` runs again when the user returns.
+- Future after scheduling from Today/Monthly;
+- Collections after migration/reference actions elsewhere;
+- Search after Task-state changes elsewhere.
 
-`AppShell` publishes the active top-level section through the presentation-level `AppSectionScope`. Screens that cache journal snapshots and can be changed by another section must observe reactivation and reload the affected presentation state. Cross-surface writes must become visible when the destination section is re-entered without requiring lock, application restart, or widget remount.
+Do not solve retained-tab freshness by destroying all branches, polling continuously, or moving persistence semantics into the router.
 
-Historical Daily retrieval is contextual navigation inside the Today branch rather than another top-level destination. `/daily/:date` resolves a genuine method date through a non-creating `DailyLogRepository.find(...)` call exposed by `JournalDailyHistorySession`; a missing historical date remains absent instead of creating a Log. The historical screen is read-only, while `/` remains the interactive current Daily Log. This route gives later Index/Search navigation a real historical Daily target without moving retrieval semantics into the router.
-
-Do not solve retained-tab freshness by destroying all branches, polling continuously, or moving journal semantics into the router. Section activation is presentation lifecycle; persistence and movement semantics remain below the UI boundary.
+Historical Daily retrieval is contextual under Today. `/daily/:date` resolves a genuine method date through a non-creating repository/session read. Missing historical dates remain absent rather than creating persisted Logs. Historical Daily is read-only; `/` remains the interactive current Daily Log.
 
 ## Persistence
 
-Drift 2.34.x is the typed relational persistence layer. The schema is declared under `lib/core/database/`, with exported schema snapshots versioned under `drift_schemas/`.
+Drift 2.34.x is the typed relational persistence layer. Schema snapshots are versioned under `drift_schemas/`.
 
 `package:sqlite3` 3.x provides the native SQLite interface and build-hook integration.
 
-One encrypted database file represents one journal. Daymark does not multiplex independent journals inside a shared SQLite database. Future multiple-journal support should normally use separate encrypted files and independent journal keys so backup, deletion, transfer, and cryptographic isolation remain naturally journal-scoped.
+One encrypted database file represents one journal. Future multi-journal support should normally use separate encrypted files and independent journal keys rather than tenant IDs inside one database.
 
-Encrypted native storage uses SQLite3MultipleCiphers selected through the `sqlite3` build hook:
+Encrypted storage uses SQLite3MultipleCiphers selected through the sqlite3 build hook:
 
 ```yaml
 hooks:
@@ -145,9 +154,7 @@ hooks:
       source: sqlite3mc
 ```
 
-This supersedes the earlier SQLCipher-first assumption and obsolete `sqlcipher_flutter_libs` direction.
-
-The application verifies at runtime during database setup that the encrypted SQLite variant is loaded before opening journal data. Failure to provide expected cipher support is a startup security failure, not a reason to silently open plaintext SQLite.
+The application verifies at runtime that encrypted SQLite support is present before opening journal data. Missing cipher support is a security failure, never permission to open plaintext SQLite.
 
 The implemented database cipher is SQLite3MultipleCiphers ChaCha20-Poly1305 (`chacha20` / sqleet mode).
 
@@ -157,122 +164,86 @@ Each journal has 48 bytes of raw SQLite cipher material:
 32-byte random journal key || 16-byte random cipher salt
 ```
 
-This is passed using SQLite3MultipleCiphers' ChaCha20 raw-key-plus-salt representation. The master password is never passed directly to SQLite3MultipleCiphers as a database passphrase.
+The master password is never passed directly to SQLite3MultipleCiphers.
 
-Applying `PRAGMA key` alone is not treated as successful unlock. The database-opening layer performs a real `sqlite_master` read after configuring cipher/key so an incorrect key fails before an opened Drift database is returned.
+Applying `PRAGMA key` alone is not treated as successful unlock. The database-opening layer performs a real read after keying so an incorrect key fails before an opened Drift database is returned.
 
-The Drift open lifecycle is forced before `createNew()` returns so schema creation, built-in seed data, and connection initialization have actually occurred rather than leaking lazy-open behavior into the creation contract.
-
-Password KDF parameters, salts, wrapped journal-key material, recovery metadata, and device-assisted unlock handles remain outside the encrypted Drift schema because they are needed before the database can be opened.
-
-Database migrations must be explicit, versioned, forward-only in normal operation, fixture-tested, and safe against partial failure. Destructive schema changes require an explicit data migration strategy.
-
-The initial schema is version 1. Drift exported-schema and `make-migrations` tooling are the normal migration path. While the project has no published prerelease user-data compatibility line, unreleased schema v1 may still be regenerated deliberately; once a prerelease is published, later supported builds must provide tested upgrade paths instead of silently resetting data.
+The initial schema is version 1 and is published in `v1.0.0-alpha.2`. The earlier pre-publication freedom to regenerate schema v1 no longer applies to supported releases. Future supported builds must use explicit forward migrations/compatibility code and fixture tests rather than resetting published user data.
 
 Stable persisted identities use UUID v7.
 
-### Chronological journal mapping
+`journal_metadata` is a singleton journal identity. New journals initialize it; alpha.2 also repairs older development journals with zero rows transactionally on unlock. More than one row remains corruption and fails closed.
 
-The schema already models Daily, Monthly, and Future Logs without parallel planner tables.
+### Chronological mapping
 
-- Daily uses one `daily` log per method date.
-- Monthly uses one `monthly` log per month plus explicit `monthly_section` and, for Calendar entries, `monthly_calendar_date`.
-- Future uses one `future` log per represented month. Future placements do **not** use Monthly fields and are month-addressed rather than day-addressed.
+- Daily uses one `daily` Log per method date.
+- Monthly uses one `monthly` Log per month plus explicit Calendar/Tasks placement fields.
+- Future uses one `future` Log per represented month and is month-addressed, not day-addressed.
 
-The current Future screen's rolling six-month horizon is presentation/product behavior. It does not change persistence ownership or delete buckets outside the visible horizon.
+The rolling six-month Future screen is presentation/product behavior. It does not change persistence ownership or delete buckets outside the visible horizon.
 
-Do not add a separate calendar schema merely to support Future UI.
+## Journal session/application boundary
 
-## Journal application/session boundary
+`JournalSession` owns objects valid only while one journal is unlocked:
 
-The unlocked-session abstraction is implemented and is no longer future architecture.
-
-`JournalSession` owns the objects that are valid only while one journal is unlocked:
-
-- the encrypted `DaymarkDatabase` connection;
+- encrypted `DaymarkDatabase` connection;
 - mutable `JournalKeyMaterial`;
-- `JournalRepository` and `JournalService`;
-- Task action services/repositories;
-- focused Daily, Monthly, Future, Collection, Index, and Search repository/session boundaries.
+- journal repositories/services;
+- focused Daily, Monthly, Future, Collection, Index, and Search boundaries.
 
-All journal operations exposed through `JournalSession` are serialized. Once closing begins, new operations cannot enter the encrypted database; lock waits for queued/in-flight work, closes persistence, then destroys key material.
+All operations exposed through the session are serialized. Once closing begins, no new operation enters encrypted persistence; lock waits for queued/in-flight work, closes persistence, then destroys owned key material.
 
 `JournalSessionManager` owns create/unlock/lock lifecycle and fails closed on incomplete database/envelope file sets. A failed create/unlock must not silently overwrite existing journal material.
 
-Presentation code reaches journal behavior through focused data-source/provider boundaries backed by the unlocked session. Widgets do not coordinate multi-table persistence themselves.
+Presentation reaches journal behavior through focused boundaries backed by the unlocked session. Widgets do not coordinate multi-table persistence themselves.
 
-Focused repositories are responsible for the semantic location they claim to represent. A repository must reject an owner of the wrong log kind rather than assuming every caller is correct. This is especially important when source and destination owners cross product surfaces.
+Focused repositories validate the semantic owner/location they claim to represent rather than trusting every caller.
 
-The Collection boundary follows the same split: `CollectionRepository` owns focused Collection reads for both owned entries and references, and delegates semantic create/capture/reference writes to `JournalService`, while `JournalSession` serializes list/create/load/capture/reference operations with the rest of the unlocked journal lifecycle. Collection ownership, Collection references, and migration remain distinct domain operations rather than being collapsed into presentation helpers.
+### Movement and references
 
-The Index uses a focused `IndexRepository` over the existing encrypted `index_items` schema. Presentation reaches it through `JournalIndexSession` extension methods, which serialize list/candidate/add operations with `JournalSession.run(...)` so Index I/O cannot escape the unlocked session lifetime. The repository owns target existence, duplicate prevention, and global ordinal allocation; the widget only presents existing candidates and the user's deliberate choice.
+Task scheduling is exposed through the session. Presentation chooses a real Future month; the session validates an open source Task and resolves the destination; journal service/repository code performs the transactional source-state, destination-entry, placement, and lineage write.
 
-Search uses a focused read-only `JournalSearchRepository` against the existing encrypted schema. It joins Entries to their one owning placement and to the corresponding Log or Collection so results retain method-native context. The first implementation deliberately scans Entries in bounded ordered pages and performs Unicode-aware case-insensitive literal substring matching in Dart rather than relying on SQLite's ASCII-oriented `lower()` behavior or introducing an FTS table, Search cache, or schema v2; a submitted query returns at most 100 Entries ordered by most recent update. Presentation reaches Search through `JournalSearchSession`, so query I/O remains serialized inside `JournalSession.run(...)`.
+Forward migration to a Collection follows the same boundary. Presentation chooses an existing Collection; service/repository code owns lineage and transactional state changes.
 
-Because Search is retained by `StatefulShellRoute.indexedStack`, `SearchScreen` keeps only its last submitted query as presentation state and observes `AppSectionScope` reactivation. Returning to Search reruns that query silently so a Task changed elsewhere does not keep a stale symbol/state. This is presentation freshness, not polling or persisted Search history. Search results remain read-only and do not reproduce Task/movement/reference semantics.
+Collection references are separate from migration. A referenced Entry keeps its identity, owner, content, and Task state; the Collection read model exposes references separately and read-only.
 
-Forward Task migration to a Collection is exposed through `JournalSession.migrateTaskToCollection(...)`. The session first validates the persisted source as an open Task, then delegates to `JournalService.migrate(...)` with a `JournalCollectionOwner`. The presentation layer only lists existing Collections and records the user's deliberate choice; it does not create a destination or reproduce lineage rules.
+Do not duplicate movement/reference semantics in widgets/providers.
 
-Collection references are exposed through `JournalSession.referenceEntryInCollection(...)`. The serialized session delegates to the existing `JournalService.referenceInCollection(...)` transaction, so presentation only chooses an existing Collection and never changes source ownership, Entry identity, or Task state. `CollectionSnapshot` keeps owned entries and reference entries in separate read-model lists so the Collection UI cannot accidentally treat a reference as owned content or expose Task mutations through it.
+### Index and Search
 
-Because Today, Monthly, or Future can now change a retained Collection while Collections is inactive, `CollectionsScreen` observes `AppSectionScope` reactivation and reloads both the Collection list and any selected Collection snapshot, including references. This is the same presentation-lifecycle rule already used by Future scheduling, not a new persistence cache.
+Index uses the encrypted `index_items` schema and is a deliberate persisted structure. The repository owns target existence, duplicate prevention, and ordering.
 
-Task scheduling is exposed through the serialized session rather than implemented inside Today/Monthly widgets. `JournalSession.scheduleTaskToFuture(...)` validates that the persisted source is an open Task before resolving/creating the Future destination, then delegates the actual movement and lineage semantics to the existing journal service/repository boundary. Invalid Task-only scheduling must fail before it creates a destination container or partial write.
+Search is a focused read-only repository over the encrypted schema. It joins Entries to their owning placement/context and performs Unicode-aware case-insensitive literal matching without creating a plaintext side index, query history, references, or Index items.
 
-Scheduling therefore has three distinct responsibilities:
-
-1. presentation chooses a real visible Future month;
-2. the session validates/unifies the unlocked serialized operation and resolves the real destination;
-3. `JournalService` / `JournalRepository` perform the transactional source-state, destination-entry, placement, and lineage write.
-
-Do not duplicate lineage rules in widgets/providers or invent a second movement service merely for UI convenience.
-
-Widget tests use controlled in-memory presentation boundaries. Real filesystem, Argon2, encrypted SQLite, and lock/unlock persistence belong in repository/session/security tests when those boundaries are the subject being validated.
+Search currently retains only the last submitted query as presentation state and reruns it on section reactivation so results do not show stale Task state.
 
 ## Cryptographic application layer
 
 Database encryption is only one layer of the security model.
 
-Daymark uses the published `cryptography` package 2.9.0 for the application security baseline:
+Daymark uses the published `cryptography` package 2.9.0:
 
 - Argon2id for master-password key derivation;
 - XChaCha20-Poly1305 for authenticated wrapping of portable journal-key material.
 
 Do not implement cryptographic primitives manually.
 
-### Journal key material
+### Journal key material and key envelope
 
 `JournalKeyMaterial` owns:
 
-- a 32-byte cryptographically random journal data-encryption key in overwrite-on-destroy `SecretKeyData`;
+- a 32-byte random journal data-encryption key in overwrite-on-destroy `SecretKeyData`;
 - a 16-byte random SQLite3MultipleCiphers salt in a private mutable buffer.
 
-Its serialized representation is exactly 48 bytes and is compatibility-sensitive once prerelease journals exist.
+Its serialized representation is exactly 48 bytes. Because alpha.2 is published, this representation is now compatibility-sensitive.
 
-The holder exposes explicit `destroy()` lifecycle. Owned mutable buffers are overwritten where practical, while `SECURITY.md` documents the limits of guaranteed zeroization under Dart/Flutter.
+The version-1 key envelope remains outside the encrypted database and contains only pre-unlock metadata: format/version, Argon2id parameters/salt, XChaCha20-Poly1305 identifier, nonce, ciphertext, and authentication tag. Interpretation-sensitive metadata is authenticated as AAD.
 
-### Key envelope
+Wrong password, modified ciphertext/nonce/tag/KDF metadata, malformed/truncated data, and unsupported identifiers fail closed.
 
-The current key-envelope format is version 1 and remains outside the encrypted database.
+### Argon2id baseline
 
-It contains only pre-unlock metadata:
-
-- format/version;
-- Argon2id identifier, parameters, and random 16-byte KDF salt;
-- XChaCha20-Poly1305 identifier;
-- nonce;
-- ciphertext containing the 48-byte serialized journal-key material;
-- authentication tag.
-
-Interpretation-sensitive metadata is authenticated as AAD. Parsing is strict and rejects unsupported format/KDF/AEAD identifiers.
-
-Wrong password, modified ciphertext/nonce/tag, modified authenticated KDF metadata, malformed/truncated data, and unsupported identifiers are covered by negative-path tests.
-
-Authentication failures use a generic journal-unlock error rather than password-quality hints.
-
-### Argon2id parameters
-
-The initial production baseline was frozen on 2026-09-02:
+Initial production baseline frozen 2026-09-02:
 
 - memory: 19 MiB (`19456 KiB`);
 - iterations: 2;
@@ -280,47 +251,52 @@ The initial production baseline was frozen on 2026-09-02:
 - output: 32 bytes;
 - random KDF salt: 16 bytes per key envelope.
 
-The decision followed profile-mode measurements on representative Linux and physical Android hardware. `tool/argon2_benchmark.dart`, `tool/argon2_profile_matrix.dart`, and `docs/ARGON2_BENCHMARK.md` preserve the evidence and retuning process.
+`docs/ARGON2_BENCHMARK.md` and `docs/argon2-results/` preserve the evidence.
 
-Because envelope KDF metadata is untrusted before authentication, parser limits remain bounded to 64 MiB memory, 5 iterations, parallelism 4, and fixed 32-byte output. Those are defensive input ceilings, not production work factors.
+Parser ceilings for untrusted pre-authentication KDF metadata remain 64 MiB memory, 5 iterations, parallelism 4, and exactly 32-byte output. Those are defensive limits, not production targets.
 
-KDF parameters are explicit versioned envelope data. Future defaults may be strengthened, but existing envelopes must remain interpretable through explicit compatibility paths once real prerelease journals exist.
-
-### Recovery relationship
-
-Recovery remains a portable credential over the same random journal key rather than a separate database-key hierarchy.
-
-A future recovery secret may independently wrap/protect the existing serialized journal-key material. The final human representation and UX remain deferred, but recovery must never depend solely on Android Keystore, Linux keyring state, an account server, or the original device.
+A future KDF-default change may strengthen newly protected material, but existing published envelopes must remain interpretable through an explicit compatibility path.
 
 ### Memory limitations
 
-SQLite3MultipleCiphers' SQL `PRAGMA key` interface currently requires a hexadecimal Dart `String`. Mutable source buffers are overwritten after conversion, but immutable Dart strings cannot be reliably zeroized. This limitation is documented rather than hidden or "fixed" through speculative unsafe FFI.
+SQLite3MultipleCiphers' SQL `PRAGMA key` path requires a hexadecimal Dart `String`. Mutable source buffers are overwritten after conversion where practical, but immutable Dart strings cannot be reliably zeroized. This limitation is documented rather than hidden or "fixed" through speculative unsafe FFI.
 
-Device-local assisted unlock requires a platform secure-storage abstraction but remains deferred. Whatever integration is eventually selected is a convenience layer only and must not become the sole portable recovery mechanism.
+Device-local assisted unlock remains deferred and is a convenience layer only. It must never become the sole portable recovery mechanism.
 
-## Backup architecture
+## Backup / Restore architecture
 
-Manual full encrypted backup and restore are initial product requirements.
+Manual full encrypted Backup / Restore is implemented and user-facing.
 
-Backups must be encrypted by default, portable between supported platforms, independent of device-bound key stores, versioned, authenticated before restore, recoverable without the original device when portable credentials are available, and capable of evolving to include attachments without moving outside the security boundary.
+Backups are encrypted, authenticated, versioned, portable across supported platforms, and independent of device-bound key stores. Restore validates before replacement and is exposed only while the destination journal is locked or absent.
 
-The encrypted backup/restore service and format-v1 safety foundation are implemented. The remaining vacation-ready slice is user-facing file selection, confirmation, and session-lifecycle integration around that existing service. Do not redesign the container format merely to expose UI.
+`docs/BACKUP_FORMAT.md` is authoritative for the container and rollback-safety contract.
 
-Automatic backup scheduling, retention rotation, remote synchronization, and cloud-specific integrations are later concerns.
+Important memory-boundary precision: the backup service streams the encrypted database payload while creating/validating the container, but the current native file-save gateway may buffer the completed **encrypted container** before handing it to the platform save API. Do not describe the UI save path as streaming end-to-end.
 
-Human-readable Markdown or JSON export is a separate portability feature and may intentionally produce plaintext after explicit user action.
+Automatic backup scheduling, retention rotation, remote synchronization, and cloud integrations remain later concerns.
 
-Android OS-managed app-data backup is not Daymark's portable-backup mechanism. Android backup/device-transfer domains are explicitly excluded; cross-device portability is designed through Daymark's own authenticated backup/restore boundary.
+## Open Export architecture
 
-Authoritative backup details live in `docs/BACKUP_FORMAT.md` and security documents.
+Open Export is implemented as a separate plaintext portability boundary.
+
+- JSON is deterministic, versioned, machine-readable, and preserves stable IDs/relationships.
+- Markdown is human-readable.
+- both represent one transactionally consistent journal snapshot;
+- both are explicit user actions;
+- neither is encrypted;
+- neither is a restore/import contract.
+
+`docs/OPEN_EXPORT_FORMAT.md` is authoritative for format version 1, which shipped in alpha.2.
+
+## Device/application settings
+
+Appearance System / Light / Dark is non-secret application/device state outside the encrypted journal schema. It applies while the journal is locked and persists independently of journal content.
+
+Do not move application preferences into journal relational tables merely to simplify state wiring. Security-sensitive future settings must still follow `SECURITY.md`.
 
 ## Localization
 
-Internationalization is part of the initial architecture.
-
-Use Flutter's built-in localization tooling with ARB resources and generated localization accessors. Do not add a competing localization framework without concrete need.
-
-English is the canonical source and fallback locale. Portuguese (Brazil) is the first additional product locale.
+Use Flutter ARB / generated localization accessors. English is canonical/fallback; Portuguese (Brazil) is the first additional product locale.
 
 Resources:
 
@@ -331,132 +307,91 @@ lib/l10n/
 └── app_pt_BR.arb
 ```
 
-`app_pt.arb` exists because Flutter's localization generator requires a parent locale when `pt_BR` exists. It is a technical fallback, not a third product-language promise.
+`app_pt.arb` exists because Flutter's generator requires a parent locale when `pt_BR` exists; it is a technical fallback, not another product-language promise.
 
-When ARB resources change, run `flutter gen-l10n` before analyzer/tests that compile presentation code. Generated localization accessors are build artifacts, not domain APIs to patch manually.
+When ARB resources change, run `flutter gen-l10n` before analyzer/tests that compile presentation code.
 
-User-facing strings belong in localization resources. Domain values, persistence codes, migration logic, export identifiers, and application decisions remain language-neutral.
-
-Layouts should use directional start/end concepts where practical to preserve future RTL support.
+Domain values, persistence codes, migration logic, export identifiers, and application decisions remain language-neutral. Layouts should use directional start/end concepts where practical to preserve future RTL support.
 
 ## File and platform integration
 
-Prefer official Flutter-maintained plugins for routine platform integration when they satisfy the requirement.
+Prefer maintained Flutter/platform packages for routine integration when they satisfy the requirement. Current file-provider behavior is an edge responsibility and must preserve the security/session boundary defined by Backup / Restore and Open Export.
 
-Examples include:
-
-- `path_provider` for application-owned filesystem locations;
-- `file_selector` for explicit user-selected import/export/backup locations.
-
-Platform-specific security behavior belongs behind interfaces under the platform/core boundary rather than leaking into journal domain objects.
+Platform-specific security behavior belongs behind core/platform interfaces rather than leaking into journal domain objects.
 
 ## Code generation policy
 
-Generated code increases coordination cost for agents and can obscure changes. Keep it limited.
+Generated code is intentionally limited:
 
-Baseline:
-
-- Drift generation is allowed and expected;
-- Flutter `gen_l10n` generation is allowed and expected;
+- Drift generation is allowed/expected;
+- Flutter `gen_l10n` is allowed/expected;
 - Riverpod code generation is not used;
 - Freezed is not a baseline dependency;
 - `json_serializable` is not a baseline dependency.
 
-Use normal Dart classes, sealed classes, records, patterns, and explicit serializers where the amount of code remains reasonable. Add more generation only when repeated real code demonstrates a benefit greater than tooling cost.
+Use normal Dart classes/sealed classes/records/patterns/explicit serializers when reasonable. Add more generation only when repeated real code demonstrates a benefit greater than tooling cost.
 
-## Quality and analysis
+## Quality and CI
 
-Use Flutter's standard formatting and analysis tools.
+The permanent CI validates the applicable tier of:
 
-The scaffold enables strict analyzer behavior for casts, inference, and raw types, with `flutter_lints` as the baseline.
-
-The permanent `.github/workflows/ci.yml` gates:
-
-1. dependency resolution from the committed lockfile;
+1. dependency resolution from committed lockfile;
 2. localization generation;
 3. Drift code generation;
-4. Drift schema-snapshot freshness plus clean generated-artifact diff;
+4. schema-snapshot freshness / clean generated-artifact diff;
 5. formatting;
 6. static analysis;
-7. unit, widget, schema-invariant, encrypted-persistence, and security tests;
-8. Linux debug build;
-9. Android debug APK build;
-10. dependency/security review for pull requests.
+7. tests;
+8. Linux build;
+9. Android build;
+10. pull-request dependency/security review;
+11. `merge-gate` for Ready PRs.
 
-Draft PRs may run the lightweight `dev-check`. When the user has explicitly agreed to local-first execution, the same pinned generation/formatter/analyzer/test/build ladder may be used as the primary development feedback path so GitHub latency does not control implementation speed. Ready/non-Draft PRs still run full merge-tier jobs and `merge-gate`, and the live `main` ruleset remains authoritative. Validation evidence is exact-head-specific.
+Draft PRs may run lightweight `dev-check`. Agreed local-first validation may be the fast implementation loop, but final Ready/non-Draft CI remains the independent merge gate where required. Evidence is exact-head-specific.
 
-## Testing strategy
+Widget tests use controlled presentation boundaries. Real filesystem, Argon2, encrypted SQLite, backup/restore, and lock/unlock persistence belong in repository/session/security/integration tests when those are the behavior under test.
 
-Use Flutter/Dart's standard test infrastructure first:
-
-- `flutter_test` for unit and widget tests;
-- `integration_test` when a true end-to-end platform boundary is needed;
-- Drift migration/schema tests with real fixtures;
-- temporary encrypted databases for persistence/security tests where appropriate.
-
-The initial schema has direct invariant tests against in-memory SQLite. Future versions must test target schema shape and representative data preservation across supported upgrades.
-
-Security-sensitive flows require failure tests as well as success tests, including wrong password, corrupted key envelope, corrupted backup, incompatible schema, and missing encrypted-database support.
-
-Cross-surface presentation behavior must test the actual navigation lifecycle when it is part of the bug. If a retained destination branch can be changed while inactive, a regression test should mutate the relevant data source while that section is inactive and prove it refreshes on reactivation without relying on remount, lock, or restart.
-
-Performance/security parameters are not selected from shared CI runner timing. Future KDF retuning must follow the evidence-first physical-device/profile process.
-
-Do not treat screenshot/golden testing as a substitute for behavioral tests. Add goldens selectively when the visual contract becomes stable enough to justify maintenance cost.
+Performance/security parameters are not selected from shared CI timing. KDF retuning follows physical-device/profile evidence.
 
 ## Dependency and supply-chain policy
 
-Applications commit `pubspec.lock`.
-
-CI uses lockfile enforcement so dependency resolution cannot silently change beneath an unchanged commit.
+Applications commit `pubspec.lock`; CI enforces the lockfile.
 
 Dependencies must come from stable published packages unless an explicit temporary exception is documented. Mutable Git dependencies are not acceptable production defaults.
 
 GitHub Actions are pinned to immutable commit SHAs. Pull-request dependency review rejects introduced dependencies at the configured severity threshold according to repository policy.
 
-## Development order
+## Current development order
 
-Daymark establishes correctness and safety before product polish.
-
-The foundational and core method sequence through PR #26 is complete:
+The product foundation through public alpha.2 is complete:
 
 1. product/domain/security constraints and pinned Flutter scaffold;
-2. relational schema and migration strategy;
-3. encrypted persistence, key management, and Argon2id baseline;
-4. authenticated portable encrypted backup/restore foundation;
-5. serialized journal application/session boundaries;
-6. Today/Daily Rapid Logging, Task terminal actions, lifecycle lock protection, and Daily history;
-7. current and historical Monthly Logs;
-8. rolling Future Log and deliberate scheduling (`<`);
-9. Collections, forward migration (`>`), and Collection references;
-10. deliberate Index and local read-only Search.
+2. schema v1 and encrypted persistence/key management;
+3. Argon2id baseline and authenticated key envelope;
+4. journal session/lifecycle and inactivity lock;
+5. Today/Daily, Monthly, Future, scheduling, Collections, migration/references, Index, Search, and history retrieval;
+6. user-facing encrypted Backup / Restore;
+7. explicit plaintext Open Export;
+8. System / Light / Dark Appearance;
+9. release packaging/signing hardening and physical Linux/Android validation;
+10. public `v1.0.0-alpha.2` prerelease.
 
-The current vacation-ready stabilization sequence is intentionally narrower than the older roadmap:
+The vacation-ready stabilization sequence is finished. Do not keep implementing from that release branch or pull multiple deferred features forward as one follow-up.
 
-1. expose the existing encrypted backup/restore foundation through safe user-facing file selection and session lifecycle;
-2. add explicit open export, expected as structured JSON plus Markdown, with a clear plaintext security boundary;
-3. expose the existing System / Light / Dark appearance choice without introducing a broad settings subsystem;
-4. perform packaging/release hardening, including versioning, Android signing setup, Linux/Android release builds, install/upgrade smoke tests, dependency/security review, and controlled real backup/restore verification;
-5. freeze feature work and fix only blockers/regressions needed for the vacation-ready prerelease.
-
-Direct retrieval navigation from Index/Search, richer Reflection, OS-level immediate-lock integration, device-assisted unlock, non-blocking accessibility/keyboard refinement, and other deferred capabilities remain later focused slices. They must not be pulled into the stabilization window merely because they appeared in an older development-order list.
-
-Do not implement convenience features ahead of the contracts that govern their persistence and security.
+No next alpha feature slice is selected yet. Candidate later focused slices include direct retrieval navigation from Index/Search, richer Reflection, OS-level immediate-lock integration, device-assisted unlock, reference removal, Index reorder/remove, accessibility/keyboard refinements, and eventually broader platform/portability work.
 
 ## Non-goals for the initial architecture
 
-The first implementation does not require:
+The initial v1 architecture does not require:
 
-- a backend server;
-- user accounts;
+- backend server or mandatory accounts;
 - cloud synchronization;
-- collaboration;
-- distributed conflict resolution;
+- collaboration/distributed conflict resolution;
 - plugin infrastructure;
 - AI services inside the product;
-- a freeform canvas/page-layout editor;
-- a multi-package workspace;
-- a parallel planner/task-management subsystem;
+- freeform canvas/page-layout editing;
+- multi-package workspace;
+- parallel generic planner/task-management subsystem;
 - Rust/Tauri integration without measured need.
 
 These must not leak into the core model as speculative abstractions.

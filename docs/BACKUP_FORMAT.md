@@ -4,7 +4,7 @@
 
 This document defines Daymark's portable encrypted backup container and restore safety contract.
 
-Backup format version 1 is introduced during pre-alpha development. Once a prerelease containing real user journals is published, this format becomes a compatibility-sensitive boundary. Later changes must either preserve version-1 restore support or provide an explicit tested migration path.
+Backup format version 1 shipped in public prerelease `v1.0.0-alpha.2` and is now a compatibility-sensitive boundary. A later supported build must either preserve version-1 restore support or provide an explicit tested migration path. A future format must not silently reinterpret version-1 bytes.
 
 ## Goals
 
@@ -19,7 +19,7 @@ A Daymark backup must:
 - recover safely from an application/process interruption during replacement;
 - avoid dependencies on Android Keystore, Linux keyrings, machine identity, filesystem paths, or cloud accounts.
 
-Version 1 intentionally does not define scheduled backup, retention rotation, remote storage, UI/file-picker behavior, attachments, or recovery-secret UX.
+Version 1 intentionally does not define scheduled backup, retention rotation, remote storage, attachments, or recovery-secret UX. The current application does provide user-facing manual file selection/save and restore around this container; those presentation/file-gateway details are not part of the binary format contract.
 
 ## Security composition
 
@@ -61,7 +61,7 @@ All fixed-width integers use unsigned big-endian encoding.
 +----------------------+-------------------------------------------+
 ```
 
-The fixed header is therefore 36 bytes.
+The fixed header is 36 bytes.
 
 The 16-byte magic value is:
 
@@ -71,7 +71,24 @@ DAYMARK-BACKUP\0\0
 
 The HMAC covers every byte from the magic through the final encrypted-database byte. The trailing 32-byte HMAC itself is not included in its own input.
 
-The parser validates fixed lengths and the exact total file size before allocating or staging payload data. Version 1 limits the manifest and key envelope to 64 KiB each. The encrypted database is streamed rather than loaded as one in-memory byte array.
+The parser validates fixed lengths and the exact total file size before allocating or staging payload data. Version 1 limits the manifest and key envelope to 64 KiB each.
+
+The backup service streams the encrypted database payload while constructing/validating the container rather than requiring the encrypted SQLite snapshot to be held as one application byte array.
+
+### Application/file-picker memory boundary
+
+Do not describe Daymark's current user-facing backup save path as streaming end-to-end.
+
+The service produces a completed encrypted backup container, but the current application/file-picker gateway may read that **already-encrypted container** into memory before handing bytes to the native file-save API. The owned mutable byte buffer is cleared after the handoff where practical.
+
+This distinction matters:
+
+- the buffered bytes are encrypted backup-container bytes, not plaintext journal content;
+- the binary format/service design remains streaming-capable for the database payload;
+- the current native file-save handoff can have memory cost proportional to the completed encrypted container size;
+- a future file API may remove that buffering without changing backup format v1.
+
+Never claim plaintext buffering or full end-to-end streaming unless the implementation actually demonstrates it.
 
 ## Manifest
 
@@ -98,7 +115,7 @@ Logical shape:
 
 The creation timestamp is metadata only and is not used to order or choose restore candidates automatically.
 
-`databaseSchemaVersion` is an explicit compatibility declaration. The current implementation restores schema version 1 only. Future schema versions must add a reviewed compatibility/migration path before accepting older or newer backup schemas.
+`databaseSchemaVersion` is an explicit compatibility declaration. Version-1 alpha.2 backups contain schema version 1. Future schema versions require a reviewed compatibility/migration path before accepting older or newer backup schemas.
 
 ## Backup creation
 
@@ -111,12 +128,12 @@ Backup creation follows this sequence:
 5. generate the random backup-integrity salt;
 6. build the strict manifest and fixed header;
 7. derive the HMAC key with HKDF-SHA256;
-8. stream header, manifest, key envelope, and encrypted snapshot into a temporary backup file while calculating HMAC-SHA256 over the same bytes;
+8. stream header, manifest, key envelope, and encrypted snapshot into a temporary backup container while calculating HMAC-SHA256 over the same bytes;
 9. append the MAC;
-10. flush and rename the completed temporary container to the requested destination;
-11. remove temporary encrypted snapshot/container files.
+10. flush and finalize the completed temporary container;
+11. remove temporary encrypted snapshot/container files when no longer needed.
 
-The service refuses to intentionally overwrite an existing backup path. Higher application/UI layers may implement an explicit replace flow later, but replacement must remain a deliberate user action.
+The service refuses to intentionally overwrite an existing backup path. The user-facing application layer may request an explicit destination/replace operation through the platform file provider, but replacement remains a deliberate user action.
 
 A stale or unrelated key envelope is rejected during backup creation. This prevents generating a container whose database and portable credential refer to different journal keys.
 
@@ -172,18 +189,20 @@ If the marker has already been deleted, the new pair is committed. Any rollback 
 
 Dart does not expose a portable directory-fsync transaction primitive across Linux and Android. Daymark therefore describes this contract as rollback-safe application-level recovery rather than claiming filesystem/power-loss atomicity stronger than the runtime can guarantee.
 
-## Session boundary
+## Session and UI boundary
 
 The backup snapshot may be taken while normal journal persistence exists because SQLite's backup API provides a transactionally consistent snapshot.
 
-Restore replacement is different: any active application session using the destination journal must be closed before commit. The application/session boundary responsible for restore must:
+Restore replacement is different: an active application session using the destination journal must be closed before commit. The application exposes restore only while the journal is locked or absent so it cannot replace files beneath a live encrypted database connection.
 
-1. lock/close the destination persistence session;
+The session/application boundary responsible for restore must:
+
+1. ensure the destination persistence session is not active;
 2. invoke interrupted-restore recovery before opening journal storage;
-3. perform restore;
+3. perform restore and validate before replacement commit;
 4. reopen only from the committed destination pair.
 
-This keeps file replacement out of widget/UI code and avoids keeping a stale open connection to files being replaced. `JournalSession` already exists as the unlocked journal-lifetime boundary; future backup UI must integrate with that existing lifecycle rather than creating a second competing session abstraction.
+`JournalSession` remains the unlocked journal-lifetime boundary. Backup/restore UI and platform file selection must integrate with that existing lifecycle rather than creating a competing session abstraction.
 
 ## Password changes
 
@@ -193,16 +212,18 @@ Therefore an older backup remains protected by the older password with which its
 
 ## Future attachments
 
-The version-1 payload contains only the encrypted SQLite snapshot because attachments are not part of schema/product scope yet.
+Version 1 contains only the encrypted SQLite snapshot because attachments are not part of schema/product scope yet.
 
-Future attachment support must not append unauthenticated plaintext files beside the backup. A later backup format version may add framed encrypted payload members while preserving these properties:
+Future attachment support must not append unauthenticated plaintext files beside the backup. A later backup format version may add framed encrypted payload members while preserving:
 
-- all interpretation-sensitive metadata authenticated;
-- content encrypted at rest;
-- streaming validation/copying;
+- authenticated interpretation-sensitive metadata;
+- encryption at rest;
+- streaming validation/copying where the platform API permits it;
 - explicit format versioning;
 - restore staging before commit.
 
 ## Plaintext export remains separate
 
-Markdown/JSON export is intentionally outside this format. A user-requested human-readable export may be plaintext and must be presented as a different operation with a clear security boundary.
+Markdown/JSON Open Export is intentionally outside this format. A user-requested human-readable export is plaintext and must remain a different operation with a clear security warning.
+
+Encrypted Backup / Restore is the recovery and migration boundary. Open Export is portability for reading/machine processing, not restore.

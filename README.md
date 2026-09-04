@@ -6,9 +6,11 @@ Daymark is a minimal, local-first Bullet Journal application for Linux and Andro
 
 ## Project status
 
-Daymark is in pre-alpha development.
+Daymark is in **alpha development**.
 
-The core product, domain, security, data, workflow, and toolchain constraints are established. The active product line now includes:
+The first controlled distributable prerelease, [`v1.0.0-alpha.2`](https://github.com/marcelositr/daymark/releases/tag/v1.0.0-alpha.2), was published on 2026-09-04 for Linux x64 and Android. It is prerelease software, not a stable `1.0.0` release.
+
+The current product line includes:
 
 - encrypted journal creation, unlock, manual lock, and automatic inactivity lock;
 - Today / Daily Log with Rapid Logging for Task, Event, and Note plus read-only historical Daily browsing;
@@ -21,11 +23,14 @@ The core product, domain, security, data, workflow, and toolchain constraints ar
 - deliberate Collection references from chronological entries without moving the source or changing Task state;
 - a deliberate basic Index of existing Logs and Collections, preserving user-chosen Index order;
 - basic local Search across existing Entry content, with read-only owner context and no Search-to-Index side effect;
-- encrypted portable backup/restore foundations.
+- user-facing portable authenticated encrypted Backup / Restore;
+- explicit plaintext Open Export to deterministic JSON and human-readable Markdown;
+- device-local System / Light / Dark appearance selection;
+- Linux and Android release packaging with dedicated Android release signing that fails closed if signing configuration is missing.
 
 The pinned toolchain is Flutter 3.47.2 with Dart 3.13.2, targeting Linux and Android.
 
-The canonical live development checkpoint is [`PROJECT.md`](PROJECT.md). It records the exact current branch, PR, validation evidence, blockers, and next intended slice.
+The canonical live development checkpoint is [`PROJECT.md`](PROJECT.md). It records the latest published release checkpoint, compatibility boundaries, validation evidence, open work, and next intended decision.
 
 Any human or AI contributor should read [`AGENTS.md`](AGENTS.md) before continuing work. The repository is intentionally structured so development can resume across chat limits, CLI restarts, API quotas, and different agents without relying on hidden conversation context.
 
@@ -34,10 +39,10 @@ Any human or AI contributor should read [`AGENTS.md`](AGENTS.md) before continui
 - Faithful to the core Bullet Journal method.
 - Digital minimalism by default.
 - Local-first and offline-first.
-- Encryption at rest from the first persisted journal.
+- Encryption at rest for persisted journal data.
 - Linux and Android are the initial supported platforms.
 - Architecture remains portable to future desktop and mobile targets.
-- Open, exportable user data.
+- Open, documented user-data portability.
 - No advertising, engagement loops, streaks, productivity scoring, or attention-seeking UI.
 - Automation must not remove deliberate reflection or migration decisions from the method.
 
@@ -54,8 +59,10 @@ Daymark deliberately avoids turning Bullet Journal concepts into a generic plann
 - **Collection references** let a Today, Monthly, or Future entry remain in its original location while also appearing in a Collection. The same Entry identity and Task state are preserved, and the reference is read-only from the Collection surface.
 - **Index** is a deliberate ordered list of existing Logs and Collections. Adding a structure to the Index does not duplicate its content, change ownership, or derive persistent items from Search results.
 - **Search** is an explicit local, read-only query over existing Entry content. Results keep the original Entry identity/state and show whether the source belongs to Daily, Monthly, Future, or a Collection; Search does not create Entries, references, or Index items.
+- **Backup / Restore** is the protected recovery and migration boundary. Backups remain encrypted and authenticated and are portable across supported devices when the user has the portable credential.
+- **Open Export** is a separate explicit plaintext portability boundary. JSON and Markdown exports are not protected by Daymark encryption and are not a restore format.
 
-Richer reflection flows, direct retrieval navigation from Index/Search, backup UI, and exports continue as focused pre-alpha work.
+Richer reflection flows, direct retrieval navigation from Index/Search, reference removal, Index reorder/remove, OS-level immediate-lock integration, and device-assisted unlock remain later focused work. No next alpha feature slice is selected merely because `alpha.2` is published.
 
 ## Technology direction
 
@@ -76,9 +83,9 @@ English is the canonical and fallback UI locale. An exact Brazilian Portuguese s
 
 The exact resolved dependency set is committed in `pubspec.lock` and changes only through reviewed dependency updates.
 
-## Initial scope
+## Initial v1 scope
 
-The first product milestone is expected to cover:
+The first stable product milestone is expected to cover:
 
 - Rapid Logging;
 - Daily Log;
@@ -102,9 +109,9 @@ Development uses one permanent integration branch (`main`), short-lived task bra
 
 See [`docs/WORKFLOW.md`](docs/WORKFLOW.md).
 
-AI-assisted work follows a staged validation ladder: trustworthy baseline, the fastest trustworthy feedback path (normally pinned local-first validation when explicitly agreed, otherwise Draft-CI assistance where useful), layer-correct focused tests, complete local validation and manual platform validation when needed, documentation alignment, full non-Draft CI / `merge-gate`, and explicit user merge approval.
+AI-assisted work follows a staged validation ladder: trustworthy baseline, the fastest trustworthy feedback path, layer-correct focused tests, complete local validation and manual platform validation when needed, documentation alignment, full non-Draft CI / `merge-gate`, and explicit user merge approval.
 
-The first public release train progresses deliberately through:
+The public release train progresses deliberately through:
 
 ```text
 v1.0.0-alpha.N
@@ -113,21 +120,26 @@ v1.0.0-rc.N
 v1.0.0
 ```
 
-Release candidates are not promoted automatically. Stable `1.0.0` happens only after deliberate testing and approval.
+Prereleases are not promoted automatically. Stable `1.0.0` happens only after deliberate testing and approval.
 
 ## Documentation map
 
-- [`PROJECT.md`](PROJECT.md): canonical live checkpoint, exact current state, validation evidence, blockers, next steps, and handoff log
+- [`PROJECT.md`](PROJECT.md): canonical live checkpoint, published release evidence, compatibility boundaries, blockers, and next steps
 - [`AGENTS.md`](AGENTS.md): mandatory operating contract and failure-prevention rules for AI-assisted development
 - [`docs/PRODUCT.md`](docs/PRODUCT.md): product boundaries and principles
 - [`docs/DOMAIN.md`](docs/DOMAIN.md): Bullet Journal semantics
 - [`docs/DATA_MODEL.md`](docs/DATA_MODEL.md): relational schema, persistence invariants, and migration policy
 - [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md): technical architecture and technology baseline
-- [`SECURITY.md`](SECURITY.md): current threat model and security constraints
+- [`SECURITY.md`](SECURITY.md): current threat model, supported prerelease line, and security constraints
 - [`docs/SECURITY_FOUNDATION.md`](docs/SECURITY_FOUNDATION.md): historical PR #7 security-foundation validation record
 - [`docs/ARGON2_BENCHMARK.md`](docs/ARGON2_BENCHMARK.md): Linux/Android KDF benchmark procedure and evidence
-- [`docs/BACKUP_FORMAT.md`](docs/BACKUP_FORMAT.md): portable authenticated backup format
+- [`docs/BACKUP_FORMAT.md`](docs/BACKUP_FORMAT.md): portable authenticated encrypted backup format and restore safety contract
+- [`docs/OPEN_EXPORT_FORMAT.md`](docs/OPEN_EXPORT_FORMAT.md): plaintext JSON/Markdown portability contract
+- [`docs/RELEASE.md`](docs/RELEASE.md): Linux/Android packaging, signing, and release verification procedure
 - [`docs/WORKFLOW.md`](docs/WORKFLOW.md): branches, PRs, validation, versioning, and releases
+- [`docs/LOCAL_ENVIRONMENT.md`](docs/LOCAL_ENVIRONMENT.md): primary local validation-host record
+- [`docs/LOCAL_EXECUTION.md`](docs/LOCAL_EXECUTION.md): safe terminal-block contract for user-assisted local validation
+- [`docs/PERFORMANCE_BENCHMARK.md`](docs/PERFORMANCE_BENCHMARK.md): measured local build/test baseline and tuning protocol
 - [`CONTRIBUTING.md`](CONTRIBUTING.md): contribution expectations and local-validation safety rules
 - [`CHANGELOG.md`](CHANGELOG.md): release-facing history
 
