@@ -4,7 +4,9 @@ import 'package:daymark/app/daymark_app.dart';
 import 'package:daymark/core/backup/backup_file_gateway.dart';
 import 'package:daymark/core/session/journal_session.dart';
 import 'package:daymark/core/session/journal_session_controller.dart';
+import 'package:daymark/features/journal/presentation/backup_dialog.dart';
 import 'package:daymark/features/journal/presentation/backup_file_gateway_provider.dart';
+import 'package:daymark/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -82,6 +84,26 @@ void main() {
 
     expect(find.text('Restore encrypted backup'), findsNothing);
     expect(find.text('Unlock Daymark'), findsOneWidget);
+  });
+
+  testWidgets('backup dialog rejects an empty master password before I/O', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      const ProviderScope(
+        child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: <Locale>[Locale('en')],
+          home: Scaffold(body: BackupDialog()),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    await tester.tap(find.widgetWithText(FilledButton, 'Create backup'));
+    await tester.pump();
+
+    expect(find.text('A master password is required.'), findsOneWidget);
   });
 }
 
