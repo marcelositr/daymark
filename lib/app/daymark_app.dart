@@ -1,7 +1,10 @@
+import 'package:daymark/core/settings/appearance_preferences.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../l10n/app_localizations.dart';
+import 'appearance_controller.dart';
 import 'router.dart';
 import 'theme.dart';
 
@@ -26,11 +29,28 @@ Locale resolveDaymarkLocale(List<Locale>? preferredLocales) {
   return const Locale('en');
 }
 
-class DaymarkApp extends StatelessWidget {
+ThemeMode themeModeForAppearance(AppearancePreference preference) {
+  return switch (preference) {
+    AppearancePreference.system => ThemeMode.system,
+    AppearancePreference.light => ThemeMode.light,
+    AppearancePreference.dark => ThemeMode.dark,
+  };
+}
+
+class DaymarkApp extends ConsumerWidget {
   const DaymarkApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final AsyncValue<AppearancePreference> appearance = ref.watch(
+      appearanceControllerProvider,
+    );
+    final ThemeMode themeMode = appearance.when(
+      data: themeModeForAppearance,
+      error: (error, stackTrace) => ThemeMode.system,
+      loading: () => ThemeMode.system,
+    );
+
     return MaterialApp.router(
       debugShowCheckedModeBanner: false,
       onGenerateTitle: (context) => AppLocalizations.of(context).appName,
@@ -46,7 +66,7 @@ class DaymarkApp extends StatelessWidget {
       },
       theme: DaymarkTheme.light(),
       darkTheme: DaymarkTheme.dark(),
-      themeMode: ThemeMode.system,
+      themeMode: themeMode,
       routerConfig: daymarkRouter,
     );
   }

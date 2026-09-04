@@ -15,6 +15,7 @@ This file is for user-visible behavior, data compatibility, security, packaging,
 - Portable authenticated encrypted backup/restore foundation with rollback-safe recovery behavior.
 - User-facing encrypted backup creation and restore, with native file selection, password verification, locked/empty-state restore, and post-restore reopening only from committed validated files.
 - Explicit Open Export to deterministic versioned JSON and human-readable Markdown, preserving stable IDs, ownership, states, relationships, and Unicode.
+- Device-local Appearance selection with System, Light, and Dark modes, applied immediately and persisted independently of the encrypted journal.
 - Semantic journal application services for capture, migration, scheduling, and collection references.
 - Encrypted journal creation, unlock, and explicit manual lock flow.
 - Functional Today/Daily Log with Rapid Logging for Task, Event, and Note entries.

@@ -6,16 +6,20 @@ This is Daymark's canonical living handoff. Read this file and `AGENTS.md` befor
 
 - Phase: pre-alpha, core Bullet Journal flows are implemented and the project is in the vacation-ready stabilization cycle.
 - Integration branch: `main` only.
-- Current merged `main`: `75380a863a64dd6d6e2b56f5fde2879ca517c2f4`, squash merge of PR #29 `docs: close backup restore benchmark checkpoint`.
+- Current merged `main`: `fecc5ea4b63297de0a8b1eb9da5c93e1ecf562e3`, squash merge of PR #30 `feat(export): add plaintext open export`.
+- PR #30 exact Ready head: `0b3d4158c6bffee9d43d6ef8c57a75151bbc2b5a`.
+- PR #30 Ready CI #470 passed quality, Linux, Android, dependency review, and `merge-gate`.
+- Post-merge `main` CI #471 passed on exact merged SHA `fecc5ea4b63297de0a8b1eb9da5c93e1ecf562e3`.
 - PR #29 exact Ready head: `f95a62cc41b1cd2e51dc29e341aa00657c4a4408`.
 - PR #29 Ready CI #467 passed quality, Linux, Android, dependency review, and `merge-gate`.
 - PR #28 exact Ready head: `a7fd2dfd5b408b0285ac88a7bf610041cf8c299d`.
 - PR #28 Ready CI #464 passed `quality`, Linux build, Android build, dependency review, and `merge-gate` on that exact head.
 - Post-merge `main` CI #465 passed on exact merged SHA `e4659c14e84759150060e4f834a1a2fc50b20910`.
 - User-facing encrypted backup/restore is now merged into `main` and passed real disposable Linux backup/restore validation before merge.
-- Active product branch: `feat/open-export`.
-- Open Export implementation and manual Linux validation are complete; final local validation is green and exact-head Ready CI remains before integration.
-- Next planned product slice after Open Export: **Appearance selection**.
+- Open Export is merged in PR #30 and passed post-merge `main` CI #471.
+- Active product branch: `feat/appearance-settings`.
+- Appearance System / Light / Dark is implemented and passed focused validation plus real Linux persistence/restart testing.
+- Next planned product slice after Appearance: **Release hardening**.
 - Runtime targets: Linux and Android.
 - Pinned toolchain: Flutter 3.47.2 / Dart 3.13.2.
 - Primary local validation host details: `docs/LOCAL_ENVIRONMENT.md`.
@@ -169,6 +173,7 @@ Current foundation includes:
 - PR #27: local-first stabilization handoff alignment. Squash `b6d8ed5904d5e587cec91ed597b297b2c75672b5`.
 - PR #28: user-facing encrypted backup/restore. Squash `e4659c14e84759150060e4f834a1a2fc50b20910`.
 - PR #29: post-backup documentation and local performance benchmark. Squash `75380a863a64dd6d6e2b56f5fde2879ca517c2f4`.
+- PR #30: explicit plaintext Open Export to deterministic JSON and human-readable Markdown. Squash `fecc5ea4b63297de0a8b1eb9da5c93e1ecf562e3`.
 
 ### PR #28 backup/restore checkpoint
 
@@ -194,9 +199,9 @@ Validation evidence:
 - squash merge produced `main` SHA `e4659c14e84759150060e4f834a1a2fc50b20910`;
 - post-merge `main` CI #465 passed on that exact merged SHA.
 
-## Active stabilization slice: Open Export
+### PR #30 Open Export checkpoint
 
-Open Export is implemented on `feat/open-export`.
+Open Export is merged in PR #30.
 
 Expected boundary:
 
@@ -222,15 +227,40 @@ Implementation and validation:
 - no dependency, schema, cryptographic-format, or backup-format change;
 - final local validation passed: locked dependency resolution, localization generation, Drift generation/migration checks, generated-artifact freshness, formatter, analyzer, focused Open Export tests, complete Flutter suite, Linux debug build, and Android debug APK build;
 - real disposable Linux validation passed for JSON, Markdown, Unicode, Collection ownership, and the plaintext warning;
-- exact-head Ready CI remains before merge.
+- Ready CI #470 passed on exact head `0b3d4158c6bffee9d43d6ef8c57a75151bbc2b5a`;
+- squash merge produced `main` SHA `fecc5ea4b63297de0a8b1eb9da5c93e1ecf562e3`;
+- post-merge `main` CI #471 passed on that exact SHA.
+
+## Active stabilization slice: Appearance
+
+Appearance selection is implemented on `feat/appearance-settings`.
+
+Implemented behavior:
+
+- System, Light, and Dark are explicit choices;
+- the selected mode is applied immediately across the application;
+- the preference is device/application state, not journal domain data;
+- it is stored outside the encrypted journal database in a small versioned `device-preferences.json` file;
+- missing, malformed, incompatible, or unknown preference content falls safely back to System;
+- writes use a temporary file followed by replacement;
+- appearance applies while the journal is locked and persists across application restarts;
+- no schema, cryptographic, backup-format, or dependency change.
+
+Validation evidence:
+
+- localization generation, formatter, analyzer, focused preference/UI tests, and Linux debug build passed;
+- real disposable Linux testing confirmed immediate Dark and Light changes;
+- restart testing confirmed Dark and Light before journal unlock;
+- returning to System persisted successfully;
+- complete Flutter suite and Android debug build are the final local gates before Ready CI.
 
 ## Vacation-ready stabilization plan
 
 Priority order:
 
 1. **User-facing encrypted backup/restore**: merged in PR #28.
-2. **Open export**: implemented on `feat/open-export`; final validation and merge remain.
-3. **Appearance selection**: expose System / Light / Dark without turning settings into a configuration surface.
+2. **Open export**: merged in PR #30.
+3. **Appearance selection**: implemented on `feat/appearance-settings`; final validation and merge remain.
 4. **Release hardening**: packaging/versioning, Android release signing setup, Linux and Android release builds, installation/upgrade smoke tests, dependency/security review, documentation alignment, and final controlled recovery validation.
 5. **Final stabilization only**: after the above closes, fix blockers and regressions; do not add unrelated features merely because time remains.
 

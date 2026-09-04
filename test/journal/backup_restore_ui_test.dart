@@ -1,9 +1,11 @@
 import 'dart:io';
 
+import 'package:daymark/app/appearance_controller.dart';
 import 'package:daymark/app/daymark_app.dart';
 import 'package:daymark/core/backup/backup_file_gateway.dart';
 import 'package:daymark/core/session/journal_session.dart';
 import 'package:daymark/core/session/journal_session_controller.dart';
+import 'package:daymark/core/settings/appearance_preferences.dart';
 import 'package:daymark/features/journal/presentation/backup_dialog.dart';
 import 'package:daymark/features/journal/presentation/backup_file_gateway_provider.dart';
 import 'package:daymark/l10n/app_localizations.dart';
@@ -129,6 +131,9 @@ Future<void> _pumpAccessState(
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
+        appearanceControllerProvider.overrideWithBuild(
+          (ref, controller) => AppearancePreference.system,
+        ),
         journalSessionControllerProvider.overrideWithBuild(
           (ref, controller) => state,
         ),
