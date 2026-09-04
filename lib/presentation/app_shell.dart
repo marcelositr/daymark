@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
-import '../features/journal/presentation/appearance_dialog.dart';
 import '../features/journal/presentation/backup_dialog.dart';
 import '../features/journal/presentation/open_export_dialog.dart';
 import '../l10n/app_localizations.dart';
 import 'app_section_scope.dart';
+import 'appearance_dialog.dart';
 
 class AppShell extends StatefulWidget {
   const AppShell({required this.navigationShell, super.key});
