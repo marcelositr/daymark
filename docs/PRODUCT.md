@@ -54,6 +54,12 @@ Today represents the current Daily Log and supports Rapid Logging of Task, Event
 
 The date changes automatically at the method-day boundary, but unresolved entries are not automatically migrated because the calendar advanced.
 
+Earlier Daily Logs may be opened through a dedicated **read-only historical route**. Historical Daily browsing must not create a missing Daily Log merely because the user views that date and must not expose capture, Task actions, migration, scheduling, references, completion, or discard.
+
+A historical day that has never existed therefore appears empty without becoming persisted state or an Index candidate. Historical navigation may move between earlier dates but must not advance into Today as though the current Daily Log were historical. Returning to Today restores the normal interactive Rapid Logging surface.
+
+This history surface is retrieval, not a generic calendar workspace or reflection engine. Direct Index/Search navigation to a historical Daily route is intentionally deferred to a focused retrieval-navigation slice now that a real Daily historical destination exists.
+
 ### Monthly Log
 
 Monthly preserves the method's two different areas:
@@ -63,7 +69,7 @@ Monthly preserves the method's two different areas:
 
 The **current month** remains the active Monthly Log and supports capture plus deliberate Task actions.
 
-Earlier Monthly Logs may be browsed month by month in **read-only historical mode**. Historical browsing must not create a missing Monthly Log merely because the user navigated to that month, must not expose capture or Task actions, and must not allow navigation forward past the current month into a future Monthly Log.
+Earlier Monthly Logs may be browsed month by month in **read-only historical mode**. Historical browsing must not create a missing Monthly Log merely because the user navigates to that month, must not expose capture or Task actions, and must not allow navigation forward past the current month into a future Monthly Log.
 
 A historical month that has never existed therefore appears empty without becoming persisted state or an Index candidate. Returning to the current month restores the normal interactive Monthly behavior.
 
@@ -196,6 +202,8 @@ The journal navigation model contains:
 The exact control used to reach them differs by screen size. Wider desktop layouts expose all six directly in the navigation rail. Compact/mobile layouts keep Today, Monthly, Future, and Collections as direct bottom destinations and use a minimal **More** destination for Search and Index rather than crowding six items into the bottom bar.
 
 Grouping Search and Index under the same compact navigation entry does not merge their product meaning. The Index remains a deliberate persisted Bullet Journal structure; Search remains query-driven retrieval.
+
+Historical Daily navigation is contextual under Today rather than a seventh top-level destination. The current Daily Log stays the primary Today surface while `/daily/:date` represents explicit read-only retrieval of a past method date.
 
 Reflection is contextual rather than a permanent top-level workspace. Reflection actions should appear where they belong, such as Daily or Monthly review flows.
 
