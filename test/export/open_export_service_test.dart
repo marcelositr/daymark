@@ -96,7 +96,7 @@ void main() {
   );
 
   test(
-    'Markdown export is plaintext, readable, and preserves Unicode',
+    'Markdown export is plaintext, readable, and preserves escaping',
     () async {
       await _seedExportFixture(database);
 
@@ -113,6 +113,11 @@ void main() {
       expect(document.contents, contains('entry-destination'));
       expect(document.contents, contains('collection-1'));
       expect(document.contents, contains('migrated'));
+      expect(document.contents, contains('- title: `` Viagem `Sul` ``'));
+      expect(
+        document.contents,
+        contains('- customLabel:\n```text\nLinha 1\nLinha `2`\n```'),
+      );
     },
   );
 }
@@ -132,7 +137,7 @@ Future<void> _seedExportFixture(DaymarkDatabase database) async {
     ''');
   await database.customStatement('''
     INSERT INTO collections (id, title, created_at, updated_at)
-    VALUES ('collection-1', 'Viagem', 20, 20)
+    VALUES ('collection-1', 'Viagem `Sul`', 20, 20)
     ''');
   await database.customStatement('''
     INSERT INTO entries (
@@ -176,7 +181,7 @@ Future<void> _seedExportFixture(DaymarkDatabase database) async {
     INSERT INTO signifiers (
       id, kind, builtin_code, custom_label, custom_symbol, created_at
     ) VALUES (
-      'signifier-custom', 'custom', NULL, 'Importante', '!', 60
+      'signifier-custom', 'custom', NULL, 'Linha 1\nLinha `2`', '!', 60
     )
     ''');
   await database.customStatement('''
