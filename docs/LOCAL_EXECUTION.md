@@ -84,6 +84,25 @@ red() {
 
 Use messages such as `COPIE O RESULTADO A PARTIR DESTA LINHA` and `FIM DO RESULTADO`. The block must still remain understandable when ANSI color is unavailable, so the text boundary matters more than the color itself.
 
+## Performance benchmarking
+
+Performance benchmarks are exceptional diagnostics, not the default validation path. The detailed benchmark protocol and current baseline live in `docs/PERFORMANCE_BENCHMARK.md`.
+
+Benchmark blocks must preserve the distinction between controlled rebuilds and normal warm incremental work.
+
+- Do not run `flutter clean` during ordinary development validation or merely to make a benchmark look more rigorous. It destroys useful incremental state across targets and makes normal iteration slower.
+- For a controlled Linux rebuild, remove only `build/linux`.
+- For a controlled Android rebuild, use an Android/Gradle-target clean when the experiment specifically needs a rebuild baseline; do not wipe unrelated Flutter/pub caches.
+- Resolve the locked dependency set once before timed commands and use `--no-pub` where supported so dependency/network work does not contaminate timing.
+- Measure a warm incremental build immediately after the corresponding controlled rebuild without source changes.
+- Record elapsed time and resource pressure when practical, including process-tree RSS, sampled CPU use, available memory, and swap use.
+- If `/usr/bin/time` is unavailable, do not install packages automatically; a Python + `/proc` sampler is an accepted zero-install fallback on the current Linux host.
+- Change one tuning variable at a time. Do not combine Gradle caching, parallelism, heap, daemon, governor, or swap changes in a single A/B experiment unless the individual effects are already understood.
+- A faster single run is not enough to justify a repository-wide setting. Repeat promising results and reject changes that worsen stability, memory pressure, CI behavior, or reproducibility.
+- Preserve a clean worktree before and after the benchmark. A benchmark must not silently commit tuning changes.
+
+Normal Daymark work should optimize the development loop by preserving warm caches, running focused tests while implementing, and reserving full suite/both-platform builds for meaningful checkpoints.
+
 ## Secrets and destructive operations
 
 Non-interactive execution does not override Daymark's security boundaries.
