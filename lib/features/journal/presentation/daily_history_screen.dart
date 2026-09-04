@@ -4,6 +4,7 @@ import 'package:daymark/core/session/journal_session_controller.dart';
 import 'package:daymark/features/journal/data/daily_log_repository.dart';
 import 'package:daymark/features/journal/domain/journal_domain.dart';
 import 'package:daymark/l10n/app_localizations.dart';
+import 'package:daymark/presentation/daymark_notice.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -127,6 +128,7 @@ class _DailyHistoryScreenState extends ConsumerState<DailyHistoryScreen> {
                 },
               ),
             ),
+            const DaymarkNoticeRegion(),
           ],
         ),
       ),

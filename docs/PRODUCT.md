@@ -166,6 +166,29 @@ discard remain authoritative.
 
 The visible Undo window is presentation behavior rather than a persistence rule.
 
+## Transient feedback
+
+Daymark uses one quiet in-layout notice channel for transient operational
+feedback. Notices must never cover a Rapid Logging field, navigation controls,
+or journal content that the user is actively manipulating.
+
+On capture surfaces the notice region sits immediately above the capture
+controls. On read-only/retrieval surfaces it sits at the bottom of the content
+column. The same notice controller is shared by Today, Monthly, Future,
+Collections, Search, Index, historical routes, Backup, and Open Export.
+
+The channel has three restrained behaviors:
+
+- **Undo**: five seconds, with one explicit action; a newer capture replaces the
+  previous Undo notice and a deliberate journal action dismisses it immediately;
+- **Info**: approximately three seconds, with no required acknowledgement;
+- **Error**: approximately six seconds, visually distinct but non-modal unless a
+  separate user decision is actually required.
+
+Notices do not steal keyboard focus, queue into an attention feed, persist as
+engagement prompts, or create a notification history. A new notice replaces the
+previous transient notice.
+
 ## Local-first
 
 The journal belongs to the user.

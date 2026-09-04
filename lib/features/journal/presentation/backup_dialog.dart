@@ -4,6 +4,7 @@ import 'package:daymark/core/backup/backup_file_gateway.dart';
 import 'package:daymark/core/crypto/security_exception.dart';
 import 'package:daymark/core/session/journal_session_controller.dart';
 import 'package:daymark/l10n/app_localizations.dart';
+import 'package:daymark/presentation/daymark_notice.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path_provider/path_provider.dart';
@@ -19,8 +20,7 @@ Future<void> showBackupDialog(BuildContext context) async {
 
   if (saved == true && context.mounted) {
     final AppLocalizations l10n = AppLocalizations.of(context);
-    ScaffoldMessenger.of(context)
-        .showSnackBar(SnackBar(content: Text(l10n.backupSaved)));
+    daymarkNoticeControllerOf(context).showInfo(l10n.backupSaved);
   }
 }
 

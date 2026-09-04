@@ -6,6 +6,7 @@ import 'package:daymark/features/journal/data/collection_repository.dart';
 import 'package:daymark/features/journal/domain/journal_domain.dart';
 import 'package:daymark/l10n/app_localizations.dart';
 import 'package:daymark/presentation/app_section_scope.dart';
+import 'package:daymark/presentation/daymark_notice.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -241,6 +242,7 @@ class _CollectionsScreenState extends ConsumerState<CollectionsScreen> {
             },
           ),
         ),
+        const DaymarkNoticeRegion(),
         const SizedBox(height: 12),
         Row(
           children: [
@@ -309,6 +311,7 @@ class _CollectionsScreenState extends ConsumerState<CollectionsScreen> {
             ),
             const SizedBox(height: 16),
             Expanded(child: _buildCollectionContent(l10n, collection)),
+            const DaymarkNoticeRegion(),
             const SizedBox(height: 12),
             SegmentedButton<JournalEntryType>(
               showSelectedIcon: false,
@@ -505,7 +508,6 @@ class _CollectionsScreenState extends ConsumerState<CollectionsScreen> {
         tooltip: l10n.taskActions,
         padding: EdgeInsets.zero,
         onSelected: (action) {
-          ScaffoldMessenger.of(context).clearSnackBars();
           unawaited(_applyTaskAction(entry, action));
         },
         itemBuilder: (context) => [
@@ -593,8 +595,9 @@ class _CollectionsScreenState extends ConsumerState<CollectionsScreen> {
     } catch (error, stackTrace) {
       _reportUnexpectedCollectionsError('create', error, stackTrace);
       if (!mounted) return;
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(l10n.createCollectionFailed)));
+      ref
+          .read(daymarkNoticeProvider.notifier)
+          .showError(l10n.createCollectionFailed);
       setState(() => _saving = false);
     }
   }
@@ -635,26 +638,20 @@ class _CollectionsScreenState extends ConsumerState<CollectionsScreen> {
     } catch (error, stackTrace) {
       _reportUnexpectedCollectionsError('capture', error, stackTrace);
       if (!mounted) return;
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(l10n.saveEntryFailed)));
+      ref.read(daymarkNoticeProvider.notifier).showError(l10n.saveEntryFailed);
       setState(() => _saving = false);
     }
   }
 
   void _showCaptureUndo(String entryId) {
     final AppLocalizations l10n = AppLocalizations.of(context);
-    final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
-    messenger.clearSnackBars();
-    messenger.showSnackBar(
-      SnackBar(
-        duration: const Duration(seconds: 5),
-        content: Text(l10n.entryCreated),
-        action: SnackBarAction(
-          label: l10n.undo,
-          onPressed: () => unawaited(_undoCapture(entryId)),
-        ),
-      ),
-    );
+    ref
+        .read(daymarkNoticeProvider.notifier)
+        .showUndo(
+          message: l10n.entryCreated,
+          actionLabel: l10n.undo,
+          onUndo: () => _undoCapture(entryId),
+        );
   }
 
   Future<void> _undoCapture(String entryId) async {
@@ -674,9 +671,9 @@ class _CollectionsScreenState extends ConsumerState<CollectionsScreen> {
     } catch (error, stackTrace) {
       _reportUnexpectedCollectionsError('capture undo', error, stackTrace);
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(AppLocalizations.of(context).undoCaptureFailed)),
-      );
+      ref
+          .read(daymarkNoticeProvider.notifier)
+          .showError(AppLocalizations.of(context).undoCaptureFailed);
     }
   }
 
@@ -687,7 +684,7 @@ class _CollectionsScreenState extends ConsumerState<CollectionsScreen> {
     final String? collectionId = _selectedCollectionId;
     if (collectionId == null || _taskActionEntryId != null) return;
     // Any deliberate journal action supersedes the short-lived capture Undo.
-    ScaffoldMessenger.of(context).removeCurrentSnackBar();
+    ref.read(daymarkNoticeProvider.notifier).dismiss();
     final AppLocalizations l10n = AppLocalizations.of(context);
     setState(() => _taskActionEntryId = entry.id);
     try {
@@ -705,8 +702,7 @@ class _CollectionsScreenState extends ConsumerState<CollectionsScreen> {
     } catch (error, stackTrace) {
       _reportUnexpectedCollectionsError('task action', error, stackTrace);
       if (!mounted) return;
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(l10n.taskActionFailed)));
+      ref.read(daymarkNoticeProvider.notifier).showError(l10n.taskActionFailed);
       setState(() => _taskActionEntryId = null);
     }
   }
@@ -736,9 +732,9 @@ class _CollectionsScreenState extends ConsumerState<CollectionsScreen> {
       if (!mounted) {
         return;
       }
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.removeCollectionReferenceFailed)),
-      );
+      ref
+          .read(daymarkNoticeProvider.notifier)
+          .showError(l10n.removeCollectionReferenceFailed);
       setState(() => _saving = false);
     }
   }

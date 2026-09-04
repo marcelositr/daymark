@@ -7,6 +7,7 @@ import 'package:daymark/features/journal/data/monthly_log_repository.dart';
 import 'package:daymark/features/journal/domain/journal_domain.dart';
 import 'package:daymark/l10n/app_localizations.dart';
 import 'package:daymark/presentation/app_section_scope.dart';
+import 'package:daymark/presentation/daymark_notice.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -298,6 +299,7 @@ class _MonthlyScreenState extends ConsumerState<MonthlyScreen>
                 },
               ),
             ),
+            const DaymarkNoticeRegion(),
             if (_followingCurrentMonth) ...[
               const SizedBox(height: 12),
               _buildComposer(l10n),
@@ -472,7 +474,6 @@ class _MonthlyScreenState extends ConsumerState<MonthlyScreen>
         tooltip: l10n.entryActions,
         padding: EdgeInsets.zero,
         onSelected: (action) {
-          ScaffoldMessenger.of(context).clearSnackBars();
           unawaited(_applyEntryAction(entry, action));
         },
         itemBuilder: (context) => [
@@ -696,26 +697,20 @@ class _MonthlyScreenState extends ConsumerState<MonthlyScreen>
       if (!mounted) {
         return;
       }
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(l10n.saveEntryFailed)));
+      ref.read(daymarkNoticeProvider.notifier).showError(l10n.saveEntryFailed);
       setState(() => _saving = false);
     }
   }
 
   void _showCaptureUndo(String entryId) {
     final AppLocalizations l10n = AppLocalizations.of(context);
-    final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
-    messenger.clearSnackBars();
-    messenger.showSnackBar(
-      SnackBar(
-        duration: const Duration(seconds: 5),
-        content: Text(l10n.entryCreated),
-        action: SnackBarAction(
-          label: l10n.undo,
-          onPressed: () => unawaited(_undoCapture(entryId)),
-        ),
-      ),
-    );
+    ref
+        .read(daymarkNoticeProvider.notifier)
+        .showUndo(
+          message: l10n.entryCreated,
+          actionLabel: l10n.undo,
+          onUndo: () => _undoCapture(entryId),
+        );
   }
 
   Future<void> _undoCapture(String entryId) async {
@@ -735,9 +730,9 @@ class _MonthlyScreenState extends ConsumerState<MonthlyScreen>
     } catch (error, stackTrace) {
       _reportUnexpectedMonthlyError('capture undo', error, stackTrace);
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(AppLocalizations.of(context).undoCaptureFailed)),
-      );
+      ref
+          .read(daymarkNoticeProvider.notifier)
+          .showError(AppLocalizations.of(context).undoCaptureFailed);
     }
   }
 
@@ -790,7 +785,7 @@ class _MonthlyScreenState extends ConsumerState<MonthlyScreen>
     }
 
     // Any deliberate journal action supersedes the short-lived capture Undo.
-    ScaffoldMessenger.of(context).removeCurrentSnackBar();
+    ref.read(daymarkNoticeProvider.notifier).dismiss();
     final AppLocalizations l10n = AppLocalizations.of(context);
     setState(() => _entryActionId = entry.id);
 
@@ -849,8 +844,7 @@ class _MonthlyScreenState extends ConsumerState<MonthlyScreen>
       final String message = action == _MonthlyEntryAction.reference
           ? l10n.referenceEntryFailed
           : l10n.taskActionFailed;
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(message)));
+      ref.read(daymarkNoticeProvider.notifier).showError(message);
       setState(() => _entryActionId = null);
     }
   }
