@@ -22,27 +22,10 @@ final class NativeBackupFileGateway implements BackupFileGateway {
     required String suggestedName,
     required String dialogTitle,
   }) async {
-    if (Platform.isLinux) {
-      try {
-        final String? destination = await FilePicker.saveFile(
-          dialogTitle: dialogTitle,
-          fileName: suggestedName,
-          type: FileType.any,
-        );
-        if (destination == null) {
-          return false;
-        }
-        await sourceFile.copy(destination);
-        return true;
-      } on Exception {
-        throw const BackupFileSelectionException();
-      }
-    }
-
     final Uint8List bytes = await sourceFile.readAsBytes();
     try {
       try {
-        final String? destination = await FilePicker.saveFile(
+        final Uri? destination = await FilePicker.saveFile(
           dialogTitle: dialogTitle,
           fileName: suggestedName,
           type: FileType.any,
@@ -59,22 +42,20 @@ final class NativeBackupFileGateway implements BackupFileGateway {
 
   @override
   Future<File?> pickBackup({required String dialogTitle}) async {
-    final FilePickerResult? result;
+    final PlatformFile? selectedFile;
     try {
-      result = await FilePicker.pickFiles(
+      selectedFile = await FilePicker.pickFile(
         dialogTitle: dialogTitle,
         type: FileType.any,
-        allowMultiple: false,
-        withData: false,
       );
     } on Exception {
       throw const BackupFileSelectionException();
     }
-    if (result == null) {
+    if (selectedFile == null) {
       return null;
     }
 
-    final String? path = result.files.single.path;
+    final String? path = selectedFile.path;
     if (path == null || path.isEmpty) {
       throw const BackupFileSelectionException();
     }
