@@ -75,11 +75,16 @@ Release validation must:
 
 ## Android release build
 
-Build a signed APK for direct controlled testing:
+The pinned Flutter toolchain can leave `android/app/src/main/java/io/flutter/plugins/GeneratedPluginRegistrant.java` configured with the dev-only `integration_test` plugin after dependency/test work. A subsequent Android build with `--no-pub` can then fail at `compileReleaseJavaWithJavac` because `IntegrationTestPlugin` is intentionally absent from the release classpath.
+
+Refresh the Android host configuration before a `--no-pub` release build:
 
 ```text
+flutter build apk --config-only
 flutter build apk --release --no-pub
 ```
+
+This follows the Flutter tool workaround for the `integration_test` / `--no-pub` registrant regression. Do not work around it by committing generated registrant sources, removing tests, adding `integration_test` to production dependencies, or using `flutter clean` as routine hygiene.
 
 A release build must fail if release signing is not configured. Do not reintroduce debug signing as a fallback.
 
