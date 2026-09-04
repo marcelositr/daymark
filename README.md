@@ -11,7 +11,7 @@ Daymark is in pre-alpha development.
 The core product, domain, security, data, workflow, and toolchain constraints are established. The active product line now includes:
 
 - encrypted journal creation, unlock, manual lock, and automatic inactivity lock;
-- Today / Daily Log with Rapid Logging for Task, Event, and Note;
+- Today / Daily Log with Rapid Logging for Task, Event, and Note plus read-only historical Daily browsing;
 - deliberate Task completion and discard;
 - a Monthly Log with a fully interactive current month plus read-only historical month browsing;
 - a rolling six-month Future Log;
@@ -45,7 +45,7 @@ Any human or AI contributor should read [`AGENTS.md`](AGENTS.md) before continui
 
 Daymark deliberately avoids turning Bullet Journal concepts into a generic planner.
 
-- **Today / Daily Log** captures Task, Event, and Note entries for the current method date.
+- **Today / Daily Log** captures Task, Event, and Note entries for the current method date. Earlier Daily Logs can be browsed read-only without creating missing historical Logs merely by viewing a date; historical Daily entries expose no capture or Task actions.
 - **Monthly Log** keeps the current month fully interactive, with a dated Calendar section and separate Tasks section, while earlier months can be browsed read-only without creating empty historical Logs merely by navigating.
 - **Future Log** is a rolling overview of six future month buckets beginning with the month after the current month. It is month-addressed, not a second day-level calendar.
 - **Collections** are simple method-native topic/project containers. They can own Task, Event, and Note entries without becoming configurable workspaces or dashboards.
@@ -55,7 +55,7 @@ Daymark deliberately avoids turning Bullet Journal concepts into a generic plann
 - **Index** is a deliberate ordered list of existing Logs and Collections. Adding a structure to the Index does not duplicate its content, change ownership, or derive persistent items from Search results.
 - **Search** is an explicit local, read-only query over existing Entry content. Results keep the original Entry identity/state and show whether the source belongs to Daily, Monthly, Future, or a Collection; Search does not create Entries, references, or Index items.
 
-Richer reflection flows, direct retrieval navigation, backup UI, and exports continue as focused pre-alpha work.
+Richer reflection flows, direct retrieval navigation from Index/Search, backup UI, and exports continue as focused pre-alpha work.
 
 ## Technology direction
 
