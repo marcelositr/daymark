@@ -5,7 +5,9 @@ import 'package:daymark/core/session/journal_session_controller.dart';
 import 'package:daymark/features/journal/data/daily_log_repository.dart';
 import 'package:daymark/features/journal/domain/journal_domain.dart';
 import 'package:daymark/l10n/app_localizations.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -99,12 +101,14 @@ class TodayScreen extends ConsumerStatefulWidget {
 class _TodayScreenState extends ConsumerState<TodayScreen>
     with WidgetsBindingObserver {
   final TextEditingController _entryController = TextEditingController();
+  final FocusNode _entryFocusNode = FocusNode();
 
   late DateTime _today;
   late Future<DailyLogSnapshot> _snapshotFuture;
   Timer? _dayRolloverTimer;
   JournalEntryType _entryType = JournalEntryType.task;
   bool _saving = false;
+  bool _reflecting = false;
   String? _entryActionId;
 
   @override
@@ -128,12 +132,14 @@ class _TodayScreenState extends ConsumerState<TodayScreen>
     WidgetsBinding.instance.removeObserver(this);
     _dayRolloverTimer?.cancel();
     _entryController.dispose();
+    _entryFocusNode.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = AppLocalizations.of(context);
+    final bool busy = _saving || _entryActionId != null;
 
     return SafeArea(
       child: Padding(
@@ -150,6 +156,17 @@ class _TodayScreenState extends ConsumerState<TodayScreen>
                   ),
                 ),
                 IconButton(
+                  onPressed: busy ? null : _toggleReflection,
+                  tooltip: _reflecting
+                      ? l10n.finishReflection
+                      : l10n.startReflection,
+                  icon: Icon(
+                    _reflecting
+                        ? Icons.fact_check
+                        : Icons.fact_check_outlined,
+                  ),
+                ),
+                IconButton(
                   onPressed: _openHistory,
                   tooltip: l10n.dailyHistory,
                   icon: const Icon(Icons.history),
@@ -161,6 +178,13 @@ class _TodayScreenState extends ConsumerState<TodayScreen>
                 ),
               ],
             ),
+            if (_reflecting) ...[
+              const SizedBox(height: 8),
+              Text(
+                l10n.dailyReflectionPrompt,
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+            ],
             const SizedBox(height: 16),
             Expanded(
               child: FutureBuilder<DailyLogSnapshot>(
@@ -176,8 +200,10 @@ class _TodayScreenState extends ConsumerState<TodayScreen>
                 },
               ),
             ),
-            const SizedBox(height: 12),
-            _buildComposer(l10n),
+            if (!_reflecting) ...[
+              const SizedBox(height: 12),
+              _buildComposer(l10n),
+            ],
           ],
         ),
       ),
@@ -189,13 +215,22 @@ class _TodayScreenState extends ConsumerState<TodayScreen>
     AppLocalizations l10n,
     DailyLogSnapshot snapshot,
   ) {
-    if (snapshot.entries.isEmpty) {
+    final List<DailyLogEntry> visibleEntries = _reflecting
+        ? <DailyLogEntry>[
+            for (final DailyLogEntry entry in snapshot.entries)
+              if (entry.type == JournalEntryType.task &&
+                  entry.taskState == JournalTaskState.open)
+                entry,
+          ]
+        : snapshot.entries;
+
+    if (visibleEntries.isEmpty) {
       return Align(
         alignment: AlignmentDirectional.topStart,
         child: Padding(
           padding: const EdgeInsets.only(top: 24),
           child: Text(
-            l10n.emptyDailyLog,
+            _reflecting ? l10n.dailyReflectionEmpty : l10n.emptyDailyLog,
             style: Theme.of(context).textTheme.bodyLarge,
           ),
         ),
@@ -203,10 +238,10 @@ class _TodayScreenState extends ConsumerState<TodayScreen>
     }
 
     return ListView.separated(
-      itemCount: snapshot.entries.length,
+      itemCount: visibleEntries.length,
       separatorBuilder: (context, index) => const SizedBox(height: 6),
       itemBuilder: (context, index) {
-        final DailyLogEntry entry = snapshot.entries[index];
+        final DailyLogEntry entry = visibleEntries[index];
         final TextStyle? entryStyle = Theme.of(context).textTheme.bodyLarge;
         return Padding(
           padding: const EdgeInsets.symmetric(vertical: 5),
@@ -219,13 +254,18 @@ class _TodayScreenState extends ConsumerState<TodayScreen>
               ),
               const SizedBox(width: 8),
               Expanded(
-                child: Text(
-                  entry.content,
-                  style: entry.taskState == JournalTaskState.discarded
-                      ? entryStyle?.copyWith(
-                          decoration: TextDecoration.lineThrough,
-                        )
-                      : entryStyle,
+                child: Semantics(
+                  label: _entrySemanticLabel(l10n, entry),
+                  child: ExcludeSemantics(
+                    child: Text(
+                      entry.content,
+                      style: entry.taskState == JournalTaskState.discarded
+                          ? entryStyle?.copyWith(
+                              decoration: TextDecoration.lineThrough,
+                            )
+                          : entryStyle,
+                    ),
+                  ),
                 ),
               ),
             ],
@@ -284,10 +324,11 @@ class _TodayScreenState extends ConsumerState<TodayScreen>
             value: _EntryAction.schedule,
             child: Text(l10n.scheduleTask),
           ),
-        PopupMenuItem<_EntryAction>(
-          value: _EntryAction.reference,
-          child: Text(l10n.referenceEntry),
-        ),
+        if (!_reflecting)
+          PopupMenuItem<_EntryAction>(
+            value: _EntryAction.reference,
+            child: Text(l10n.referenceEntry),
+          ),
         if (openTask)
           PopupMenuItem<_EntryAction>(
             value: _EntryAction.discard,
@@ -330,15 +371,20 @@ class _TodayScreenState extends ConsumerState<TodayScreen>
         ),
         const SizedBox(width: 12),
         Expanded(
-          child: TextField(
-            controller: _entryController,
-            enabled: !_saving,
-            minLines: 1,
-            maxLines: 4,
-            onChanged: (_) => JournalActivityGuard.recordActivity(context),
-            decoration: InputDecoration(
-              hintText: l10n.rapidLogHint,
-              isDense: true,
+          child: Focus(
+            onKeyEvent: _handleComposerKeyEvent,
+            child: TextField(
+              controller: _entryController,
+              focusNode: _entryFocusNode,
+              autofocus: defaultTargetPlatform == TargetPlatform.linux,
+              enabled: !_saving,
+              minLines: 1,
+              maxLines: 4,
+              onChanged: (_) => JournalActivityGuard.recordActivity(context),
+              decoration: InputDecoration(
+                hintText: l10n.rapidLogHint,
+                isDense: true,
+              ),
             ),
           ),
         ),
@@ -363,6 +409,16 @@ class _TodayScreenState extends ConsumerState<TodayScreen>
 
   Future<DailyLogSnapshot> _loadSnapshot() {
     return _dataSource().load(formatJournalMethodDate(_today));
+  }
+
+  KeyEventResult _handleComposerKeyEvent(FocusNode node, KeyEvent event) {
+    if (event is KeyDownEvent &&
+        event.logicalKey == LogicalKeyboardKey.enter &&
+        HardwareKeyboard.instance.isControlPressed) {
+      unawaited(_capture());
+      return KeyEventResult.handled;
+    }
+    return KeyEventResult.ignored;
   }
 
   Future<void> _capture() async {
@@ -392,6 +448,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen>
         _snapshotFuture = dataSource.load(formatJournalMethodDate(_today));
         _saving = false;
       });
+      _restoreComposerFocus();
     } catch (error, stackTrace) {
       _reportUnexpectedJournalError('capture', error, stackTrace);
       if (!mounted) {
@@ -515,6 +572,31 @@ class _TodayScreenState extends ConsumerState<TodayScreen>
     }
   }
 
+  void _toggleReflection() {
+    if (_saving || _entryActionId != null) {
+      return;
+    }
+
+    final bool enteringReflection = !_reflecting;
+    setState(() => _reflecting = enteringReflection);
+    if (enteringReflection) {
+      _entryFocusNode.unfocus();
+      return;
+    }
+    _restoreComposerFocus();
+  }
+
+  void _restoreComposerFocus() {
+    if (defaultTargetPlatform != TargetPlatform.linux) {
+      return;
+    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && !_reflecting && !_saving) {
+        _entryFocusNode.requestFocus();
+      }
+    });
+  }
+
   void _openHistory() {
     final DateTime previousDate = _today.subtract(const Duration(days: 1));
     context.push('/daily/${formatJournalMethodDate(previousDate)}');
@@ -539,9 +621,11 @@ class _TodayScreenState extends ConsumerState<TodayScreen>
       setState(() {
         _today = currentDate;
         _snapshotFuture = _loadSnapshot();
+        _reflecting = false;
       });
     }
     _scheduleDayRollover();
+    _restoreComposerFocus();
   }
 
   void _scheduleDayRollover() {
@@ -571,6 +655,26 @@ String _entrySymbol(DailyLogEntry entry) => switch (entry.type) {
   JournalEntryType.event => '○',
   JournalEntryType.note => '–',
 };
+
+String _entrySemanticLabel(AppLocalizations l10n, DailyLogEntry entry) {
+  final String typeLabel = switch (entry.type) {
+    JournalEntryType.task => l10n.entryTask,
+    JournalEntryType.event => l10n.entryEvent,
+    JournalEntryType.note => l10n.entryNote,
+  };
+  if (entry.type != JournalEntryType.task) {
+    return '$typeLabel, ${entry.content}';
+  }
+
+  final String stateLabel = switch (entry.taskState) {
+    JournalTaskState.completed => l10n.taskStateCompleted,
+    JournalTaskState.migrated => l10n.taskStateMigrated,
+    JournalTaskState.scheduled => l10n.taskStateScheduled,
+    JournalTaskState.discarded => l10n.taskStateDiscarded,
+    JournalTaskState.open || null => l10n.taskStateOpen,
+  };
+  return '$typeLabel, $stateLabel, ${entry.content}';
+}
 
 void _reportUnexpectedJournalError(
   String operation,
