@@ -48,7 +48,7 @@ Daymark assumes that a phone, computer, removable storage device, or backup medi
 
 The at-rest protection goal is that possession of the storage medium alone must not reveal journal contents.
 
-User-requested plaintext Open Export is outside this guarantee because exporting is an explicit decision to create an unencrypted copy.
+User-requested plaintext Open Export is outside this guarantee because exporting is an explicit decision to create an unencrypted copy. Daymark requires the current master password to be reauthenticated against the authenticated key envelope before it creates that plaintext representation.
 
 Daymark does not claim to protect an already-unlocked device against a fully privileged attacker executing arbitrary code in the user's session. Runtime compromise and at-rest protection are different threat classes.
 
@@ -201,7 +201,7 @@ This applies to:
 
 Internal backups created by Daymark remain encrypted by default, including backups stored on removable media.
 
-User-requested Open Export is an explicit security boundary. JSON and Markdown Open Export files are plaintext and clearly state that they are no longer protected by Daymark's journal encryption. Open Export is not a recovery/restore format.
+User-requested Open Export is an explicit security boundary. Before any plaintext representation is created, Daymark reauthenticates the current master password against the authenticated key envelope without replacing the live session. JSON and Markdown Open Export output may then be deliberately saved to a file or copied to the system clipboard. Both destinations are outside Daymark's encryption boundary; clipboard content may be readable by other applications or retained by a clipboard manager. Open Export is not a recovery/restore format.
 
 ## Search security
 

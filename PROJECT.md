@@ -13,9 +13,11 @@ This is Daymark's canonical living handoff. Read this file and `AGENTS.md` befor
 - Post-merge `main` CI #475 passed on exact release source SHA `5c073c6bbbe298c15f975740a5499f2b9a0c98ba`.
 - Annotated tag `v1.0.0-alpha.2` points to that release source commit.
 - GitHub Release `Daymark 1.0.0-alpha.2` is published as a prerelease with the final Linux archive, signed Android APK, and `SHA256SUMS`.
-- Post-alpha.2 documentation audit merged via PR #33 as current `main` commit `76ef920d2c5d7ad56471b053d3446b530363c079`.
-- Current `main` CI #477 passed on exact SHA `76ef920d2c5d7ad56471b053d3446b530363c079`.
-- Next product slice selected: navigation and organization, to begin on `feat/navigation-and-organization` after this checkpoint alignment is merged.
+- Post-alpha.2 documentation alignment merged via PR #34 as `main` commit `6e0784fc15d6321c341ca7eeae2169bf020beaf9`.
+- Navigation and organization merged via PR #35 as `main` commit `49ff9494c49bd8ceafe0cf8198c63e452bc91d0b`.
+- Reflection and Rapid Logging UX merged via PR #36 as current `main` commit `0b7c79c96a17f76479aa81ea7002ab7c0971028c`.
+- PR #36 Ready CI #482 passed on exact head `596b4ad678a2d08a9e7f5d60f1ef847eabd2abd9`; post-merge `main` CI #483 passed on exact squash SHA `0b7c79c96a17f76479aa81ea7002ab7c0971028c`.
+- Current development branch: `feat/security-and-next-release`, adding Open Export reauthentication and clipboard output before the next prerelease preparation.
 - The completed `release/1.0.0-alpha.2` branch is retained as historical reference/backup and is not an active integration line.
 - Runtime targets: Linux and Android.
 - Pinned toolchain: Flutter 3.47.2 / Dart 3.13.2.
@@ -136,7 +138,7 @@ Current foundation includes:
 - explicit mutable key-material destruction where practical;
 - Android OS backup/device-transfer exclusion;
 - user-facing portable authenticated encrypted backup/restore with rollback/recovery protections;
-- explicit plaintext Open Export to deterministic JSON and human-readable Markdown;
+- explicit plaintext Open Export to deterministic JSON and human-readable Markdown, requiring master-password reauthentication before plaintext generation and supporting deliberate file save or clipboard copy;
 - Appearance is non-secret device/application state outside the encrypted journal database;
 - Android release builds fail closed if dedicated release signing is absent and never silently use debug signing.
 
@@ -234,30 +236,31 @@ The local safety directory created during this migration should be retained thro
 - PR #31: device-local System / Light / Dark Appearance selection. Squash `5184f519eed723221206ce529c4f0e0a2fed8bcf`.
 - PR #32: alpha.2 packaging/signing hardening, legacy `journal_metadata` repair, release validation, and release documentation. Squash `5c073c6bbbe298c15f975740a5499f2b9a0c98ba`.
 - PR #33: post-alpha.2 full documentation audit/alignment. Squash `76ef920d2c5d7ad56471b053d3446b530363c079`.
+- PR #34: accelerated post-alpha.2 execution-plan alignment. Squash `6e0784fc15d6321c341ca7eeae2169bf020beaf9`.
+- PR #35: source navigation and organization controls. Squash `49ff9494c49bd8ceafe0cf8198c63e452bc91d0b`.
+- PR #36: contextual reflection, Rapid Logging UX, immediate capture Undo, and centralized notices. Squash `0b7c79c96a17f76479aa81ea7002ab7c0971028c`.
 
 ## Next development state
 
-The post-alpha.2 documentation audit is complete and merged through PR #33. Current `main` is `76ef920d2c5d7ad56471b053d3446b530363c079`, and CI #477 passed on that exact SHA.
+The first three accelerated post-alpha.2 branches are complete and merged:
 
-The accelerated post-alpha.2 execution plan is deliberately limited to four branches:
+1. `chore/post-alpha2-alignment`;
+2. `feat/navigation-and-organization`;
+3. `feat/reflection-and-daily-ux`.
 
-1. `chore/post-alpha2-alignment` - documentation-only correction of this living checkpoint. No product code.
-2. `feat/navigation-and-organization` - direct source navigation from Search/Index, Index reorder/remove, and Collection-reference removal.
-3. `feat/reflection-and-daily-ux` - richer Reflection, Linux keyboard/focus improvements, practical accessibility, and only the Settings needed by those flows.
-4. `feat/security-and-next-release` - OS-level immediate lock hooks, device-assisted/biometric unlock, compatibility/migration work if required, backup/restore/export regression coverage, physical Linux/Android validation, and preparation of the next prerelease.
+The fourth branch, `feat/security-and-next-release`, is active. Its current completed slice requires master-password reauthentication before Open Export creates plaintext and adds deliberate clipboard copy alongside file save.
 
-Execution rules for this accelerated plan:
+Before this branch is Ready:
 
-- prefer local focused validation during development and avoid repeated CI merely for iteration;
-- run full Ready CI once a branch is genuinely reviewable, because `merge-gate` remains mandatory;
-- never trade away security, persistence, compatibility, or exact-head evidence for speed;
-- retain merged feature/release branches as historical backup/reference if desired, but never reuse them as integration lines;
-- do not split work merely for ceremony; split only when an independent security, migration, or review boundary makes isolation materially safer;
-- merge only after exact-head CI is green and explicit user approval.
+- manually validate Open Export on Linux with the real UI;
+- confirm a wrong password produces no export and leaves the live session usable;
+- confirm the correct password allows Markdown and JSON save;
+- confirm Copy places the selected representation on the system clipboard;
+- confirm the plaintext/clipboard warning is clear and the post-action notice is unobtrusive;
+- finish any remaining security/release work that is still justified by the current alpha scope;
+- align release-facing documentation;
+- run the final exact-head Ready CI / `merge-gate`.
 
-Still deferred beyond this plan:
+The broader security backlog still includes OS-level immediate lock hooks and optional device-assisted/biometric unlock. Those are not silently considered complete merely because Open Export reauthentication is complete; they must either be implemented and validated in a focused slice or explicitly deferred before the next release is prepared.
 
-- cloud/sync;
-- broader Settings complexity unrelated to the selected flows;
-- large refactors;
-- AGP 9 built-in Kotlin migration unless it becomes a blocker.
+After this branch is merged, release preparation may begin from the resulting current `main`. Daymark remains alpha; the next prerelease must receive a new version/build number and must not be tagged, built for publication, or promoted to GitHub Release without explicit user approval.

@@ -6,7 +6,27 @@ This file is for user-visible behavior, data compatibility, security, packaging,
 
 ## Unreleased
 
-No release-facing changes have been recorded since `v1.0.0-alpha.2`.
+### Added
+
+- Search results and Index items now navigate directly to their real Daily, Monthly, Future, or Collection source while preserving historical read-only behavior.
+- Index items can be deliberately reordered or removed without changing the underlying journal structures.
+- Collection references can be removed without deleting or mutating the source Entry.
+- Today includes contextual Daily Reflection for open Tasks with deliberate Complete, Migrate, Schedule, and Discard decisions.
+- Fresh captures expose a narrow immediate Undo action without introducing generic Edit/Delete behavior.
+- Open Export can copy the selected Markdown or JSON representation directly to the system clipboard.
+
+### Changed
+
+- Linux keyboard focus and keyboard submission behavior are consistent across Today, Monthly, Future, Collections, and Search.
+- Journal entry rows are the primary action target instead of requiring precise clicks on the Bullet Journal marker.
+- Transient application feedback uses one in-layout Daymark notice channel that does not cover Rapid Logging controls.
+- Open Export now uses one format selector with Copy and Save actions rather than separate format-specific save buttons.
+
+### Security
+
+- Open Export now requires master-password reauthentication before Daymark creates any plaintext representation.
+- Reauthentication validates the existing authenticated key envelope with temporary key material that is destroyed immediately without replacing or reopening the live journal session.
+- The Open Export warning explicitly covers both saved plaintext files and the system clipboard, including clipboard-manager retention risk.
 
 ## [1.0.0-alpha.2] - 2026-09-04
 
