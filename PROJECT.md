@@ -9,7 +9,7 @@ This is Daymark's canonical living handoff. Read this file and `AGENTS.md` befor
 - Current merged `main`: `e4659c14e84759150060e4f834a1a2fc50b20910`, squash merge of PR #28 `feat(backup): add user-facing encrypted backup restore`.
 - PR #28 exact Ready head: `a7fd2dfd5b408b0285ac88a7bf610041cf8c299d`.
 - PR #28 Ready CI #464 passed `quality`, Linux build, Android build, dependency review, and `merge-gate` on that exact head.
-- Post-merge `main` CI #465 started on exact merged SHA `e4659c14e84759150060e4f834a1a2fc50b20910`; its final result was still pending at this documentation checkpoint.
+- Post-merge `main` CI #465 passed on exact merged SHA `e4659c14e84759150060e4f834a1a2fc50b20910`.
 - User-facing encrypted backup/restore is now merged into `main` and passed real disposable Linux backup/restore validation before merge.
 - Next planned product slice: **Open Export**.
 - Runtime targets: Linux and Android.
@@ -186,7 +186,8 @@ Validation evidence:
 - manual Linux restore used an isolated disposable XDG root;
 - the manual flow proved snapshot rollback semantics, wrong-password rejection, auto-unlock after correct restore, and restored-state persistence across a second launch;
 - Ready CI #464 passed on exact head `a7fd2dfd5b408b0285ac88a7bf610041cf8c299d` including `merge-gate`;
-- squash merge produced `main` SHA `e4659c14e84759150060e4f834a1a2fc50b20910`.
+- squash merge produced `main` SHA `e4659c14e84759150060e4f834a1a2fc50b20910`;
+- post-merge `main` CI #465 passed on that exact merged SHA.
 
 ## Next product slice: Open Export
 
