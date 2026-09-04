@@ -67,6 +67,21 @@ final class FutureLogRepository {
     );
   }
 
+  Future<FutureLogSnapshot?> find(String periodStart) async {
+    validateFuturePeriodStart(periodStart);
+
+    final String? logId = await _findFutureLogId(periodStart);
+    if (logId == null) {
+      return null;
+    }
+
+    return FutureLogSnapshot(
+      logId: logId,
+      periodStart: periodStart,
+      entries: await _loadEntries(logId),
+    );
+  }
+
   Future<void> capture({
     required String logId,
     required JournalEntryType type,

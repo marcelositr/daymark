@@ -185,6 +185,16 @@ final class CollectionRepository {
       entryId: entryId,
     );
   }
+
+  Future<void> removeReference({
+    required String collectionId,
+    required String entryId,
+  }) {
+    return _journalService.removeReferenceFromCollection(
+      collectionId: collectionId,
+      entryId: entryId,
+    );
+  }
 }
 
 JournalEntryType _entryTypeFromCode(String code) => switch (code) {

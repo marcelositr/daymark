@@ -3,7 +3,7 @@ import 'package:daymark/features/journal/application/journal_service.dart';
 import 'package:daymark/features/journal/data/future_log_repository.dart';
 import 'package:daymark/features/journal/data/journal_repository.dart';
 import 'package:daymark/features/journal/domain/journal_domain.dart';
-import 'package:drift/drift.dart' hide isNull;
+import 'package:drift/drift.dart' hide isNull, isNotNull;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -142,4 +142,38 @@ void main() {
         .getSingle();
     expect(row.read<int>('count'), 0);
   });
+  test(
+    'find reads an exact Future month without creating missing Logs',
+    () async {
+      expect(await futureLog.find('2027-01-01'), isNull);
+
+      var row = await database
+          .customSelect(
+            "SELECT COUNT(*) AS count FROM logs WHERE kind = 'future'",
+          )
+          .getSingle();
+      expect(row.read<int>('count'), 0);
+
+      final FutureLogSnapshot created = await futureLog.loadOrCreate(
+        '2026-10-01',
+      );
+      await futureLog.capture(
+        logId: created.logId,
+        type: JournalEntryType.note,
+        content: 'Persisted future note',
+      );
+
+      final FutureLogSnapshot? found = await futureLog.find('2026-10-01');
+      expect(found, isNotNull);
+      expect(found!.logId, created.logId);
+      expect(found.entries.single.content, 'Persisted future note');
+
+      row = await database
+          .customSelect(
+            "SELECT COUNT(*) AS count FROM logs WHERE kind = 'future'",
+          )
+          .getSingle();
+      expect(row.read<int>('count'), 1);
+    },
+  );
 }

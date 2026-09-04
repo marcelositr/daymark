@@ -162,4 +162,12 @@ final class _CollectionsDataSource implements CollectionsJournalDataSource {
 
   @override
   Future<void> discardTask({required String entryId}) async {}
+
+  @override
+  Future<void> removeReference({
+    required String collectionId,
+    required String entryId,
+  }) async {
+    references.removeWhere((entry) => entry.id == entryId);
+  }
 }

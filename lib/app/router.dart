@@ -1,7 +1,9 @@
 import 'package:go_router/go_router.dart';
 
+import '../features/journal/domain/journal_domain.dart';
 import '../features/journal/presentation/collections_screen.dart';
 import '../features/journal/presentation/daily_history_screen.dart';
+import '../features/journal/presentation/future_history_screen.dart';
 import '../features/journal/presentation/future_screen.dart';
 import '../features/journal/presentation/index_screen.dart';
 import '../features/journal/presentation/journal_gate.dart';
@@ -37,6 +39,18 @@ final GoRouter daymarkRouter = GoRouter(
               path: '/monthly',
               builder: (context, state) => const MonthlyScreen(),
             ),
+            GoRoute(
+              path: '/monthly/:period',
+              builder: (context, state) => MonthlyScreen(
+                key: state.pageKey,
+                initialMonth: DateTime.parse(state.pathParameters['period']!),
+                initialSection: switch (state.uri.queryParameters['section']) {
+                  'calendar' => JournalMonthlySection.calendar,
+                  'tasks' => JournalMonthlySection.tasks,
+                  _ => null,
+                },
+              ),
+            ),
           ],
         ),
         StatefulShellBranch(
@@ -45,6 +59,13 @@ final GoRouter daymarkRouter = GoRouter(
               path: '/future',
               builder: (context, state) => const FutureScreen(),
             ),
+            GoRoute(
+              path: '/future/:period',
+              builder: (context, state) => FutureHistoryScreen(
+                key: state.pageKey,
+                periodStart: state.pathParameters['period']!,
+              ),
+            ),
           ],
         ),
         StatefulShellBranch(
@@ -52,6 +73,13 @@ final GoRouter daymarkRouter = GoRouter(
             GoRoute(
               path: '/collections',
               builder: (context, state) => const CollectionsScreen(),
+            ),
+            GoRoute(
+              path: '/collections/:collectionId',
+              builder: (context, state) => CollectionsScreen(
+                key: state.pageKey,
+                initialCollectionId: state.pathParameters['collectionId']!,
+              ),
             ),
           ],
         ),

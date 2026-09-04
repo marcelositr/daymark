@@ -116,5 +116,14 @@
   "searchAction": "Buscar",
   "searchPrompt": "Digite um texto para buscar no diário.",
   "searchNoResults": "Nenhuma entrada correspondente.",
-  "searchFailed": "Não foi possível buscar no diário."
+  "searchFailed": "Não foi possível buscar no diário.",
+  "futureHistoryReadOnly": "Este Registro Futuro é somente leitura.",
+  "referenceActions": "Ações da referência",
+  "removeCollectionReference": "Remover referência",
+  "removeCollectionReferenceFailed": "Não foi possível remover esta referência da Coleção.",
+  "indexItemActions": "Ações do item do Índice",
+  "moveIndexItemUp": "Mover para cima",
+  "moveIndexItemDown": "Mover para baixo",
+  "removeIndexItem": "Remover do Índice",
+  "indexItemUpdateFailed": "Não foi possível atualizar este item do Índice."
 }

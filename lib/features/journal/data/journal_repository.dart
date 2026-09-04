@@ -163,6 +163,93 @@ final class JournalRepository {
     });
   }
 
+  Future<void> removeCollectionReference({
+    required String collectionId,
+    required String entryId,
+  }) {
+    return _database.transaction(() async {
+      await _requireCollection(collectionId);
+
+      final existing = await _database
+          .customSelect(
+            '''
+        SELECT 1
+        FROM collection_references
+        WHERE collection_id = ? AND entry_id = ?
+        ''',
+            variables: <Variable<Object>>[
+              Variable.withString(collectionId),
+              Variable.withString(entryId),
+            ],
+          )
+          .getSingleOrNull();
+      if (existing == null) {
+        throw JournalNotFoundException('Collection reference', entryId);
+      }
+
+      await _database.customStatement(
+        '''
+        DELETE FROM collection_references
+        WHERE collection_id = ? AND entry_id = ?
+        ''',
+        <Object>[collectionId, entryId],
+      );
+
+      final rows = await _database
+          .customSelect(
+            '''
+        SELECT entry_id
+        FROM collection_references
+        WHERE collection_id = ?
+        ORDER BY ordinal, entry_id
+        ''',
+            variables: <Variable<Object>>[Variable.withString(collectionId)],
+          )
+          .get();
+
+      final List<String> orderedEntryIds = <String>[
+        for (final row in rows) row.read<String>('entry_id'),
+      ];
+      if (orderedEntryIds.isEmpty) {
+        return;
+      }
+
+      final maxRow = await _database
+          .customSelect(
+            '''
+        SELECT COALESCE(MAX(ordinal), -1) AS max_ordinal
+        FROM collection_references
+        WHERE collection_id = ?
+        ''',
+            variables: <Variable<Object>>[Variable.withString(collectionId)],
+          )
+          .getSingle();
+      final int temporaryBase =
+          maxRow.read<int>('max_ordinal') + orderedEntryIds.length + 1;
+
+      for (int index = 0; index < orderedEntryIds.length; index++) {
+        await _database.customStatement(
+          '''
+          UPDATE collection_references
+          SET ordinal = ?
+          WHERE collection_id = ? AND entry_id = ?
+          ''',
+          <Object>[temporaryBase + index, collectionId, orderedEntryIds[index]],
+        );
+      }
+      for (int index = 0; index < orderedEntryIds.length; index++) {
+        await _database.customStatement(
+          '''
+          UPDATE collection_references
+          SET ordinal = ?
+          WHERE collection_id = ? AND entry_id = ?
+          ''',
+          <Object>[index, collectionId, orderedEntryIds[index]],
+        );
+      }
+    });
+  }
+
   Future<String> migrateEntry({
     required String sourceEntryId,
     required JournalEntryOwner destinationOwner,

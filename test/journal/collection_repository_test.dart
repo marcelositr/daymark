@@ -137,6 +137,51 @@ void main() {
       expect(count.read<int>('count'), 0);
     },
   );
+  test('removing a Collection reference preserves source ownership and compacts order', () async {
+    final String collectionId = await collections.create(title: 'Links');
+    final String dailyLogId = await service.createLog(
+      kind: JournalLogKind.daily,
+      periodStart: '2026-09-03',
+    );
+    final String firstEntryId = await service.capture(
+      type: JournalEntryType.note,
+      content: 'First linked note',
+      owner: JournalLogOwner(logId: dailyLogId),
+    );
+    final String secondEntryId = await service.capture(
+      type: JournalEntryType.note,
+      content: 'Second linked note',
+      owner: JournalLogOwner(logId: dailyLogId),
+    );
+
+    await collections.reference(
+      collectionId: collectionId,
+      entryId: firstEntryId,
+    );
+    await collections.reference(
+      collectionId: collectionId,
+      entryId: secondEntryId,
+    );
+
+    await collections.removeReference(
+      collectionId: collectionId,
+      entryId: firstEntryId,
+    );
+
+    final CollectionSnapshot snapshot = await collections.load(collectionId);
+    expect(snapshot.references, hasLength(1));
+    expect(snapshot.references.single.id, secondEntryId);
+    expect(snapshot.references.single.ordinal, 0);
+
+    final placement = await database
+        .customSelect(
+          'SELECT log_id, collection_id FROM entry_placements WHERE entry_id = ?',
+          variables: <Variable<Object>>[Variable.withString(secondEntryId)],
+        )
+        .getSingle();
+    expect(placement.read<String>('log_id'), dailyLogId);
+    expect(placement.readNullable<String>('collection_id'), isNull);
+  });
 }
 
 final class _IdSequence {
