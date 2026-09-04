@@ -38,6 +38,31 @@ void main() {
     expect(row.read<int>('count'), 1);
   });
 
+  test('find does not create a missing historical Daily Log', () async {
+    expect(await dailyLog.find('2026-09-01'), isNull);
+
+    final row = await database
+        .customSelect("SELECT COUNT(*) AS count FROM logs WHERE kind = 'daily'")
+        .getSingle();
+    expect(row.read<int>('count'), 0);
+  });
+
+  test('find loads an existing historical Daily Log', () async {
+    final DailyLogSnapshot initial = await dailyLog.loadOrCreate('2026-09-01');
+    await dailyLog.capture(
+      logId: initial.logId,
+      type: JournalEntryType.note,
+      content: 'Historical note',
+    );
+
+    final DailyLogSnapshot? loaded = await dailyLog.find('2026-09-01');
+
+    expect(loaded, isNotNull);
+    expect(loaded!.logId, initial.logId);
+    expect(loaded.methodDate, '2026-09-01');
+    expect(loaded.entries.single.content, 'Historical note');
+  });
+
   test('Rapid Logging preserves type, task state, and entry order', () async {
     final DailyLogSnapshot initial = await dailyLog.loadOrCreate('2026-09-02');
 
