@@ -16,6 +16,7 @@ This file is for user-visible behavior, data compatibility, security, packaging,
 - Semantic journal application services for capture, migration, scheduling, and collection references.
 - Encrypted journal creation, unlock, and explicit manual lock flow.
 - Functional Today/Daily Log with Rapid Logging for Task, Event, and Note entries.
+- Read-only historical Daily browsing through a genuine date-addressed route, with no creation of missing historical Logs and no historical capture or Task actions.
 - Automatic Today date rollover at midnight and refresh when the application resumes.
 - Automatic journal lock after five minutes without journal interaction, with pointer/touch, hardware-keyboard, and text-edit activity resetting the deadline and background time continuing to count.
 - Deliberate completion and discard actions for open Tasks in the Today/Daily Log flow.
@@ -45,7 +46,7 @@ This file is for user-visible behavior, data compatibility, security, packaging,
 - Task terminal actions preserve the original journal entry and change only its Task state, keeping journal history visible.
 - Future Log is explicitly month-addressed rather than a second day-level calendar, preserving the method-native distinction between Monthly and Future surfaces.
 - Forward migration (`>`) uses an explicitly selected existing Collection as its first exposed non-Future destination; the current Monthly Log remains intentionally unavailable as a shortcut destination, while Collection references use the same source Entry rather than movement lineage.
-- Historical Monthly Logs are retrieval-only in the first history slice: capture and Task actions remain available only in the current month.
+- Historical Daily and Monthly Logs are retrieval-only: capture and Task actions remain available only in the current Daily Log/current month.
 
 ### Fixed
 

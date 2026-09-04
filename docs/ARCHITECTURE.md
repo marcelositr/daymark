@@ -124,6 +124,8 @@ The top-level journal shell uses `StatefulShellRoute.indexedStack`, so branch wi
 
 `AppShell` publishes the active top-level section through the presentation-level `AppSectionScope`. Screens that cache journal snapshots and can be changed by another section must observe reactivation and reload the affected presentation state. Cross-surface writes must become visible when the destination section is re-entered without requiring lock, application restart, or widget remount.
 
+Historical Daily retrieval is contextual navigation inside the Today branch rather than another top-level destination. `/daily/:date` resolves a genuine method date through a non-creating `DailyLogRepository.find(...)` call exposed by `JournalDailyHistorySession`; a missing historical date remains absent instead of creating a Log. The historical screen is read-only, while `/` remains the interactive current Daily Log. This route gives later Index/Search navigation a real historical Daily target without moving retrieval semantics into the router.
+
 Do not solve retained-tab freshness by destroying all branches, polling continuously, or moving journal semantics into the router. Section activation is presentation lifecycle; persistence and movement semantics remain below the UI boundary.
 
 ## Persistence

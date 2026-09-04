@@ -31,11 +31,12 @@ final class DailyLogSnapshot {
   final List<DailyLogEntry> entries;
 }
 
-/// Focused read/write boundary for the current Daily Log.
+/// Focused read/write boundary for Daily Logs.
 ///
-/// Reads query encrypted storage directly. Mutations continue through the
-/// semantic [JournalService] so ownership and task-state invariants remain in
-/// the already-reviewed journal repository layer.
+/// Reads query encrypted storage directly. Historical lookup is deliberately
+/// non-creating. Mutations continue through the semantic [JournalService] so
+/// ownership and task-state invariants remain in the already-reviewed journal
+/// repository layer.
 final class DailyLogRepository {
   const DailyLogRepository(this._database, this._journalService);
 
@@ -63,11 +64,17 @@ final class DailyLogRepository {
       }
     }
 
-    return DailyLogSnapshot(
-      logId: logId,
-      methodDate: methodDate,
-      entries: await _loadEntries(logId),
-    );
+    return _loadSnapshot(logId: logId, methodDate: methodDate);
+  }
+
+  Future<DailyLogSnapshot?> find(String methodDate) async {
+    validateJournalMethodDate(methodDate);
+
+    final String? logId = await _findDailyLogId(methodDate);
+    if (logId == null) {
+      return null;
+    }
+    return _loadSnapshot(logId: logId, methodDate: methodDate);
   }
 
   Future<void> capture({
@@ -79,6 +86,17 @@ final class DailyLogRepository {
       type: type,
       content: content,
       owner: JournalLogOwner(logId: logId),
+    );
+  }
+
+  Future<DailyLogSnapshot> _loadSnapshot({
+    required String logId,
+    required String methodDate,
+  }) async {
+    return DailyLogSnapshot(
+      logId: logId,
+      methodDate: methodDate,
+      entries: await _loadEntries(logId),
     );
   }
 

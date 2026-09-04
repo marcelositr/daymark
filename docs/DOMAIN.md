@@ -63,6 +63,10 @@ A Daily Log belongs to one method date.
 
 Rapid Logging may capture Task, Event, or Note entries there. Advancing to a new day does not silently migrate unresolved entries.
 
+Historical retrieval of a Daily Log is non-creating: asking to view a method date that has no persisted Daily Log must return absence rather than inventing an empty Log. A past Daily Log remains historical evidence and is read-only in the current product; retrieval does not grant capture, Task actions, migration, scheduling, references, completion, or discard through the historical surface.
+
+Today remains the interactive current Daily Log. Navigating historical dates is retrieval over existing chronology, not a change of Entry ownership or an alternative calendar model.
+
 ### Monthly Log
 
 A Monthly Log belongs to one month.
