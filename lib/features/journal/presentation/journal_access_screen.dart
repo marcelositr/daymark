@@ -1,9 +1,14 @@
+import 'dart:io';
+
+import 'package:daymark/core/backup/backup_file_gateway.dart';
 import 'package:daymark/core/crypto/security_exception.dart';
 import 'package:daymark/core/session/journal_session.dart';
 import 'package:daymark/core/session/journal_session_controller.dart';
 import 'package:daymark/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import 'backup_file_gateway_provider.dart';
 
 class JournalAccessScreen extends ConsumerStatefulWidget {
   const JournalAccessScreen({super.key});
@@ -92,6 +97,12 @@ class _JournalAccessScreenState extends ConsumerState<JournalAccessScreen> {
           onPressed: _createJournal,
           child: Text(l10n.createJournal),
         ),
+        const SizedBox(height: 12),
+        OutlinedButton.icon(
+          onPressed: () => _restoreBackup(replacingExistingJournal: false),
+          icon: const Icon(Icons.restore),
+          label: Text(l10n.restoreBackup),
+        ),
       ],
     );
   }
@@ -118,6 +129,12 @@ class _JournalAccessScreenState extends ConsumerState<JournalAccessScreen> {
         FilledButton(
           onPressed: _unlockJournal,
           child: Text(l10n.unlockJournal),
+        ),
+        const SizedBox(height: 12),
+        OutlinedButton.icon(
+          onPressed: () => _restoreBackup(replacingExistingJournal: true),
+          icon: const Icon(Icons.restore),
+          label: Text(l10n.restoreBackup),
         ),
       ],
     );
@@ -248,6 +265,162 @@ class _JournalAccessScreenState extends ConsumerState<JournalAccessScreen> {
         setState(() => _errorMessage = l10n.journalAccessFailed);
       }
     }
+  }
+
+  Future<void> _restoreBackup({
+    required bool replacingExistingJournal,
+  }) async {
+    final AppLocalizations l10n = AppLocalizations.of(context);
+    setState(() => _errorMessage = null);
+
+    final File? backupFile;
+    try {
+      backupFile = await ref
+          .read(backupFileGatewayProvider)
+          .pickBackup(dialogTitle: l10n.restoreBackupTitle);
+    } on BackupFileSelectionException {
+      if (mounted) {
+        setState(() => _errorMessage = l10n.backupFileSelectionFailed);
+      }
+      return;
+    } catch (error, stackTrace) {
+      _reportUnexpectedAccessError(error, stackTrace);
+      if (mounted) {
+        setState(() => _errorMessage = l10n.backupFileSelectionFailed);
+      }
+      return;
+    }
+    if (backupFile == null || !mounted) {
+      return;
+    }
+
+    final String? password = await showDialog<String>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => _RestorePasswordDialog(
+        l10n: l10n,
+        replacingExistingJournal: replacingExistingJournal,
+      ),
+    );
+    if (password == null || !mounted) {
+      return;
+    }
+
+    try {
+      await ref
+          .read(journalSessionControllerProvider.notifier)
+          .restoreBackup(backupFile: backupFile, masterPassword: password);
+    } on BackupAuthenticationException {
+      if (mounted) {
+        setState(
+          () => _errorMessage = l10n.restoreBackupAuthenticationFailed,
+        );
+      }
+    } on BackupFormatException {
+      if (mounted) {
+        setState(() => _errorMessage = l10n.restoreBackupInvalid);
+      }
+    } on BackupCompatibilityException {
+      if (mounted) {
+        setState(() => _errorMessage = l10n.restoreBackupIncompatible);
+      }
+    } on BackupRestoreException {
+      if (mounted) {
+        setState(() => _errorMessage = l10n.restoreBackupFailed);
+      }
+    } catch (error, stackTrace) {
+      _reportUnexpectedAccessError(error, stackTrace);
+      if (mounted) {
+        setState(() => _errorMessage = l10n.restoreBackupFailed);
+      }
+    }
+  }
+}
+
+final class _RestorePasswordDialog extends StatefulWidget {
+  const _RestorePasswordDialog({
+    required this.l10n,
+    required this.replacingExistingJournal,
+  });
+
+  final AppLocalizations l10n;
+  final bool replacingExistingJournal;
+
+  @override
+  State<_RestorePasswordDialog> createState() =>
+      _RestorePasswordDialogState();
+}
+
+final class _RestorePasswordDialogState extends State<_RestorePasswordDialog> {
+  final TextEditingController _passwordController = TextEditingController();
+  String? _errorMessage;
+
+  @override
+  void dispose() {
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = widget.l10n;
+    return AlertDialog(
+      title: Text(l10n.restoreBackupTitle),
+      content: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 420),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              widget.replacingExistingJournal
+                  ? l10n.restoreBackupExistingMessage
+                  : l10n.restoreBackupEmptyMessage,
+            ),
+            const SizedBox(height: 12),
+            Text(l10n.restoreBackupPasswordMessage),
+            const SizedBox(height: 20),
+            TextField(
+              controller: _passwordController,
+              obscureText: true,
+              autocorrect: false,
+              enableSuggestions: false,
+              autofocus: true,
+              autofillHints: const <String>[AutofillHints.password],
+              textInputAction: TextInputAction.done,
+              onSubmitted: (_) => _submit(),
+              decoration: InputDecoration(labelText: l10n.masterPassword),
+            ),
+            if (_errorMessage != null) ...[
+              const SizedBox(height: 12),
+              Text(
+                _errorMessage!,
+                style: TextStyle(color: Theme.of(context).colorScheme.error),
+              ),
+            ],
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: Text(MaterialLocalizations.of(context).cancelButtonLabel),
+        ),
+        FilledButton(
+          onPressed: _submit,
+          child: Text(l10n.restoreBackupConfirm),
+        ),
+      ],
+    );
+  }
+
+  void _submit() {
+    final String password = _passwordController.text;
+    if (password.isEmpty) {
+      setState(() => _errorMessage = widget.l10n.masterPasswordRequired);
+      return;
+    }
+    Navigator.of(context).pop(password);
   }
 }
 
