@@ -7,6 +7,7 @@ import 'package:daymark/features/journal/domain/journal_domain.dart';
 import 'package:daymark/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import 'entry_collection_reference_dialog.dart';
 import 'journal_activity_guard.dart';
@@ -147,6 +148,11 @@ class _TodayScreenState extends ConsumerState<TodayScreen>
                     MaterialLocalizations.of(context).formatFullDate(_today),
                     style: Theme.of(context).textTheme.headlineSmall,
                   ),
+                ),
+                IconButton(
+                  onPressed: _openHistory,
+                  tooltip: l10n.dailyHistory,
+                  icon: const Icon(Icons.history),
                 ),
                 IconButton(
                   onPressed: _lock,
@@ -507,6 +513,11 @@ class _TodayScreenState extends ConsumerState<TodayScreen>
           .showSnackBar(SnackBar(content: Text(message)));
       setState(() => _entryActionId = null);
     }
+  }
+
+  void _openHistory() {
+    final DateTime previousDate = _today.subtract(const Duration(days: 1));
+    context.push('/daily/${formatJournalMethodDate(previousDate)}');
   }
 
   Future<void> _lock() async {

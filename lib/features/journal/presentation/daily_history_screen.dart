@@ -35,18 +35,13 @@ final class _SessionDailyHistoryDataSource implements DailyHistoryDataSource {
 }
 
 class DailyHistoryScreen extends ConsumerStatefulWidget {
-  const DailyHistoryScreen({
-    required this.methodDate,
-    this.now,
-    super.key,
-  });
+  const DailyHistoryScreen({required this.methodDate, this.now, super.key});
 
   final String methodDate;
   final DateTime Function()? now;
 
   @override
-  ConsumerState<DailyHistoryScreen> createState() =>
-      _DailyHistoryScreenState();
+  ConsumerState<DailyHistoryScreen> createState() => _DailyHistoryScreenState();
 }
 
 class _DailyHistoryScreenState extends ConsumerState<DailyHistoryScreen> {
@@ -157,9 +152,8 @@ class _DailyHistoryScreenState extends ConsumerState<DailyHistoryScreen> {
                   _entrySymbol(entry),
                   textAlign: TextAlign.center,
                   style: discarded
-                      ? Theme.of(context).textTheme.titleMedium?.copyWith(
-                          decoration: TextDecoration.lineThrough,
-                        )
+                      ? Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(decoration: TextDecoration.lineThrough)
                       : Theme.of(context).textTheme.titleMedium,
                 ),
               ),

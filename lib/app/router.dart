@@ -26,9 +26,8 @@ final GoRouter daymarkRouter = GoRouter(
             ),
             GoRoute(
               path: '/daily/:date',
-              builder: (context, state) => DailyHistoryScreen(
-                methodDate: state.pathParameters['date']!,
-              ),
+              builder: (context, state) =>
+                  DailyHistoryScreen(methodDate: state.pathParameters['date']!),
             ),
           ],
         ),

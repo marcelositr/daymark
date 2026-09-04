@@ -100,9 +100,7 @@ void main() {
 }
 
 final class _MemoryDailyHistory implements DailyHistoryDataSource {
-  _MemoryDailyHistory({
-    this.snapshots = const <String, DailyLogSnapshot>{},
-  });
+  _MemoryDailyHistory({this.snapshots = const <String, DailyLogSnapshot>{}});
 
   final Map<String, DailyLogSnapshot> snapshots;
   final List<String> calls = <String>[];
