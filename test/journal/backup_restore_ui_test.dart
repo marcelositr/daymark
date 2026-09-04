@@ -64,6 +64,8 @@ void main() {
     await tester.tap(find.widgetWithText(OutlinedButton, 'Restore backup'));
     await tester.pumpAndSettle();
 
+    final Finder restoreDialog = find.byType(AlertDialog);
+
     expect(find.text('Restore encrypted backup'), findsOneWidget);
     expect(
       find.text(
@@ -76,7 +78,13 @@ void main() {
       find.text('Enter the master password that belongs to this backup.'),
       findsOneWidget,
     );
-    expect(find.text('Master password'), findsOneWidget);
+    expect(
+      find.descendant(
+        of: restoreDialog,
+        matching: find.text('Master password'),
+      ),
+      findsOneWidget,
+    );
     expect(find.widgetWithText(FilledButton, 'Restore'), findsOneWidget);
 
     await tester.tap(find.text('Cancel'));
