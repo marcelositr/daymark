@@ -12,6 +12,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import 'entry_capture_undo.dart';
 import 'journal_activity_guard.dart';
 
 abstract interface class CollectionsJournalDataSource {
@@ -416,7 +417,7 @@ class _CollectionsScreenState extends ConsumerState<CollectionsScreen> {
     final bool discarded = entry.taskState == JournalTaskState.discarded;
     final TextStyle? contentStyle = Theme.of(context).textTheme.bodyLarge;
     final TextStyle? markerStyle = Theme.of(context).textTheme.titleMedium;
-    return Row(
+    final Widget row = Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         SizedBox(
@@ -438,59 +439,49 @@ class _CollectionsScreenState extends ConsumerState<CollectionsScreen> {
                 : contentStyle,
           ),
         ),
-        PopupMenuButton<_CollectionReferenceAction>(
-          enabled: !_saving,
-          tooltip: l10n.referenceActions,
-          onSelected: (_) => unawaited(_removeReference(entry)),
-          itemBuilder: (context) => [
-            PopupMenuItem<_CollectionReferenceAction>(
-              value: _CollectionReferenceAction.remove,
-              child: Text(l10n.removeCollectionReference),
-            ),
-          ],
-        ),
       ],
+    );
+    return SizedBox(
+      width: double.infinity,
+      child: PopupMenuButton<_CollectionReferenceAction>(
+        enabled: !_saving,
+        tooltip: l10n.referenceActions,
+        padding: EdgeInsets.zero,
+        onSelected: (_) => unawaited(_removeReference(entry)),
+        itemBuilder: (context) => [
+          PopupMenuItem(
+            value: _CollectionReferenceAction.remove,
+            child: Text(l10n.removeCollectionReference),
+          ),
+        ],
+        child: row,
+      ),
     );
   }
 
   Widget _buildEntry(AppLocalizations l10n, CollectionEntry entry) {
     final TextStyle? style = Theme.of(context).textTheme.bodyLarge;
     final bool discarded = entry.taskState == JournalTaskState.discarded;
-    final Text marker = Text(
-      _entrySymbol(entry.type, entry.taskState),
-      style: discarded
-          ? Theme.of(context).textTheme.titleMedium
-                ?.copyWith(decoration: TextDecoration.lineThrough)
-          : Theme.of(context).textTheme.titleMedium,
-      textAlign: TextAlign.center,
-    );
-
-    Widget leading = marker;
-    if (entry.type == JournalEntryType.task &&
-        entry.taskState == JournalTaskState.open) {
-      leading = PopupMenuButton<_CollectionTaskAction>(
-        enabled: _taskActionEntryId == null,
-        tooltip: l10n.taskActions,
-        padding: EdgeInsets.zero,
-        onSelected: (action) => unawaited(_applyTaskAction(entry, action)),
-        itemBuilder: (context) => [
-          PopupMenuItem(
-            value: _CollectionTaskAction.complete,
-            child: Text(l10n.completeTask),
-          ),
-          PopupMenuItem(
-            value: _CollectionTaskAction.discard,
-            child: Text(l10n.discardTask),
-          ),
-        ],
-        child: marker,
-      );
-    }
-
-    return Row(
+    final bool actionInProgress = _taskActionEntryId == entry.id;
+    final Widget marker = actionInProgress
+        ? const Center(
+            child: SizedBox.square(
+              dimension: 16,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+          )
+        : Text(
+            _entrySymbol(entry.type, entry.taskState),
+            style: discarded
+                ? Theme.of(context).textTheme.titleMedium
+                      ?.copyWith(decoration: TextDecoration.lineThrough)
+                : Theme.of(context).textTheme.titleMedium,
+            textAlign: TextAlign.center,
+          );
+    final Widget row = Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        SizedBox(width: 28, child: leading),
+        SizedBox(width: 28, child: marker),
         const SizedBox(width: 8),
         Expanded(
           child: Text(
@@ -501,6 +492,34 @@ class _CollectionsScreenState extends ConsumerState<CollectionsScreen> {
           ),
         ),
       ],
+    );
+    final bool openTask =
+        entry.type == JournalEntryType.task &&
+        entry.taskState == JournalTaskState.open;
+    if (!openTask || actionInProgress) return row;
+
+    return SizedBox(
+      width: double.infinity,
+      child: PopupMenuButton<_CollectionTaskAction>(
+        enabled: _taskActionEntryId == null,
+        tooltip: l10n.taskActions,
+        padding: EdgeInsets.zero,
+        onSelected: (action) {
+          ScaffoldMessenger.of(context).clearSnackBars();
+          unawaited(_applyTaskAction(entry, action));
+        },
+        itemBuilder: (context) => [
+          PopupMenuItem(
+            value: _CollectionTaskAction.complete,
+            child: Text(l10n.completeTask),
+          ),
+          PopupMenuItem(
+            value: _CollectionTaskAction.discard,
+            child: Text(l10n.discardTask),
+          ),
+        ],
+        child: row,
+      ),
     );
   }
 
@@ -587,17 +606,31 @@ class _CollectionsScreenState extends ConsumerState<CollectionsScreen> {
     final AppLocalizations l10n = AppLocalizations.of(context);
     setState(() => _saving = true);
     try {
+      final CollectionSnapshot beforeSnapshot = await _collectionFuture!;
+      final Set<String> beforeEntryIds = <String>{
+        for (final CollectionEntry entry in beforeSnapshot.entries) entry.id,
+      };
       await _dataSource().capture(
         collectionId: collectionId,
         type: _entryType,
         content: content,
       );
+      final CollectionSnapshot updatedSnapshot = await _dataSource().load(
+        collectionId,
+      );
+      final List<String> capturedEntryIds = <String>[
+        for (final CollectionEntry entry in updatedSnapshot.entries)
+          if (!beforeEntryIds.contains(entry.id)) entry.id,
+      ];
       if (!mounted) return;
       _entryController.clear();
       setState(() {
-        _collectionFuture = _dataSource().load(collectionId);
+        _collectionFuture = Future<CollectionSnapshot>.value(updatedSnapshot);
         _saving = false;
       });
+      if (capturedEntryIds.length == 1) {
+        _showCaptureUndo(capturedEntryIds.single);
+      }
       _restoreActiveFocus();
     } catch (error, stackTrace) {
       _reportUnexpectedCollectionsError('capture', error, stackTrace);
@@ -608,12 +641,53 @@ class _CollectionsScreenState extends ConsumerState<CollectionsScreen> {
     }
   }
 
+  void _showCaptureUndo(String entryId) {
+    final AppLocalizations l10n = AppLocalizations.of(context);
+    final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
+    messenger.clearSnackBars();
+    messenger.showSnackBar(
+      SnackBar(
+        duration: const Duration(seconds: 5),
+        content: Text(l10n.entryCreated),
+        action: SnackBarAction(
+          label: l10n.undo,
+          onPressed: () => unawaited(_undoCapture(entryId)),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _undoCapture(String entryId) async {
+    JournalActivityGuard.recordActivity(context);
+    try {
+      await ref
+          .read(entryCaptureUndoDataSourceProvider)
+          .undoCapture(entryId: entryId);
+      if (!mounted) return;
+      final String? collectionId = _selectedCollectionId;
+      if (collectionId != null) {
+        setState(() {
+          _collectionFuture = _dataSource().load(collectionId);
+        });
+      }
+      _restoreActiveFocus();
+    } catch (error, stackTrace) {
+      _reportUnexpectedCollectionsError('capture undo', error, stackTrace);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(AppLocalizations.of(context).undoCaptureFailed)),
+      );
+    }
+  }
+
   Future<void> _applyTaskAction(
     CollectionEntry entry,
     _CollectionTaskAction action,
   ) async {
     final String? collectionId = _selectedCollectionId;
     if (collectionId == null || _taskActionEntryId != null) return;
+    // Any deliberate journal action supersedes the short-lived capture Undo.
+    ScaffoldMessenger.of(context).removeCurrentSnackBar();
     final AppLocalizations l10n = AppLocalizations.of(context);
     setState(() => _taskActionEntryId = entry.id);
     try {

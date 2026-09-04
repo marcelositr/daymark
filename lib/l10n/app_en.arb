@@ -134,5 +134,8 @@
   "moveIndexItemUp": "Move up",
   "moveIndexItemDown": "Move down",
   "removeIndexItem": "Remove from Index",
-  "indexItemUpdateFailed": "Could not update this Index item."
+  "indexItemUpdateFailed": "Could not update this Index item.",
+  "entryCreated": "Entry created.",
+  "undo": "Undo",
+  "undoCaptureFailed": "Could not undo this capture."
 }

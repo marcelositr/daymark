@@ -25,7 +25,8 @@ void main() {
     await tester.pump();
 
     expect(find.text('Widget task'), findsOneWidget);
-    expect(find.byType(SnackBar), findsNothing);
+    expect(find.text('Entry created.'), findsOneWidget);
+    expect(find.text('Undo'), findsOneWidget);
     expect(dataSource.entries, hasLength(1));
     expect(dataSource.entries.single.type, JournalEntryType.task);
     expect(dataSource.entries.single.taskState, JournalTaskState.open);

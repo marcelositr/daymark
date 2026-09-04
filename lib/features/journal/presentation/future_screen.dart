@@ -11,6 +11,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'entry_capture_undo.dart';
 import 'entry_collection_reference_dialog.dart';
 import 'journal_activity_guard.dart';
 
@@ -252,74 +253,80 @@ class _FutureScreenState extends ConsumerState<FutureScreen>
     final TextStyle? entryStyle = Theme.of(context).textTheme.bodyLarge;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(width: 28, child: _buildEntryMarker(context, l10n, entry)),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              entry.content,
-              style: entry.taskState == JournalTaskState.discarded
-                  ? entryStyle?.copyWith(decoration: TextDecoration.lineThrough)
-                  : entryStyle,
-            ),
-          ),
-        ],
-      ),
+      child: _buildEntryRow(context, l10n, entry, entryStyle),
     );
   }
 
-  Widget _buildEntryMarker(
+  Widget _buildEntryRow(
     BuildContext context,
     AppLocalizations l10n,
     FutureLogEntry entry,
+    TextStyle? entryStyle,
   ) {
-    if (_entryActionId == entry.id) {
-      return const Center(
-        child: SizedBox.square(
-          dimension: 16,
-          child: CircularProgressIndicator(strokeWidth: 2),
-        ),
-      );
-    }
-
+    final bool actionInProgress = _entryActionId == entry.id;
     final TextStyle? markerStyle = Theme.of(context).textTheme.titleMedium;
-    final Text marker = Text(
-      _entrySymbol(entry),
-      textAlign: TextAlign.center,
-      style: entry.taskState == JournalTaskState.discarded
-          ? markerStyle?.copyWith(decoration: TextDecoration.lineThrough)
-          : markerStyle,
+    final Widget marker = actionInProgress
+        ? const Center(
+            child: SizedBox.square(
+              dimension: 16,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+          )
+        : Text(
+            _entrySymbol(entry),
+            textAlign: TextAlign.center,
+            style: entry.taskState == JournalTaskState.discarded
+                ? markerStyle?.copyWith(decoration: TextDecoration.lineThrough)
+                : markerStyle,
+          );
+    final Widget row = Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(width: 28, child: marker),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            entry.content,
+            style: entry.taskState == JournalTaskState.discarded
+                ? entryStyle?.copyWith(decoration: TextDecoration.lineThrough)
+                : entryStyle,
+          ),
+        ),
+      ],
     );
+    if (actionInProgress) return row;
+
     final bool openTask =
         entry.type == JournalEntryType.task &&
         entry.taskState == JournalTaskState.open;
-
-    return PopupMenuButton<_FutureEntryAction>(
-      enabled: _entryActionId == null,
-      tooltip: l10n.entryActions,
-      padding: EdgeInsets.zero,
-      onSelected: (action) {
-        unawaited(_applyEntryAction(entry, action));
-      },
-      itemBuilder: (context) => [
-        if (openTask)
-          PopupMenuItem<_FutureEntryAction>(
-            value: _FutureEntryAction.complete,
-            child: Text(l10n.completeTask),
+    return SizedBox(
+      width: double.infinity,
+      child: PopupMenuButton<_FutureEntryAction>(
+        enabled: _entryActionId == null,
+        tooltip: l10n.entryActions,
+        padding: EdgeInsets.zero,
+        onSelected: (action) {
+          ScaffoldMessenger.of(context).clearSnackBars();
+          unawaited(_applyEntryAction(entry, action));
+        },
+        itemBuilder: (context) => [
+          if (openTask)
+            PopupMenuItem(
+              value: _FutureEntryAction.complete,
+              child: Text(l10n.completeTask),
+            ),
+          PopupMenuItem(
+            value: _FutureEntryAction.reference,
+            child: Text(l10n.referenceEntry),
           ),
-        PopupMenuItem<_FutureEntryAction>(
-          value: _FutureEntryAction.reference,
-          child: Text(l10n.referenceEntry),
-        ),
-        if (openTask)
-          PopupMenuItem<_FutureEntryAction>(
-            value: _FutureEntryAction.discard,
-            child: Text(l10n.discardTask),
-          ),
-      ],
-      child: marker,
+          if (openTask)
+            PopupMenuItem(
+              value: _FutureEntryAction.discard,
+              child: Text(l10n.discardTask),
+            ),
+        ],
+        child: row,
+      ),
     );
   }
 
@@ -479,21 +486,34 @@ class _FutureScreenState extends ConsumerState<FutureScreen>
         (snapshot) => snapshot.periodStart == periodStart,
       );
 
+      final Set<String> beforeEntryIds = <String>{
+        for (final FutureLogEntry entry in target.entries) entry.id,
+      };
       await dataSource.capture(
         logId: target.logId,
         type: entryType,
         content: content,
       );
+      final List<FutureLogSnapshot> updatedSnapshots = await _loadSnapshots();
+      final FutureLogSnapshot updatedTarget = updatedSnapshots.singleWhere(
+        (snapshot) => snapshot.periodStart == periodStart,
+      );
+      final List<String> capturedEntryIds = <String>[
+        for (final FutureLogEntry entry in updatedTarget.entries)
+          if (!beforeEntryIds.contains(entry.id)) entry.id,
+      ];
 
-      if (!mounted) {
-        return;
-      }
-
+      if (!mounted) return;
       _entryController.clear();
       setState(() {
-        _snapshotsFuture = _loadSnapshots();
+        _snapshotsFuture = Future<List<FutureLogSnapshot>>.value(
+          updatedSnapshots,
+        );
         _saving = false;
       });
+      if (capturedEntryIds.length == 1) {
+        _showCaptureUndo(capturedEntryIds.single);
+      }
       _restoreComposerFocus();
     } catch (error, stackTrace) {
       _reportUnexpectedFutureError('capture', error, stackTrace);
@@ -503,6 +523,42 @@ class _FutureScreenState extends ConsumerState<FutureScreen>
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text(l10n.saveEntryFailed)));
       setState(() => _saving = false);
+    }
+  }
+
+  void _showCaptureUndo(String entryId) {
+    final AppLocalizations l10n = AppLocalizations.of(context);
+    final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
+    messenger.clearSnackBars();
+    messenger.showSnackBar(
+      SnackBar(
+        duration: const Duration(seconds: 5),
+        content: Text(l10n.entryCreated),
+        action: SnackBarAction(
+          label: l10n.undo,
+          onPressed: () => unawaited(_undoCapture(entryId)),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _undoCapture(String entryId) async {
+    JournalActivityGuard.recordActivity(context);
+    try {
+      await ref
+          .read(entryCaptureUndoDataSourceProvider)
+          .undoCapture(entryId: entryId);
+      if (!mounted) return;
+      setState(() {
+        _snapshotsFuture = _loadSnapshots();
+      });
+      _restoreComposerFocus();
+    } catch (error, stackTrace) {
+      _reportUnexpectedFutureError('capture undo', error, stackTrace);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(AppLocalizations.of(context).undoCaptureFailed)),
+      );
     }
   }
 
@@ -531,6 +587,8 @@ class _FutureScreenState extends ConsumerState<FutureScreen>
       }
     }
 
+    // Any deliberate journal action supersedes the short-lived capture Undo.
+    ScaffoldMessenger.of(context).removeCurrentSnackBar();
     final AppLocalizations l10n = AppLocalizations.of(context);
     setState(() => _entryActionId = entry.id);
 

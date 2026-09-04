@@ -178,6 +178,10 @@ final class JournalSession {
     );
   }
 
+  Future<void> undoCapture({required String entryId}) {
+    return run(() => service.undoCapture(entryId: entryId));
+  }
+
   Future<void> referenceEntryInCollection({
     required String entryId,
     required String collectionId,

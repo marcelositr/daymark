@@ -30,7 +30,8 @@ void main() {
     );
 
     expect(find.text('○ Dentist'), findsOneWidget);
-    expect(find.byType(SnackBar), findsNothing);
+    expect(find.text('Entry created.'), findsOneWidget);
+    expect(find.text('Undo'), findsOneWidget);
 
     await tester.pumpWidget(const SizedBox.shrink());
   });

@@ -291,6 +291,17 @@ Deleting a Collection or Log that owns entries must not silently destroy those e
 
 Exact `ON DELETE` actions are part of the Drift schema implementation and tests and must match these rules.
 
+### Immediate capture undo
+
+The UI may briefly offer Undo immediately after capture. The persistence
+operation is intentionally narrower than generic deletion: it transactionally
+removes the Entry and its owning placement only while the Entry remains
+untouched and has no migration, Collection reference, signifier, or other
+journal relationship.
+
+This behavior requires no schema change and does not introduce Trash or soft
+delete.
+
 ## Ordering
 
 Do not use timestamps alone as UI order.

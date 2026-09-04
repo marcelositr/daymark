@@ -32,7 +32,8 @@ void main() {
 
     expect(find.text('Build antenna'), findsOneWidget);
     expect(find.text('•'), findsOneWidget);
-    expect(find.byType(SnackBar), findsNothing);
+    expect(find.text('Entry created.'), findsOneWidget);
+    expect(find.text('Undo'), findsOneWidget);
   });
 
   testWidgets('Collection shows references separately as read-only', (
@@ -57,9 +58,9 @@ void main() {
     expect(find.text('References'), findsOneWidget);
     expect(find.text('Linked note'), findsOneWidget);
     expect(find.text('–'), findsOneWidget);
-    await tester.tap(find.text('–'));
+    await tester.tap(find.text('Linked note'));
     await tester.pumpAndSettle();
-    expect(find.byType(PopupMenuItem<Object>), findsNothing);
+    expect(find.text('Remove reference'), findsOneWidget);
   });
 
   testWidgets('Collection open Task can complete or discard', (tester) async {

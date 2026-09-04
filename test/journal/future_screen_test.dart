@@ -33,7 +33,8 @@ void main() {
     expect(entry.taskState, JournalTaskState.open);
     expect(entry.content, 'Renew passport');
     expect(find.text('•'), findsOneWidget);
-    expect(find.byType(SnackBar), findsNothing);
+    expect(find.text('Entry created.'), findsOneWidget);
+    expect(find.text('Undo'), findsOneWidget);
 
     await tester.pumpWidget(const SizedBox.shrink());
   });

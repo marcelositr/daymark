@@ -152,6 +152,20 @@ A Future destination always uses scheduling semantics. A normal forward migratio
 
 Daymark does **not** treat the current Monthly Log as a shortcut destination for a Today Task merely because that container already exists. Existing Collections are the first deliberately exposed forward-migration destination. Migration from Future or from Collection-owned entries, and migration to a future Monthly Log, remain separate product decisions rather than implicit extensions of this flow.
 
+## Immediate capture correction
+
+A successful capture in Today, Monthly, Future, or a Collection may expose a
+short-lived **Undo** action as mechanical error correction.
+
+Undo is deliberately not a general Edit/Delete feature and is not a new Bullet
+Journal task state. It may reverse only the freshly captured Entry while that
+Entry is still untouched and has no migration, Collection reference, signifier,
+or other journal relationship. Once the Entry participates in journal history,
+normal method actions such as completion, migration, scheduling, reference, and
+discard remain authoritative.
+
+The visible Undo window is presentation behavior rather than a persistence rule.
+
 ## Local-first
 
 The journal belongs to the user.

@@ -134,5 +134,8 @@
   "moveIndexItemUp": "Mover para cima",
   "moveIndexItemDown": "Mover para baixo",
   "removeIndexItem": "Remover do Índice",
-  "indexItemUpdateFailed": "Não foi possível atualizar este item do Índice."
+  "indexItemUpdateFailed": "Não foi possível atualizar este item do Índice.",
+  "entryCreated": "Entrada criada.",
+  "undo": "Desfazer",
+  "undoCaptureFailed": "Não foi possível desfazer esta captura."
 }

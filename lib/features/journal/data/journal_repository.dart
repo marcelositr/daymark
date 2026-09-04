@@ -107,6 +107,79 @@ final class JournalRepository {
     });
   }
 
+  Future<void> undoCapture({required String entryId}) {
+    return _database.transaction(() async {
+      final entry = await _database
+          .customSelect(
+            '''
+        SELECT entry_type, task_state, created_at, updated_at
+        FROM entries
+        WHERE id = ?
+        ''',
+            variables: <Variable<Object>>[Variable.withString(entryId)],
+          )
+          .getSingleOrNull();
+      if (entry == null) {
+        throw JournalNotFoundException('Entry', entryId);
+      }
+
+      final JournalEntryType type = _entryTypeFromCode(
+        entry.read<String>('entry_type'),
+      );
+      final JournalTaskState? taskState = _taskStateFromCode(
+        entry.readNullable<String>('task_state'),
+      );
+      if (entry.read<int>('created_at') != entry.read<int>('updated_at') ||
+          (type == JournalEntryType.task &&
+              taskState != JournalTaskState.open)) {
+        throw const JournalInvariantException(
+          'Only an untouched capture can be undone.',
+        );
+      }
+
+      final relations = await _database
+          .customSelect(
+            '''
+        SELECT
+          EXISTS(
+            SELECT 1 FROM migrations
+            WHERE source_entry_id = ? OR destination_entry_id = ?
+          ) AS has_migration,
+          EXISTS(
+            SELECT 1 FROM collection_references WHERE entry_id = ?
+          ) AS has_reference,
+          EXISTS(
+            SELECT 1 FROM entry_signifiers WHERE entry_id = ?
+          ) AS has_signifier
+        ''',
+            variables: <Variable<Object>>[
+              Variable.withString(entryId),
+              Variable.withString(entryId),
+              Variable.withString(entryId),
+              Variable.withString(entryId),
+            ],
+          )
+          .getSingle();
+
+      if (relations.read<int>('has_migration') != 0 ||
+          relations.read<int>('has_reference') != 0 ||
+          relations.read<int>('has_signifier') != 0) {
+        throw const JournalInvariantException(
+          'A capture with journal relationships cannot be undone.',
+        );
+      }
+
+      await _database.customStatement(
+        'DELETE FROM entry_placements WHERE entry_id = ?',
+        <Object>[entryId],
+      );
+      await _database.customStatement(
+        'DELETE FROM entries WHERE id = ?',
+        <Object>[entryId],
+      );
+    });
+  }
+
   Future<void> addCollectionReference({
     required String collectionId,
     required String entryId,

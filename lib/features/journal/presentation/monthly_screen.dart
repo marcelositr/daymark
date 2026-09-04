@@ -12,6 +12,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'entry_capture_undo.dart';
 import 'entry_collection_reference_dialog.dart';
 import 'journal_activity_guard.dart';
 import 'task_collection_migration_dialog.dart';
@@ -363,9 +364,14 @@ class _MonthlyScreenState extends ConsumerState<MonthlyScreen>
                                     child: Text(l10n.referenceEntry),
                                   ),
                                 ],
-                                child: Text(
-                                  '○ ${entry.content}',
-                                  style: Theme.of(context).textTheme.bodyLarge,
+                                child: SizedBox(
+                                  width: double.infinity,
+                                  child: Text(
+                                    '○ ${entry.content}',
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .bodyLarge,
+                                  ),
                                 ),
                               )
                             : Text(
@@ -411,95 +417,92 @@ class _MonthlyScreenState extends ConsumerState<MonthlyScreen>
         final TextStyle? entryStyle = Theme.of(context).textTheme.bodyLarge;
         return Padding(
           padding: const EdgeInsets.symmetric(vertical: 5),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              SizedBox(
-                width: 28,
-                child: _buildTaskMarker(context, l10n, entry),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  entry.content,
-                  style: entry.taskState == JournalTaskState.discarded
-                      ? entryStyle?.copyWith(
-                          decoration: TextDecoration.lineThrough,
-                        )
-                      : entryStyle,
-                ),
-              ),
-            ],
-          ),
+          child: _buildTaskRow(context, l10n, entry, entryStyle),
         );
       },
     );
   }
 
-  Widget _buildTaskMarker(
+  Widget _buildTaskRow(
     BuildContext context,
     AppLocalizations l10n,
     MonthlyLogEntry entry,
+    TextStyle? entryStyle,
   ) {
+    final bool actionInProgress = _entryActionId == entry.id;
     final TextStyle? markerStyle = Theme.of(context).textTheme.titleMedium;
-    final Text marker = Text(
-      _taskSymbol(entry.taskState),
-      textAlign: TextAlign.center,
-      style: entry.taskState == JournalTaskState.discarded
-          ? markerStyle?.copyWith(decoration: TextDecoration.lineThrough)
-          : markerStyle,
-    );
-
-    if (!_followingCurrentMonth) {
-      return marker;
-    }
-    if (_entryActionId == entry.id) {
-      return const Center(
-        child: SizedBox.square(
-          dimension: 16,
-          child: CircularProgressIndicator(strokeWidth: 2),
+    final Widget marker = actionInProgress
+        ? const Center(
+            child: SizedBox.square(
+              dimension: 16,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+          )
+        : Text(
+            _taskSymbol(entry.taskState),
+            textAlign: TextAlign.center,
+            style: entry.taskState == JournalTaskState.discarded
+                ? markerStyle?.copyWith(decoration: TextDecoration.lineThrough)
+                : markerStyle,
+          );
+    final Widget row = Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(width: 28, child: marker),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            entry.content,
+            style: entry.taskState == JournalTaskState.discarded
+                ? entryStyle?.copyWith(decoration: TextDecoration.lineThrough)
+                : entryStyle,
+          ),
         ),
-      );
-    }
+      ],
+    );
+    if (!_followingCurrentMonth || actionInProgress) return row;
 
     final bool openTask =
         entry.type == JournalEntryType.task &&
         entry.taskState == JournalTaskState.open;
-
-    return PopupMenuButton<_MonthlyEntryAction>(
-      enabled: _entryActionId == null,
-      tooltip: l10n.entryActions,
-      padding: EdgeInsets.zero,
-      onSelected: (action) {
-        unawaited(_applyEntryAction(entry, action));
-      },
-      itemBuilder: (context) => [
-        if (openTask)
-          PopupMenuItem<_MonthlyEntryAction>(
-            value: _MonthlyEntryAction.complete,
-            child: Text(l10n.completeTask),
+    return SizedBox(
+      width: double.infinity,
+      child: PopupMenuButton<_MonthlyEntryAction>(
+        enabled: _entryActionId == null,
+        tooltip: l10n.entryActions,
+        padding: EdgeInsets.zero,
+        onSelected: (action) {
+          ScaffoldMessenger.of(context).clearSnackBars();
+          unawaited(_applyEntryAction(entry, action));
+        },
+        itemBuilder: (context) => [
+          if (openTask)
+            PopupMenuItem(
+              value: _MonthlyEntryAction.complete,
+              child: Text(l10n.completeTask),
+            ),
+          if (openTask)
+            PopupMenuItem(
+              value: _MonthlyEntryAction.migrate,
+              child: Text(l10n.migrateTask),
+            ),
+          if (openTask)
+            PopupMenuItem(
+              value: _MonthlyEntryAction.schedule,
+              child: Text(l10n.scheduleTask),
+            ),
+          PopupMenuItem(
+            value: _MonthlyEntryAction.reference,
+            child: Text(l10n.referenceEntry),
           ),
-        if (openTask)
-          PopupMenuItem<_MonthlyEntryAction>(
-            value: _MonthlyEntryAction.migrate,
-            child: Text(l10n.migrateTask),
-          ),
-        if (openTask)
-          PopupMenuItem<_MonthlyEntryAction>(
-            value: _MonthlyEntryAction.schedule,
-            child: Text(l10n.scheduleTask),
-          ),
-        PopupMenuItem<_MonthlyEntryAction>(
-          value: _MonthlyEntryAction.reference,
-          child: Text(l10n.referenceEntry),
-        ),
-        if (openTask)
-          PopupMenuItem<_MonthlyEntryAction>(
-            value: _MonthlyEntryAction.discard,
-            child: Text(l10n.discardTask),
-          ),
-      ],
-      child: marker,
+          if (openTask)
+            PopupMenuItem(
+              value: _MonthlyEntryAction.discard,
+              child: Text(l10n.discardTask),
+            ),
+        ],
+        child: row,
+      ),
     );
   }
 
@@ -653,6 +656,10 @@ class _MonthlyScreenState extends ConsumerState<MonthlyScreen>
       if (snapshot == null) {
         throw StateError('Current Monthly Log is missing.');
       }
+      final Set<String> beforeEntryIds = <String>{
+        for (final MonthlyLogEntry entry in snapshot.calendarEntries) entry.id,
+        for (final MonthlyLogEntry entry in snapshot.taskEntries) entry.id,
+      };
       if (section == JournalMonthlySection.calendar) {
         await dataSource.captureCalendarEvent(
           logId: snapshot.logId,
@@ -664,16 +671,25 @@ class _MonthlyScreenState extends ConsumerState<MonthlyScreen>
       } else {
         await dataSource.captureTask(logId: snapshot.logId, content: content);
       }
+      final MonthlyLogSnapshot updatedSnapshot = await dataSource.load(
+        formatJournalMonthStart(_month),
+      );
+      final List<String> capturedEntryIds = <String>[
+        for (final MonthlyLogEntry entry in updatedSnapshot.calendarEntries)
+          if (!beforeEntryIds.contains(entry.id)) entry.id,
+        for (final MonthlyLogEntry entry in updatedSnapshot.taskEntries)
+          if (!beforeEntryIds.contains(entry.id)) entry.id,
+      ];
 
-      if (!mounted) {
-        return;
-      }
-
+      if (!mounted) return;
       _entryController.clear();
       setState(() {
-        _snapshotFuture = dataSource.load(formatJournalMonthStart(_month));
+        _snapshotFuture = Future<MonthlyLogSnapshot?>.value(updatedSnapshot);
         _saving = false;
       });
+      if (capturedEntryIds.length == 1) {
+        _showCaptureUndo(capturedEntryIds.single);
+      }
       _restoreComposerFocus();
     } catch (error, stackTrace) {
       _reportUnexpectedMonthlyError('capture', error, stackTrace);
@@ -683,6 +699,45 @@ class _MonthlyScreenState extends ConsumerState<MonthlyScreen>
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text(l10n.saveEntryFailed)));
       setState(() => _saving = false);
+    }
+  }
+
+  void _showCaptureUndo(String entryId) {
+    final AppLocalizations l10n = AppLocalizations.of(context);
+    final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
+    messenger.clearSnackBars();
+    messenger.showSnackBar(
+      SnackBar(
+        duration: const Duration(seconds: 5),
+        content: Text(l10n.entryCreated),
+        action: SnackBarAction(
+          label: l10n.undo,
+          onPressed: () => unawaited(_undoCapture(entryId)),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _undoCapture(String entryId) async {
+    JournalActivityGuard.recordActivity(context);
+    try {
+      await ref
+          .read(entryCaptureUndoDataSourceProvider)
+          .undoCapture(entryId: entryId);
+      if (!mounted) return;
+      setState(() {
+        _snapshotFuture = _loadSnapshotFor(
+          _month,
+          writable: _followingCurrentMonth,
+        );
+      });
+      _restoreComposerFocus();
+    } catch (error, stackTrace) {
+      _reportUnexpectedMonthlyError('capture undo', error, stackTrace);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(AppLocalizations.of(context).undoCaptureFailed)),
+      );
     }
   }
 
@@ -734,6 +789,8 @@ class _MonthlyScreenState extends ConsumerState<MonthlyScreen>
       }
     }
 
+    // Any deliberate journal action supersedes the short-lived capture Undo.
+    ScaffoldMessenger.of(context).removeCurrentSnackBar();
     final AppLocalizations l10n = AppLocalizations.of(context);
     setState(() => _entryActionId = entry.id);
 
