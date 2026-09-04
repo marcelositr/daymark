@@ -1,6 +1,7 @@
 import 'package:go_router/go_router.dart';
 
 import '../features/journal/presentation/collections_screen.dart';
+import '../features/journal/presentation/daily_history_screen.dart';
 import '../features/journal/presentation/future_screen.dart';
 import '../features/journal/presentation/index_screen.dart';
 import '../features/journal/presentation/journal_gate.dart';
@@ -22,6 +23,12 @@ final GoRouter daymarkRouter = GoRouter(
             GoRoute(
               path: '/',
               builder: (context, state) => const TodayScreen(),
+            ),
+            GoRoute(
+              path: '/daily/:date',
+              builder: (context, state) => DailyHistoryScreen(
+                methodDate: state.pathParameters['date']!,
+              ),
             ),
           ],
         ),
