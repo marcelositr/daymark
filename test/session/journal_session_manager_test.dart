@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:daymark/core/backup/encrypted_backup_service.dart';
 import 'package:daymark/core/crypto/key_envelope.dart';
 import 'package:daymark/core/crypto/security_exception.dart';
 import 'package:daymark/core/session/journal_files.dart';
@@ -18,9 +19,15 @@ void main() {
   setUp(() async {
     directory = await Directory.systemTemp.createTemp('daymark-session-test-');
     files = JournalFiles(directory);
+    final KeyEnvelopeService keyEnvelopeService = KeyEnvelopeService(
+      parameters: Argon2Parameters.test,
+    );
     manager = JournalSessionManager(
       files: files,
-      keyEnvelopeService: KeyEnvelopeService(parameters: Argon2Parameters.test),
+      keyEnvelopeService: keyEnvelopeService,
+      backupService: EncryptedBackupService(
+        keyEnvelopeService: keyEnvelopeService,
+      ),
     );
   });
 
@@ -210,6 +217,125 @@ void main() {
 
     expect(session.isClosed, isTrue);
     expect(await manager.inspect(), isA<JournalLocked>());
+  });
+
+  test('unlocked journal can create a portable encrypted backup', () async {
+    const String password = 'backup lifecycle password';
+    final JournalSession session = await manager.create(masterPassword: password);
+    final DailyLogSnapshot daily = await session.loadDailyLog('2026-09-04');
+    await session.captureDailyLogEntry(
+      logId: daily.logId,
+      type: JournalEntryType.note,
+      content: 'Before the backup',
+    );
+
+    final File backupFile = File(
+      '${directory.path}${Platform.pathSeparator}journal.daymark-backup',
+    );
+    await manager.createBackup(
+      backupFile: backupFile,
+      masterPassword: password,
+    );
+
+    expect(await backupFile.exists(), isTrue);
+    expect(await backupFile.length(), greaterThan(0));
+    expect(await manager.inspect(), isA<JournalUnlocked>());
+  });
+
+  test('backup rejects a password that does not match the live journal', () async {
+    await manager.create(masterPassword: 'right backup password');
+    final File backupFile = File(
+      '${directory.path}${Platform.pathSeparator}wrong-password.daymark-backup',
+    );
+
+    await expectLater(
+      manager.createBackup(
+        backupFile: backupFile,
+        masterPassword: 'wrong backup password',
+      ),
+      throwsA(isA<BackupAuthenticationException>()),
+    );
+    expect(await backupFile.exists(), isFalse);
+    expect(await manager.inspect(), isA<JournalUnlocked>());
+  });
+
+  test('locked restore replaces the journal only with the backup snapshot', () async {
+    const String password = 'restore lifecycle password';
+    final JournalSession session = await manager.create(masterPassword: password);
+    final DailyLogSnapshot daily = await session.loadDailyLog('2026-09-04');
+    await session.captureDailyLogEntry(
+      logId: daily.logId,
+      type: JournalEntryType.note,
+      content: 'Included in backup',
+    );
+
+    final File backupFile = File(
+      '${directory.path}${Platform.pathSeparator}restore.daymark-backup',
+    );
+    await manager.createBackup(
+      backupFile: backupFile,
+      masterPassword: password,
+    );
+
+    await session.captureDailyLogEntry(
+      logId: daily.logId,
+      type: JournalEntryType.note,
+      content: 'Created after backup',
+    );
+    await manager.lock();
+
+    final JournalSession restored = await manager.restoreBackup(
+      backupFile: backupFile,
+      masterPassword: password,
+    );
+    final DailyLogSnapshot restoredDaily = await restored.loadDailyLog(
+      '2026-09-04',
+    );
+
+    expect(
+      restoredDaily.entries.map((entry) => entry.content),
+      <String>['Included in backup'],
+    );
+    expect(await manager.inspect(), isA<JournalUnlocked>());
+  });
+
+  test('restore is rejected while the destination journal is unlocked', () async {
+    const String password = 'unlocked restore password';
+    await manager.create(masterPassword: password);
+    final File backupFile = File(
+      '${directory.path}${Platform.pathSeparator}unlocked.daymark-backup',
+    );
+    await manager.createBackup(
+      backupFile: backupFile,
+      masterPassword: password,
+    );
+
+    await expectLater(
+      manager.restoreBackup(
+        backupFile: backupFile,
+        masterPassword: password,
+      ),
+      throwsA(isA<StateError>()),
+    );
+    expect(await manager.inspect(), isA<JournalUnlocked>());
+  });
+
+  test('inspect cleans committed restore rollback residue before unlock', () async {
+    await manager.create(masterPassword: 'recovery inspection password');
+    await manager.lock();
+
+    final File rollbackDatabase = File(
+      '${files.databaseFile.path}.restore-rollback',
+    );
+    final File rollbackEnvelope = File(
+      '${files.keyEnvelopeFile.path}.restore-rollback',
+    );
+    await rollbackDatabase.writeAsBytes(const <int>[1], flush: true);
+    await rollbackEnvelope.writeAsString('{"stale":true}', flush: true);
+
+    expect(await manager.inspect(), isA<JournalLocked>());
+    expect(await rollbackDatabase.exists(), isFalse);
+    expect(await rollbackEnvelope.exists(), isFalse);
   });
 
   test('incomplete journal file sets are never treated as creatable', () async {
