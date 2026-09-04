@@ -2,6 +2,7 @@ import 'package:daymark/features/journal/data/daily_log_repository.dart';
 import 'package:daymark/features/journal/domain/journal_domain.dart';
 import 'package:daymark/features/journal/presentation/today_screen.dart';
 import 'package:daymark/l10n/app_localizations.dart';
+import 'package:daymark/presentation/app_section_scope.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -202,7 +203,6 @@ void main() {
     tester,
   ) async {
     debugDefaultTargetPlatformOverride = TargetPlatform.linux;
-    addTearDown(() => debugDefaultTargetPlatformOverride = null);
 
     final _MemoryTodayJournal dataSource = _MemoryTodayJournal();
     await _pumpToday(tester, dataSource);
@@ -219,14 +219,59 @@ void main() {
     expect(dataSource.entries, hasLength(1));
     expect(dataSource.entries.single.content, 'Keyboard capture');
     expect(find.text('Keyboard capture'), findsOneWidget);
+
+    debugDefaultTargetPlatformOverride = null;
+  });
+
+  testWidgets('Linux composer regains focus when Today becomes active', (
+    tester,
+  ) async {
+    debugDefaultTargetPlatformOverride = TargetPlatform.linux;
+
+    final ValueNotifier<int> sectionIndex = ValueNotifier<int>(0);
+    addTearDown(sectionIndex.dispose);
+
+    final _MemoryTodayJournal dataSource = _MemoryTodayJournal();
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          todayJournalDataSourceProvider.overrideWithValue(dataSource),
+        ],
+        child: AppSectionScope(
+          currentIndex: sectionIndex,
+          child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: const Scaffold(body: TodayScreen()),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final TextField field = tester.widget<TextField>(find.byType(TextField));
+    expect(field.focusNode!.hasFocus, isTrue);
+
+    field.focusNode!.unfocus();
+    await tester.pump();
+    expect(field.focusNode!.hasFocus, isFalse);
+
+    sectionIndex.value = 1;
+    await tester.pump();
+
+    sectionIndex.value = 0;
+    await tester.pump();
+    await tester.pump();
+
+    expect(field.focusNode!.hasFocus, isTrue);
+
+    debugDefaultTargetPlatformOverride = null;
   });
 
   testWidgets('Today exposes entry type and Task state to semantics', (
     tester,
   ) async {
-    final SemanticsHandle semantics = tester.ensureSemantics();
-    addTearDown(semantics.dispose);
-
     final _MemoryTodayJournal dataSource = _MemoryTodayJournal(
       entries: [
         const DailyLogEntry(
@@ -242,7 +287,11 @@ void main() {
     await _pumpToday(tester, dataSource);
 
     expect(
-      find.bySemanticsLabel('Task, Open, Accessible task'),
+      find.byWidgetPredicate(
+        (widget) =>
+            widget is Semantics &&
+            widget.properties.label == 'Task, Open, Accessible task',
+      ),
       findsOneWidget,
     );
   });

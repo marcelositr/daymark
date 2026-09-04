@@ -5,6 +5,7 @@ import 'package:daymark/core/session/journal_session_controller.dart';
 import 'package:daymark/features/journal/data/daily_log_repository.dart';
 import 'package:daymark/features/journal/domain/journal_domain.dart';
 import 'package:daymark/l10n/app_localizations.dart';
+import 'package:daymark/presentation/app_section_scope.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -109,6 +110,8 @@ class _TodayScreenState extends ConsumerState<TodayScreen>
   JournalEntryType _entryType = JournalEntryType.task;
   bool _saving = false;
   bool _reflecting = false;
+  bool _sectionScopeInitialized = false;
+  bool _wasTodaySectionActive = false;
   String? _entryActionId;
 
   @override
@@ -118,6 +121,31 @@ class _TodayScreenState extends ConsumerState<TodayScreen>
     _today = _dateOnly(DateTime.now());
     _snapshotFuture = _loadSnapshot();
     _scheduleDayRollover();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+
+    final int? currentSectionIndex = AppSectionScope.maybeCurrentIndexOf(
+      context,
+    );
+    if (currentSectionIndex == null) {
+      return;
+    }
+
+    final bool isTodaySectionActive = currentSectionIndex == 0;
+    if (_sectionScopeInitialized &&
+        isTodaySectionActive &&
+        !_wasTodaySectionActive &&
+        !_reflecting &&
+        !_saving &&
+        _entryActionId == null) {
+      _restoreComposerFocus();
+    }
+
+    _sectionScopeInitialized = true;
+    _wasTodaySectionActive = isTodaySectionActive;
   }
 
   @override
@@ -161,9 +189,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen>
                       ? l10n.finishReflection
                       : l10n.startReflection,
                   icon: Icon(
-                    _reflecting
-                        ? Icons.fact_check
-                        : Icons.fact_check_outlined,
+                    _reflecting ? Icons.fact_check : Icons.fact_check_outlined,
                   ),
                 ),
                 IconButton(
