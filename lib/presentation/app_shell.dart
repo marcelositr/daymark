@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../features/journal/presentation/appearance_dialog.dart';
 import '../features/journal/presentation/backup_dialog.dart';
 import '../features/journal/presentation/open_export_dialog.dart';
 import '../l10n/app_localizations.dart';
@@ -18,6 +19,7 @@ class AppShell extends StatefulWidget {
 class _AppShellState extends State<AppShell> {
   static const int _backupAction = 6;
   static const int _exportAction = 7;
+  static const int _appearanceAction = 8;
 
   late final ValueNotifier<int> _currentSectionIndex;
 
@@ -100,6 +102,11 @@ class _AppShellState extends State<AppShell> {
                             onPressed: () => showOpenExportDialog(context),
                             tooltip: l10n.openExport,
                             icon: const Icon(Icons.file_download_outlined),
+                          ),
+                          IconButton(
+                            onPressed: () => showAppearanceDialog(context),
+                            tooltip: l10n.appearance,
+                            icon: const Icon(Icons.palette_outlined),
                           ),
                         ],
                       ),
@@ -186,6 +193,11 @@ class _AppShellState extends State<AppShell> {
                 title: Text(l10n.openExport),
                 onTap: () => Navigator.of(sheetContext).pop(_exportAction),
               ),
+              ListTile(
+                leading: const Icon(Icons.palette_outlined),
+                title: Text(l10n.appearance),
+                onTap: () => Navigator.of(sheetContext).pop(_appearanceAction),
+              ),
             ],
           ),
         );
@@ -200,6 +212,10 @@ class _AppShellState extends State<AppShell> {
     }
     if (action == _exportAction) {
       await showOpenExportDialog(context);
+      return;
+    }
+    if (action == _appearanceAction) {
+      await showAppearanceDialog(context);
       return;
     }
     _goToBranch(action);
