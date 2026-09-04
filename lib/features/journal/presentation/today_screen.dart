@@ -5,10 +5,15 @@ import 'package:daymark/core/session/journal_session_controller.dart';
 import 'package:daymark/features/journal/data/daily_log_repository.dart';
 import 'package:daymark/features/journal/domain/journal_domain.dart';
 import 'package:daymark/l10n/app_localizations.dart';
+import 'package:daymark/presentation/app_section_scope.dart';
+import 'package:daymark/presentation/daymark_notice.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import 'entry_capture_undo.dart';
 import 'entry_collection_reference_dialog.dart';
 import 'journal_activity_guard.dart';
 import 'task_collection_migration_dialog.dart';
@@ -99,12 +104,16 @@ class TodayScreen extends ConsumerStatefulWidget {
 class _TodayScreenState extends ConsumerState<TodayScreen>
     with WidgetsBindingObserver {
   final TextEditingController _entryController = TextEditingController();
+  final FocusNode _entryFocusNode = FocusNode();
 
   late DateTime _today;
   late Future<DailyLogSnapshot> _snapshotFuture;
   Timer? _dayRolloverTimer;
   JournalEntryType _entryType = JournalEntryType.task;
   bool _saving = false;
+  bool _reflecting = false;
+  bool _sectionScopeInitialized = false;
+  bool _wasTodaySectionActive = false;
   String? _entryActionId;
 
   @override
@@ -114,6 +123,32 @@ class _TodayScreenState extends ConsumerState<TodayScreen>
     _today = _dateOnly(DateTime.now());
     _snapshotFuture = _loadSnapshot();
     _scheduleDayRollover();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+
+    final int? currentSectionIndex = AppSectionScope.maybeCurrentIndexOf(
+      context,
+    );
+    if (currentSectionIndex == null) {
+      return;
+    }
+
+    final bool isTodaySectionActive =
+        currentSectionIndex == AppSectionScope.todaySectionIndex;
+    if (_sectionScopeInitialized &&
+        isTodaySectionActive &&
+        !_wasTodaySectionActive &&
+        !_reflecting &&
+        !_saving &&
+        _entryActionId == null) {
+      _restoreComposerFocus();
+    }
+
+    _sectionScopeInitialized = true;
+    _wasTodaySectionActive = isTodaySectionActive;
   }
 
   @override
@@ -128,12 +163,14 @@ class _TodayScreenState extends ConsumerState<TodayScreen>
     WidgetsBinding.instance.removeObserver(this);
     _dayRolloverTimer?.cancel();
     _entryController.dispose();
+    _entryFocusNode.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = AppLocalizations.of(context);
+    final bool busy = _saving || _entryActionId != null;
 
     return SafeArea(
       child: Padding(
@@ -150,6 +187,15 @@ class _TodayScreenState extends ConsumerState<TodayScreen>
                   ),
                 ),
                 IconButton(
+                  onPressed: busy ? null : _toggleReflection,
+                  tooltip: _reflecting
+                      ? l10n.finishReflection
+                      : l10n.startReflection,
+                  icon: Icon(
+                    _reflecting ? Icons.fact_check : Icons.fact_check_outlined,
+                  ),
+                ),
+                IconButton(
                   onPressed: _openHistory,
                   tooltip: l10n.dailyHistory,
                   icon: const Icon(Icons.history),
@@ -161,6 +207,13 @@ class _TodayScreenState extends ConsumerState<TodayScreen>
                 ),
               ],
             ),
+            if (_reflecting) ...[
+              const SizedBox(height: 8),
+              Text(
+                l10n.dailyReflectionPrompt,
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+            ],
             const SizedBox(height: 16),
             Expanded(
               child: FutureBuilder<DailyLogSnapshot>(
@@ -176,8 +229,11 @@ class _TodayScreenState extends ConsumerState<TodayScreen>
                 },
               ),
             ),
-            const SizedBox(height: 12),
-            _buildComposer(l10n),
+            const DaymarkNoticeRegion(),
+            if (!_reflecting) ...[
+              const SizedBox(height: 12),
+              _buildComposer(l10n),
+            ],
           ],
         ),
       ),
@@ -189,13 +245,22 @@ class _TodayScreenState extends ConsumerState<TodayScreen>
     AppLocalizations l10n,
     DailyLogSnapshot snapshot,
   ) {
-    if (snapshot.entries.isEmpty) {
+    final List<DailyLogEntry> visibleEntries = _reflecting
+        ? <DailyLogEntry>[
+            for (final DailyLogEntry entry in snapshot.entries)
+              if (entry.type == JournalEntryType.task &&
+                  entry.taskState == JournalTaskState.open)
+                entry,
+          ]
+        : snapshot.entries;
+
+    if (visibleEntries.isEmpty) {
       return Align(
         alignment: AlignmentDirectional.topStart,
         child: Padding(
           padding: const EdgeInsets.only(top: 24),
           child: Text(
-            l10n.emptyDailyLog,
+            _reflecting ? l10n.dailyReflectionEmpty : l10n.emptyDailyLog,
             style: Theme.of(context).textTheme.bodyLarge,
           ),
         ),
@@ -203,98 +268,106 @@ class _TodayScreenState extends ConsumerState<TodayScreen>
     }
 
     return ListView.separated(
-      itemCount: snapshot.entries.length,
+      itemCount: visibleEntries.length,
       separatorBuilder: (context, index) => const SizedBox(height: 6),
       itemBuilder: (context, index) {
-        final DailyLogEntry entry = snapshot.entries[index];
+        final DailyLogEntry entry = visibleEntries[index];
         final TextStyle? entryStyle = Theme.of(context).textTheme.bodyLarge;
         return Padding(
           padding: const EdgeInsets.symmetric(vertical: 5),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              SizedBox(
-                width: 28,
-                child: _buildEntryMarker(context, l10n, entry),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  entry.content,
-                  style: entry.taskState == JournalTaskState.discarded
-                      ? entryStyle?.copyWith(
-                          decoration: TextDecoration.lineThrough,
-                        )
-                      : entryStyle,
-                ),
-              ),
-            ],
-          ),
+          child: _buildEntryRow(context, l10n, entry, entryStyle),
         );
       },
     );
   }
 
-  Widget _buildEntryMarker(
+  Widget _buildEntryRow(
     BuildContext context,
     AppLocalizations l10n,
     DailyLogEntry entry,
+    TextStyle? entryStyle,
   ) {
-    if (_entryActionId == entry.id) {
-      return const Center(
-        child: SizedBox.square(
-          dimension: 16,
-          child: CircularProgressIndicator(strokeWidth: 2),
-        ),
-      );
-    }
-
+    final bool actionInProgress = _entryActionId == entry.id;
     final TextStyle? markerStyle = Theme.of(context).textTheme.titleMedium;
-    final Text marker = Text(
-      _entrySymbol(entry),
-      textAlign: TextAlign.center,
-      style: entry.taskState == JournalTaskState.discarded
-          ? markerStyle?.copyWith(decoration: TextDecoration.lineThrough)
-          : markerStyle,
+    final Widget marker = actionInProgress
+        ? const Center(
+            child: SizedBox.square(
+              dimension: 16,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+          )
+        : Text(
+            _entrySymbol(entry),
+            textAlign: TextAlign.center,
+            style: entry.taskState == JournalTaskState.discarded
+                ? markerStyle?.copyWith(decoration: TextDecoration.lineThrough)
+                : markerStyle,
+          );
+    final Widget row = Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(width: 28, child: marker),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Semantics(
+            label: _entrySemanticLabel(l10n, entry),
+            child: ExcludeSemantics(
+              child: Text(
+                entry.content,
+                style: entry.taskState == JournalTaskState.discarded
+                    ? entryStyle?.copyWith(
+                        decoration: TextDecoration.lineThrough,
+                      )
+                    : entryStyle,
+              ),
+            ),
+          ),
+        ),
+      ],
     );
+    if (actionInProgress) return row;
+
     final bool openTask =
         entry.type == JournalEntryType.task &&
         entry.taskState == JournalTaskState.open;
-
-    return PopupMenuButton<_EntryAction>(
-      enabled: _entryActionId == null,
-      tooltip: l10n.entryActions,
-      padding: EdgeInsets.zero,
-      onSelected: (action) {
-        unawaited(_applyEntryAction(entry, action));
-      },
-      itemBuilder: (context) => [
-        if (openTask)
-          PopupMenuItem<_EntryAction>(
-            value: _EntryAction.complete,
-            child: Text(l10n.completeTask),
-          ),
-        if (openTask)
-          PopupMenuItem<_EntryAction>(
-            value: _EntryAction.migrate,
-            child: Text(l10n.migrateTask),
-          ),
-        if (openTask)
-          PopupMenuItem<_EntryAction>(
-            value: _EntryAction.schedule,
-            child: Text(l10n.scheduleTask),
-          ),
-        PopupMenuItem<_EntryAction>(
-          value: _EntryAction.reference,
-          child: Text(l10n.referenceEntry),
-        ),
-        if (openTask)
-          PopupMenuItem<_EntryAction>(
-            value: _EntryAction.discard,
-            child: Text(l10n.discardTask),
-          ),
-      ],
-      child: marker,
+    return SizedBox(
+      width: double.infinity,
+      child: PopupMenuButton<_EntryAction>(
+        enabled: _entryActionId == null,
+        tooltip: l10n.entryActions,
+        padding: EdgeInsets.zero,
+        onSelected: (action) {
+          unawaited(_applyEntryAction(entry, action));
+        },
+        itemBuilder: (context) => [
+          if (openTask)
+            PopupMenuItem(
+              value: _EntryAction.complete,
+              child: Text(l10n.completeTask),
+            ),
+          if (openTask)
+            PopupMenuItem(
+              value: _EntryAction.migrate,
+              child: Text(l10n.migrateTask),
+            ),
+          if (openTask)
+            PopupMenuItem(
+              value: _EntryAction.schedule,
+              child: Text(l10n.scheduleTask),
+            ),
+          if (!_reflecting)
+            PopupMenuItem(
+              value: _EntryAction.reference,
+              child: Text(l10n.referenceEntry),
+            ),
+          if (openTask)
+            PopupMenuItem(
+              value: _EntryAction.discard,
+              child: Text(l10n.discardTask),
+            ),
+        ],
+        child: row,
+      ),
     );
   }
 
@@ -330,15 +403,20 @@ class _TodayScreenState extends ConsumerState<TodayScreen>
         ),
         const SizedBox(width: 12),
         Expanded(
-          child: TextField(
-            controller: _entryController,
-            enabled: !_saving,
-            minLines: 1,
-            maxLines: 4,
-            onChanged: (_) => JournalActivityGuard.recordActivity(context),
-            decoration: InputDecoration(
-              hintText: l10n.rapidLogHint,
-              isDense: true,
+          child: Focus(
+            onKeyEvent: _handleComposerKeyEvent,
+            child: TextField(
+              controller: _entryController,
+              focusNode: _entryFocusNode,
+              autofocus: defaultTargetPlatform == TargetPlatform.linux,
+              enabled: !_saving,
+              minLines: 1,
+              maxLines: 4,
+              onChanged: (_) => JournalActivityGuard.recordActivity(context),
+              decoration: InputDecoration(
+                hintText: l10n.rapidLogHint,
+                isDense: true,
+              ),
             ),
           ),
         ),
@@ -365,6 +443,16 @@ class _TodayScreenState extends ConsumerState<TodayScreen>
     return _dataSource().load(formatJournalMethodDate(_today));
   }
 
+  KeyEventResult _handleComposerKeyEvent(FocusNode node, KeyEvent event) {
+    if (event is KeyDownEvent &&
+        event.logicalKey == LogicalKeyboardKey.enter &&
+        HardwareKeyboard.instance.isControlPressed) {
+      unawaited(_capture());
+      return KeyEventResult.handled;
+    }
+    return KeyEventResult.ignored;
+  }
+
   Future<void> _capture() async {
     final String content = _entryController.text.trim();
     if (content.isEmpty || _saving) {
@@ -377,29 +465,70 @@ class _TodayScreenState extends ConsumerState<TodayScreen>
     try {
       final TodayJournalDataSource dataSource = _dataSource();
       final DailyLogSnapshot snapshot = await _snapshotFuture;
+      final Set<String> beforeEntryIds = <String>{
+        for (final DailyLogEntry entry in snapshot.entries) entry.id,
+      };
       await dataSource.capture(
         logId: snapshot.logId,
         type: _entryType,
         content: content,
       );
+      final DailyLogSnapshot updatedSnapshot = await dataSource.load(
+        formatJournalMethodDate(_today),
+      );
+      final List<String> capturedEntryIds = <String>[
+        for (final DailyLogEntry entry in updatedSnapshot.entries)
+          if (!beforeEntryIds.contains(entry.id)) entry.id,
+      ];
 
-      if (!mounted) {
-        return;
-      }
-
+      if (!mounted) return;
       _entryController.clear();
       setState(() {
-        _snapshotFuture = dataSource.load(formatJournalMethodDate(_today));
+        _snapshotFuture = Future<DailyLogSnapshot>.value(updatedSnapshot);
         _saving = false;
       });
+      if (capturedEntryIds.length == 1) {
+        _showCaptureUndo(capturedEntryIds.single);
+      }
+      _restoreComposerFocus();
     } catch (error, stackTrace) {
       _reportUnexpectedJournalError('capture', error, stackTrace);
       if (!mounted) {
         return;
       }
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(l10n.saveEntryFailed)));
+      ref.read(daymarkNoticeProvider.notifier).showError(l10n.saveEntryFailed);
       setState(() => _saving = false);
+    }
+  }
+
+  void _showCaptureUndo(String entryId) {
+    final AppLocalizations l10n = AppLocalizations.of(context);
+    ref
+        .read(daymarkNoticeProvider.notifier)
+        .showUndo(
+          message: l10n.entryCreated,
+          actionLabel: l10n.undo,
+          onUndo: () => _undoCapture(entryId),
+        );
+  }
+
+  Future<void> _undoCapture(String entryId) async {
+    JournalActivityGuard.recordActivity(context);
+    try {
+      await ref
+          .read(entryCaptureUndoDataSourceProvider)
+          .undoCapture(entryId: entryId);
+      if (!mounted) return;
+      setState(() {
+        _snapshotFuture = _dataSource().load(formatJournalMethodDate(_today));
+      });
+      _restoreComposerFocus();
+    } catch (error, stackTrace) {
+      _reportUnexpectedJournalError('capture undo', error, stackTrace);
+      if (!mounted) return;
+      ref
+          .read(daymarkNoticeProvider.notifier)
+          .showError(AppLocalizations.of(context).undoCaptureFailed);
     }
   }
 
@@ -451,6 +580,8 @@ class _TodayScreenState extends ConsumerState<TodayScreen>
       }
     }
 
+    // Any deliberate journal action supersedes the short-lived capture Undo.
+    ref.read(daymarkNoticeProvider.notifier).dismiss();
     final AppLocalizations l10n = AppLocalizations.of(context);
     setState(() => _entryActionId = entry.id);
 
@@ -509,10 +640,34 @@ class _TodayScreenState extends ConsumerState<TodayScreen>
       final String message = action == _EntryAction.reference
           ? l10n.referenceEntryFailed
           : l10n.taskActionFailed;
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(message)));
+      ref.read(daymarkNoticeProvider.notifier).showError(message);
       setState(() => _entryActionId = null);
     }
+  }
+
+  void _toggleReflection() {
+    if (_saving || _entryActionId != null) {
+      return;
+    }
+
+    final bool enteringReflection = !_reflecting;
+    setState(() => _reflecting = enteringReflection);
+    if (enteringReflection) {
+      _entryFocusNode.unfocus();
+      return;
+    }
+    _restoreComposerFocus();
+  }
+
+  void _restoreComposerFocus() {
+    if (defaultTargetPlatform != TargetPlatform.linux) {
+      return;
+    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && !_reflecting && !_saving) {
+        _entryFocusNode.requestFocus();
+      }
+    });
   }
 
   void _openHistory() {
@@ -539,9 +694,11 @@ class _TodayScreenState extends ConsumerState<TodayScreen>
       setState(() {
         _today = currentDate;
         _snapshotFuture = _loadSnapshot();
+        _reflecting = false;
       });
     }
     _scheduleDayRollover();
+    _restoreComposerFocus();
   }
 
   void _scheduleDayRollover() {
@@ -571,6 +728,26 @@ String _entrySymbol(DailyLogEntry entry) => switch (entry.type) {
   JournalEntryType.event => '○',
   JournalEntryType.note => '–',
 };
+
+String _entrySemanticLabel(AppLocalizations l10n, DailyLogEntry entry) {
+  final String typeLabel = switch (entry.type) {
+    JournalEntryType.task => l10n.entryTask,
+    JournalEntryType.event => l10n.entryEvent,
+    JournalEntryType.note => l10n.entryNote,
+  };
+  if (entry.type != JournalEntryType.task) {
+    return '$typeLabel, ${entry.content}';
+  }
+
+  final String stateLabel = switch (entry.taskState) {
+    JournalTaskState.completed => l10n.taskStateCompleted,
+    JournalTaskState.migrated => l10n.taskStateMigrated,
+    JournalTaskState.scheduled => l10n.taskStateScheduled,
+    JournalTaskState.discarded => l10n.taskStateDiscarded,
+    JournalTaskState.open || null => l10n.taskStateOpen,
+  };
+  return '$typeLabel, $stateLabel, ${entry.content}';
+}
 
 void _reportUnexpectedJournalError(
   String operation,

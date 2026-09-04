@@ -80,6 +80,15 @@
   "scheduleTaskTitle": "Schedule task",
   "discardTask": "Discard",
   "taskActionFailed": "Could not update this task.",
+  "startReflection": "Start reflection",
+  "finishReflection": "Finish reflection",
+  "dailyReflectionPrompt": "Review each open Task and deliberately decide what happens to it.",
+  "dailyReflectionEmpty": "No open Tasks to reflect on.",
+  "taskStateOpen": "Open",
+  "taskStateCompleted": "Completed",
+  "taskStateMigrated": "Migrated",
+  "taskStateScheduled": "Scheduled",
+  "taskStateDiscarded": "Discarded",
   "monthlyCalendar": "Calendar",
   "monthlyTasks": "Tasks",
   "monthlyLogLoadFailed": "Could not load this Monthly Log.",
@@ -125,5 +134,8 @@
   "moveIndexItemUp": "Move up",
   "moveIndexItemDown": "Move down",
   "removeIndexItem": "Remove from Index",
-  "indexItemUpdateFailed": "Could not update this Index item."
+  "indexItemUpdateFailed": "Could not update this Index item.",
+  "entryCreated": "Entry created.",
+  "undo": "Undo",
+  "undoCaptureFailed": "Could not undo this capture."
 }

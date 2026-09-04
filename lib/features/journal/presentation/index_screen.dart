@@ -7,6 +7,7 @@ import 'package:daymark/features/journal/data/index_repository.dart';
 import 'package:daymark/features/journal/domain/journal_domain.dart';
 import 'package:daymark/features/journal/presentation/source_navigation.dart';
 import 'package:daymark/l10n/app_localizations.dart';
+import 'package:daymark/presentation/daymark_notice.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -174,6 +175,7 @@ class _IndexScreenState extends ConsumerState<IndexScreen> {
                 },
               ),
             ),
+            const DaymarkNoticeRegion(),
           ],
         ),
       ),
@@ -206,8 +208,7 @@ class _IndexScreenState extends ConsumerState<IndexScreen> {
       return;
     }
     if (candidates.isEmpty) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(l10n.noIndexCandidates)));
+      ref.read(daymarkNoticeProvider.notifier).showInfo(l10n.noIndexCandidates);
       return;
     }
 
@@ -390,9 +391,7 @@ class _IndexScreenState extends ConsumerState<IndexScreen> {
   }
 
   void _showError(String message) {
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(content: Text(message)));
+    ref.read(daymarkNoticeProvider.notifier).showError(message);
   }
 }
 

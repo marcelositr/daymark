@@ -6,10 +6,14 @@ import 'package:daymark/features/journal/data/collection_repository.dart';
 import 'package:daymark/features/journal/domain/journal_domain.dart';
 import 'package:daymark/l10n/app_localizations.dart';
 import 'package:daymark/presentation/app_section_scope.dart';
+import 'package:daymark/presentation/daymark_notice.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import 'entry_capture_undo.dart';
 import 'journal_activity_guard.dart';
 
 abstract interface class CollectionsJournalDataSource {
@@ -114,6 +118,8 @@ class CollectionsScreen extends ConsumerStatefulWidget {
 class _CollectionsScreenState extends ConsumerState<CollectionsScreen> {
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _entryController = TextEditingController();
+  final FocusNode _titleFocusNode = FocusNode();
+  final FocusNode _entryFocusNode = FocusNode();
 
   late Future<List<CollectionSummary>> _collectionsFuture;
   Future<CollectionSnapshot>? _collectionFuture;
@@ -155,6 +161,7 @@ class _CollectionsScreenState extends ConsumerState<CollectionsScreen> {
       if (collectionId != null) {
         _collectionFuture = _dataSource().load(collectionId);
       }
+      _restoreActiveFocus();
     }
     _sectionScopeInitialized = true;
     _wasCollectionsSectionActive = isCollectionsSectionActive;
@@ -164,6 +171,8 @@ class _CollectionsScreenState extends ConsumerState<CollectionsScreen> {
   void dispose() {
     _titleController.dispose();
     _entryController.dispose();
+    _titleFocusNode.dispose();
+    _entryFocusNode.dispose();
     super.dispose();
   }
 
@@ -233,13 +242,20 @@ class _CollectionsScreenState extends ConsumerState<CollectionsScreen> {
             },
           ),
         ),
+        const DaymarkNoticeRegion(),
         const SizedBox(height: 12),
         Row(
           children: [
             Expanded(
               child: TextField(
                 controller: _titleController,
+                focusNode: _titleFocusNode,
+                autofocus:
+                    defaultTargetPlatform == TargetPlatform.linux &&
+                    _selectedCollectionId == null,
                 enabled: !_saving,
+                textInputAction: TextInputAction.done,
+                onSubmitted: (_) => unawaited(_createCollection()),
                 onChanged: (_) => JournalActivityGuard.recordActivity(context),
                 decoration: InputDecoration(
                   hintText: l10n.collectionTitleHint,
@@ -295,6 +311,7 @@ class _CollectionsScreenState extends ConsumerState<CollectionsScreen> {
             ),
             const SizedBox(height: 16),
             Expanded(child: _buildCollectionContent(l10n, collection)),
+            const DaymarkNoticeRegion(),
             const SizedBox(height: 12),
             SegmentedButton<JournalEntryType>(
               showSelectedIcon: false,
@@ -323,16 +340,23 @@ class _CollectionsScreenState extends ConsumerState<CollectionsScreen> {
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 Expanded(
-                  child: TextField(
-                    controller: _entryController,
-                    enabled: !_saving,
-                    minLines: 1,
-                    maxLines: 4,
-                    onChanged: (_) =>
-                        JournalActivityGuard.recordActivity(context),
-                    decoration: InputDecoration(
-                      hintText: l10n.collectionEntryHint,
-                      isDense: true,
+                  child: Focus(
+                    onKeyEvent: _handleEntryComposerKeyEvent,
+                    child: TextField(
+                      controller: _entryController,
+                      focusNode: _entryFocusNode,
+                      autofocus:
+                          defaultTargetPlatform == TargetPlatform.linux &&
+                          _selectedCollectionId != null,
+                      enabled: !_saving,
+                      minLines: 1,
+                      maxLines: 4,
+                      onChanged: (_) =>
+                          JournalActivityGuard.recordActivity(context),
+                      decoration: InputDecoration(
+                        hintText: l10n.collectionEntryHint,
+                        isDense: true,
+                      ),
                     ),
                   ),
                 ),
@@ -396,7 +420,7 @@ class _CollectionsScreenState extends ConsumerState<CollectionsScreen> {
     final bool discarded = entry.taskState == JournalTaskState.discarded;
     final TextStyle? contentStyle = Theme.of(context).textTheme.bodyLarge;
     final TextStyle? markerStyle = Theme.of(context).textTheme.titleMedium;
-    return Row(
+    final Widget row = Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         SizedBox(
@@ -418,59 +442,49 @@ class _CollectionsScreenState extends ConsumerState<CollectionsScreen> {
                 : contentStyle,
           ),
         ),
-        PopupMenuButton<_CollectionReferenceAction>(
-          enabled: !_saving,
-          tooltip: l10n.referenceActions,
-          onSelected: (_) => unawaited(_removeReference(entry)),
-          itemBuilder: (context) => [
-            PopupMenuItem<_CollectionReferenceAction>(
-              value: _CollectionReferenceAction.remove,
-              child: Text(l10n.removeCollectionReference),
-            ),
-          ],
-        ),
       ],
+    );
+    return SizedBox(
+      width: double.infinity,
+      child: PopupMenuButton<_CollectionReferenceAction>(
+        enabled: !_saving,
+        tooltip: l10n.referenceActions,
+        padding: EdgeInsets.zero,
+        onSelected: (_) => unawaited(_removeReference(entry)),
+        itemBuilder: (context) => [
+          PopupMenuItem(
+            value: _CollectionReferenceAction.remove,
+            child: Text(l10n.removeCollectionReference),
+          ),
+        ],
+        child: row,
+      ),
     );
   }
 
   Widget _buildEntry(AppLocalizations l10n, CollectionEntry entry) {
     final TextStyle? style = Theme.of(context).textTheme.bodyLarge;
     final bool discarded = entry.taskState == JournalTaskState.discarded;
-    final Text marker = Text(
-      _entrySymbol(entry.type, entry.taskState),
-      style: discarded
-          ? Theme.of(context).textTheme.titleMedium
-                ?.copyWith(decoration: TextDecoration.lineThrough)
-          : Theme.of(context).textTheme.titleMedium,
-      textAlign: TextAlign.center,
-    );
-
-    Widget leading = marker;
-    if (entry.type == JournalEntryType.task &&
-        entry.taskState == JournalTaskState.open) {
-      leading = PopupMenuButton<_CollectionTaskAction>(
-        enabled: _taskActionEntryId == null,
-        tooltip: l10n.taskActions,
-        padding: EdgeInsets.zero,
-        onSelected: (action) => unawaited(_applyTaskAction(entry, action)),
-        itemBuilder: (context) => [
-          PopupMenuItem(
-            value: _CollectionTaskAction.complete,
-            child: Text(l10n.completeTask),
-          ),
-          PopupMenuItem(
-            value: _CollectionTaskAction.discard,
-            child: Text(l10n.discardTask),
-          ),
-        ],
-        child: marker,
-      );
-    }
-
-    return Row(
+    final bool actionInProgress = _taskActionEntryId == entry.id;
+    final Widget marker = actionInProgress
+        ? const Center(
+            child: SizedBox.square(
+              dimension: 16,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+          )
+        : Text(
+            _entrySymbol(entry.type, entry.taskState),
+            style: discarded
+                ? Theme.of(context).textTheme.titleMedium
+                      ?.copyWith(decoration: TextDecoration.lineThrough)
+                : Theme.of(context).textTheme.titleMedium,
+            textAlign: TextAlign.center,
+          );
+    final Widget row = Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        SizedBox(width: 28, child: leading),
+        SizedBox(width: 28, child: marker),
         const SizedBox(width: 8),
         Expanded(
           child: Text(
@@ -482,6 +496,59 @@ class _CollectionsScreenState extends ConsumerState<CollectionsScreen> {
         ),
       ],
     );
+    final bool openTask =
+        entry.type == JournalEntryType.task &&
+        entry.taskState == JournalTaskState.open;
+    if (!openTask || actionInProgress) return row;
+
+    return SizedBox(
+      width: double.infinity,
+      child: PopupMenuButton<_CollectionTaskAction>(
+        enabled: _taskActionEntryId == null,
+        tooltip: l10n.taskActions,
+        padding: EdgeInsets.zero,
+        onSelected: (action) {
+          unawaited(_applyTaskAction(entry, action));
+        },
+        itemBuilder: (context) => [
+          PopupMenuItem(
+            value: _CollectionTaskAction.complete,
+            child: Text(l10n.completeTask),
+          ),
+          PopupMenuItem(
+            value: _CollectionTaskAction.discard,
+            child: Text(l10n.discardTask),
+          ),
+        ],
+        child: row,
+      ),
+    );
+  }
+
+  KeyEventResult _handleEntryComposerKeyEvent(FocusNode node, KeyEvent event) {
+    if (event is KeyDownEvent &&
+        event.logicalKey == LogicalKeyboardKey.enter &&
+        HardwareKeyboard.instance.isControlPressed) {
+      unawaited(_capture());
+      return KeyEventResult.handled;
+    }
+    return KeyEventResult.ignored;
+  }
+
+  void _restoreActiveFocus() {
+    if (defaultTargetPlatform != TargetPlatform.linux || _saving) {
+      return;
+    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || _saving) {
+        return;
+      }
+      if (_selectedCollectionId == null) {
+        _titleFocusNode.requestFocus();
+      } else {
+        _entryFocusNode.requestFocus();
+      }
+    });
   }
 
   CollectionsJournalDataSource _dataSource() {
@@ -493,6 +560,7 @@ class _CollectionsScreenState extends ConsumerState<CollectionsScreen> {
       _selectedCollectionId = collectionId;
       _collectionFuture = _dataSource().load(collectionId);
     });
+    _restoreActiveFocus();
   }
 
   void _backToList() {
@@ -505,6 +573,7 @@ class _CollectionsScreenState extends ConsumerState<CollectionsScreen> {
       _collectionFuture = null;
       _collectionsFuture = _dataSource().list();
     });
+    _restoreActiveFocus();
   }
 
   Future<void> _createCollection() async {
@@ -522,11 +591,13 @@ class _CollectionsScreenState extends ConsumerState<CollectionsScreen> {
         _collectionsFuture = _dataSource().list();
         _saving = false;
       });
+      _restoreActiveFocus();
     } catch (error, stackTrace) {
       _reportUnexpectedCollectionsError('create', error, stackTrace);
       if (!mounted) return;
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(l10n.createCollectionFailed)));
+      ref
+          .read(daymarkNoticeProvider.notifier)
+          .showError(l10n.createCollectionFailed);
       setState(() => _saving = false);
     }
   }
@@ -538,23 +609,71 @@ class _CollectionsScreenState extends ConsumerState<CollectionsScreen> {
     final AppLocalizations l10n = AppLocalizations.of(context);
     setState(() => _saving = true);
     try {
+      final CollectionSnapshot beforeSnapshot = await _collectionFuture!;
+      final Set<String> beforeEntryIds = <String>{
+        for (final CollectionEntry entry in beforeSnapshot.entries) entry.id,
+      };
       await _dataSource().capture(
         collectionId: collectionId,
         type: _entryType,
         content: content,
       );
+      final CollectionSnapshot updatedSnapshot = await _dataSource().load(
+        collectionId,
+      );
+      final List<String> capturedEntryIds = <String>[
+        for (final CollectionEntry entry in updatedSnapshot.entries)
+          if (!beforeEntryIds.contains(entry.id)) entry.id,
+      ];
       if (!mounted) return;
       _entryController.clear();
       setState(() {
-        _collectionFuture = _dataSource().load(collectionId);
+        _collectionFuture = Future<CollectionSnapshot>.value(updatedSnapshot);
         _saving = false;
       });
+      if (capturedEntryIds.length == 1) {
+        _showCaptureUndo(capturedEntryIds.single);
+      }
+      _restoreActiveFocus();
     } catch (error, stackTrace) {
       _reportUnexpectedCollectionsError('capture', error, stackTrace);
       if (!mounted) return;
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(l10n.saveEntryFailed)));
+      ref.read(daymarkNoticeProvider.notifier).showError(l10n.saveEntryFailed);
       setState(() => _saving = false);
+    }
+  }
+
+  void _showCaptureUndo(String entryId) {
+    final AppLocalizations l10n = AppLocalizations.of(context);
+    ref
+        .read(daymarkNoticeProvider.notifier)
+        .showUndo(
+          message: l10n.entryCreated,
+          actionLabel: l10n.undo,
+          onUndo: () => _undoCapture(entryId),
+        );
+  }
+
+  Future<void> _undoCapture(String entryId) async {
+    JournalActivityGuard.recordActivity(context);
+    try {
+      await ref
+          .read(entryCaptureUndoDataSourceProvider)
+          .undoCapture(entryId: entryId);
+      if (!mounted) return;
+      final String? collectionId = _selectedCollectionId;
+      if (collectionId != null) {
+        setState(() {
+          _collectionFuture = _dataSource().load(collectionId);
+        });
+      }
+      _restoreActiveFocus();
+    } catch (error, stackTrace) {
+      _reportUnexpectedCollectionsError('capture undo', error, stackTrace);
+      if (!mounted) return;
+      ref
+          .read(daymarkNoticeProvider.notifier)
+          .showError(AppLocalizations.of(context).undoCaptureFailed);
     }
   }
 
@@ -564,6 +683,8 @@ class _CollectionsScreenState extends ConsumerState<CollectionsScreen> {
   ) async {
     final String? collectionId = _selectedCollectionId;
     if (collectionId == null || _taskActionEntryId != null) return;
+    // Any deliberate journal action supersedes the short-lived capture Undo.
+    ref.read(daymarkNoticeProvider.notifier).dismiss();
     final AppLocalizations l10n = AppLocalizations.of(context);
     setState(() => _taskActionEntryId = entry.id);
     try {
@@ -581,8 +702,7 @@ class _CollectionsScreenState extends ConsumerState<CollectionsScreen> {
     } catch (error, stackTrace) {
       _reportUnexpectedCollectionsError('task action', error, stackTrace);
       if (!mounted) return;
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(l10n.taskActionFailed)));
+      ref.read(daymarkNoticeProvider.notifier).showError(l10n.taskActionFailed);
       setState(() => _taskActionEntryId = null);
     }
   }
@@ -612,9 +732,9 @@ class _CollectionsScreenState extends ConsumerState<CollectionsScreen> {
       if (!mounted) {
         return;
       }
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.removeCollectionReferenceFailed)),
-      );
+      ref
+          .read(daymarkNoticeProvider.notifier)
+          .showError(l10n.removeCollectionReferenceFailed);
       setState(() => _saving = false);
     }
   }

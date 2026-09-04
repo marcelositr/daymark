@@ -12,6 +12,8 @@ final class AppSectionScope extends InheritedNotifier<ValueNotifier<int>> {
     super.key,
   }) : super(notifier: currentIndex);
 
+  static const int todaySectionIndex = 0;
+  static const int monthlySectionIndex = 1;
   static const int futureSectionIndex = 2;
   static const int collectionsSectionIndex = 3;
   static const int searchSectionIndex = 4;

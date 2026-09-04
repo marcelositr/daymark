@@ -33,7 +33,8 @@ void main() {
     expect(entry.taskState, JournalTaskState.open);
     expect(entry.content, 'Renew passport');
     expect(find.text('•'), findsOneWidget);
-    expect(find.byType(SnackBar), findsNothing);
+    expect(find.text('Entry created.'), findsOneWidget);
+    expect(find.text('Undo'), findsOneWidget);
 
     await tester.pumpWidget(const SizedBox.shrink());
   });
@@ -137,7 +138,7 @@ void main() {
 
     await _pumpFuture(tester, dataSource);
 
-    await tester.tap(find.text('•'));
+    await tester.tap(find.text('Book lodging'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Complete'));
     await tester.pumpAndSettle();

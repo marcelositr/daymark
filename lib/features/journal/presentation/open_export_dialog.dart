@@ -5,6 +5,7 @@ import 'package:daymark/core/export/export_file_gateway.dart';
 import 'package:daymark/core/export/open_export_service.dart';
 import 'package:daymark/core/session/journal_session_controller.dart';
 import 'package:daymark/l10n/app_localizations.dart';
+import 'package:daymark/presentation/daymark_notice.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -19,8 +20,7 @@ Future<void> showOpenExportDialog(BuildContext context) async {
 
   if (saved == true && context.mounted) {
     final AppLocalizations l10n = AppLocalizations.of(context);
-    ScaffoldMessenger.of(context)
-        .showSnackBar(SnackBar(content: Text(l10n.openExportSaved)));
+    daymarkNoticeControllerOf(context).showInfo(l10n.openExportSaved);
   }
 }
 

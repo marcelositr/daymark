@@ -80,6 +80,15 @@
   "scheduleTaskTitle": "Agendar tarefa",
   "discardTask": "Descartar",
   "taskActionFailed": "Não foi possível atualizar esta tarefa.",
+  "startReflection": "Iniciar reflexão",
+  "finishReflection": "Encerrar reflexão",
+  "dailyReflectionPrompt": "Revise cada tarefa aberta e decida conscientemente o que fazer com ela.",
+  "dailyReflectionEmpty": "Nenhuma tarefa aberta para refletir.",
+  "taskStateOpen": "Aberta",
+  "taskStateCompleted": "Concluída",
+  "taskStateMigrated": "Migrada",
+  "taskStateScheduled": "Agendada",
+  "taskStateDiscarded": "Descartada",
   "monthlyCalendar": "Calendário",
   "monthlyTasks": "Tarefas",
   "monthlyLogLoadFailed": "Não foi possível carregar este Registro Mensal.",
@@ -125,5 +134,8 @@
   "moveIndexItemUp": "Mover para cima",
   "moveIndexItemDown": "Mover para baixo",
   "removeIndexItem": "Remover do Índice",
-  "indexItemUpdateFailed": "Não foi possível atualizar este item do Índice."
+  "indexItemUpdateFailed": "Não foi possível atualizar este item do Índice.",
+  "entryCreated": "Entrada criada.",
+  "undo": "Desfazer",
+  "undoCaptureFailed": "Não foi possível desfazer esta captura."
 }

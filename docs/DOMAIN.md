@@ -165,6 +165,17 @@ This distinction prevents Collections from becoming a hidden second task manager
 
 The current product exposes deliberate references from Today, Monthly, and Future entries into an existing Collection. A reference keeps the same Entry identity, owner, content, and Task state; the Collection presents it separately as read-only content rather than granting ownership-level Task actions.
 
+## Immediate capture undo
+
+Immediate capture Undo is a narrow correction operation for an accidental fresh
+capture. It is not `discarded`, is not an Entry type or Task state, and must not
+become a generic historical delete path.
+
+The operation may destroy only an Entry that is still pristine after capture.
+If the Entry has been semantically changed or participates in migration,
+scheduling, Collection references, signifiers, or other journal relationships,
+Undo must fail rather than rewrite history.
+
 ## Identity and history
 
 Every persisted entry must have a stable identifier independent of its text, date, symbol, language, or screen position.

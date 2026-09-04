@@ -30,6 +30,10 @@ final class JournalService {
     return _repository.createEntry(type: type, content: content, owner: owner);
   }
 
+  Future<void> undoCapture({required String entryId}) {
+    return _repository.undoCapture(entryId: entryId);
+  }
+
   Future<void> referenceInCollection({
     required String collectionId,
     required String entryId,

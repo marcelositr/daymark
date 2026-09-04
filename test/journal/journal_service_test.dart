@@ -372,6 +372,96 @@ void main() {
     },
   );
 
+  test('capture undo removes a pristine entry and placement', () async {
+    final String dailyLog = await service.createLog(
+      kind: JournalLogKind.daily,
+      periodStart: '2026-09-04',
+    );
+    final String entry = await service.capture(
+      type: JournalEntryType.note,
+      content: 'Typing mistake',
+      owner: JournalLogOwner(logId: dailyLog),
+    );
+
+    await service.undoCapture(entryId: entry);
+
+    final entryCount = await database
+        .customSelect(
+          'SELECT COUNT(*) AS count FROM entries WHERE id = ?',
+          variables: <Variable<Object>>[Variable.withString(entry)],
+        )
+        .getSingle();
+    final placementCount = await database
+        .customSelect(
+          'SELECT COUNT(*) AS count FROM entry_placements WHERE entry_id = ?',
+          variables: <Variable<Object>>[Variable.withString(entry)],
+        )
+        .getSingle();
+
+    expect(entryCount.read<int>('count'), 0);
+    expect(placementCount.read<int>('count'), 0);
+  });
+
+  test('capture undo refuses a Task after its state changes', () async {
+    final String dailyLog = await service.createLog(
+      kind: JournalLogKind.daily,
+      periodStart: '2026-09-04',
+    );
+    final String entry = await service.capture(
+      type: JournalEntryType.task,
+      content: 'Already decided',
+      owner: JournalLogOwner(logId: dailyLog),
+    );
+
+    await database.customStatement(
+      'UPDATE entries SET task_state = ? WHERE id = ?',
+      <Object?>['completed', entry],
+    );
+
+    expect(
+      () => service.undoCapture(entryId: entry),
+      throwsA(isA<JournalInvariantException>()),
+    );
+
+    final row = await database
+        .customSelect(
+          'SELECT task_state FROM entries WHERE id = ?',
+          variables: <Variable<Object>>[Variable.withString(entry)],
+        )
+        .getSingle();
+    expect(row.read<String>('task_state'), 'completed');
+  });
+
+  test('capture undo refuses an entry after a reference', () async {
+    final String dailyLog = await service.createLog(
+      kind: JournalLogKind.daily,
+      periodStart: '2026-09-04',
+    );
+    final String collection = await service.createCollection(title: 'Work');
+    final String entry = await service.capture(
+      type: JournalEntryType.note,
+      content: 'Keep this history',
+      owner: JournalLogOwner(logId: dailyLog),
+    );
+    await service.referenceInCollection(
+      collectionId: collection,
+      entryId: entry,
+    );
+
+    expect(
+      () => service.undoCapture(entryId: entry),
+      throwsA(isA<JournalInvariantException>()),
+    );
+
+    final entryCount = await database
+        .customSelect(
+          'SELECT COUNT(*) AS count FROM entries WHERE id = ?',
+          variables: <Variable<Object>>[Variable.withString(entry)],
+        )
+        .getSingle();
+    expect(entryCount.read<int>('count'), 1);
+  });
+
   test('Monthly and Future period buckets must start on day one', () async {
     expect(
       () => service.createLog(

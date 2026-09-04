@@ -6,9 +6,13 @@ import 'package:daymark/features/journal/data/future_log_repository.dart';
 import 'package:daymark/features/journal/domain/journal_domain.dart';
 import 'package:daymark/l10n/app_localizations.dart';
 import 'package:daymark/presentation/app_section_scope.dart';
+import 'package:daymark/presentation/daymark_notice.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'entry_capture_undo.dart';
 import 'entry_collection_reference_dialog.dart';
 import 'journal_activity_guard.dart';
 
@@ -85,6 +89,7 @@ class _FutureScreenState extends ConsumerState<FutureScreen>
   static const int _visibleMonthCount = 6;
 
   final TextEditingController _entryController = TextEditingController();
+  final FocusNode _entryFocusNode = FocusNode();
 
   late DateTime _anchorMonth;
   late List<DateTime> _months;
@@ -125,6 +130,7 @@ class _FutureScreenState extends ConsumerState<FutureScreen>
         isFutureSectionActive &&
         !_wasFutureSectionActive) {
       _snapshotsFuture = _loadSnapshots();
+      _restoreComposerFocus();
     }
     _sectionScopeInitialized = true;
     _wasFutureSectionActive = isFutureSectionActive;
@@ -142,6 +148,7 @@ class _FutureScreenState extends ConsumerState<FutureScreen>
     WidgetsBinding.instance.removeObserver(this);
     _horizonRolloverTimer?.cancel();
     _entryController.dispose();
+    _entryFocusNode.dispose();
     super.dispose();
   }
 
@@ -185,6 +192,7 @@ class _FutureScreenState extends ConsumerState<FutureScreen>
                 },
               ),
             ),
+            const DaymarkNoticeRegion(),
             const SizedBox(height: 12),
             _buildComposer(context, l10n),
           ],
@@ -247,74 +255,79 @@ class _FutureScreenState extends ConsumerState<FutureScreen>
     final TextStyle? entryStyle = Theme.of(context).textTheme.bodyLarge;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(width: 28, child: _buildEntryMarker(context, l10n, entry)),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              entry.content,
-              style: entry.taskState == JournalTaskState.discarded
-                  ? entryStyle?.copyWith(decoration: TextDecoration.lineThrough)
-                  : entryStyle,
-            ),
-          ),
-        ],
-      ),
+      child: _buildEntryRow(context, l10n, entry, entryStyle),
     );
   }
 
-  Widget _buildEntryMarker(
+  Widget _buildEntryRow(
     BuildContext context,
     AppLocalizations l10n,
     FutureLogEntry entry,
+    TextStyle? entryStyle,
   ) {
-    if (_entryActionId == entry.id) {
-      return const Center(
-        child: SizedBox.square(
-          dimension: 16,
-          child: CircularProgressIndicator(strokeWidth: 2),
-        ),
-      );
-    }
-
+    final bool actionInProgress = _entryActionId == entry.id;
     final TextStyle? markerStyle = Theme.of(context).textTheme.titleMedium;
-    final Text marker = Text(
-      _entrySymbol(entry),
-      textAlign: TextAlign.center,
-      style: entry.taskState == JournalTaskState.discarded
-          ? markerStyle?.copyWith(decoration: TextDecoration.lineThrough)
-          : markerStyle,
+    final Widget marker = actionInProgress
+        ? const Center(
+            child: SizedBox.square(
+              dimension: 16,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+          )
+        : Text(
+            _entrySymbol(entry),
+            textAlign: TextAlign.center,
+            style: entry.taskState == JournalTaskState.discarded
+                ? markerStyle?.copyWith(decoration: TextDecoration.lineThrough)
+                : markerStyle,
+          );
+    final Widget row = Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(width: 28, child: marker),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            entry.content,
+            style: entry.taskState == JournalTaskState.discarded
+                ? entryStyle?.copyWith(decoration: TextDecoration.lineThrough)
+                : entryStyle,
+          ),
+        ),
+      ],
     );
+    if (actionInProgress) return row;
+
     final bool openTask =
         entry.type == JournalEntryType.task &&
         entry.taskState == JournalTaskState.open;
-
-    return PopupMenuButton<_FutureEntryAction>(
-      enabled: _entryActionId == null,
-      tooltip: l10n.entryActions,
-      padding: EdgeInsets.zero,
-      onSelected: (action) {
-        unawaited(_applyEntryAction(entry, action));
-      },
-      itemBuilder: (context) => [
-        if (openTask)
-          PopupMenuItem<_FutureEntryAction>(
-            value: _FutureEntryAction.complete,
-            child: Text(l10n.completeTask),
+    return SizedBox(
+      width: double.infinity,
+      child: PopupMenuButton<_FutureEntryAction>(
+        enabled: _entryActionId == null,
+        tooltip: l10n.entryActions,
+        padding: EdgeInsets.zero,
+        onSelected: (action) {
+          unawaited(_applyEntryAction(entry, action));
+        },
+        itemBuilder: (context) => [
+          if (openTask)
+            PopupMenuItem(
+              value: _FutureEntryAction.complete,
+              child: Text(l10n.completeTask),
+            ),
+          PopupMenuItem(
+            value: _FutureEntryAction.reference,
+            child: Text(l10n.referenceEntry),
           ),
-        PopupMenuItem<_FutureEntryAction>(
-          value: _FutureEntryAction.reference,
-          child: Text(l10n.referenceEntry),
-        ),
-        if (openTask)
-          PopupMenuItem<_FutureEntryAction>(
-            value: _FutureEntryAction.discard,
-            child: Text(l10n.discardTask),
-          ),
-      ],
-      child: marker,
+          if (openTask)
+            PopupMenuItem(
+              value: _FutureEntryAction.discard,
+              child: Text(l10n.discardTask),
+            ),
+        ],
+        child: row,
+      ),
     );
   }
 
@@ -385,15 +398,21 @@ class _FutureScreenState extends ConsumerState<FutureScreen>
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
             Expanded(
-              child: TextField(
-                controller: _entryController,
-                enabled: !_saving,
-                minLines: 1,
-                maxLines: 4,
-                onChanged: (_) => JournalActivityGuard.recordActivity(context),
-                decoration: InputDecoration(
-                  hintText: l10n.futureEntryHint,
-                  isDense: true,
+              child: Focus(
+                onKeyEvent: _handleComposerKeyEvent,
+                child: TextField(
+                  controller: _entryController,
+                  focusNode: _entryFocusNode,
+                  autofocus: defaultTargetPlatform == TargetPlatform.linux,
+                  enabled: !_saving,
+                  minLines: 1,
+                  maxLines: 4,
+                  onChanged: (_) =>
+                      JournalActivityGuard.recordActivity(context),
+                  decoration: InputDecoration(
+                    hintText: l10n.futureEntryHint,
+                    isDense: true,
+                  ),
                 ),
               ),
             ),
@@ -412,6 +431,29 @@ class _FutureScreenState extends ConsumerState<FutureScreen>
         ),
       ],
     );
+  }
+
+  KeyEventResult _handleComposerKeyEvent(FocusNode node, KeyEvent event) {
+    if (event is KeyDownEvent &&
+        event.logicalKey == LogicalKeyboardKey.enter &&
+        HardwareKeyboard.instance.isControlPressed) {
+      unawaited(_capture());
+      return KeyEventResult.handled;
+    }
+    return KeyEventResult.ignored;
+  }
+
+  void _restoreComposerFocus() {
+    if (defaultTargetPlatform != TargetPlatform.linux ||
+        _saving ||
+        _entryActionId != null) {
+      return;
+    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && !_saving && _entryActionId == null) {
+        _entryFocusNode.requestFocus();
+      }
+    });
   }
 
   FutureJournalDataSource _dataSource() {
@@ -445,29 +487,73 @@ class _FutureScreenState extends ConsumerState<FutureScreen>
         (snapshot) => snapshot.periodStart == periodStart,
       );
 
+      final Set<String> beforeEntryIds = <String>{
+        for (final FutureLogEntry entry in target.entries) entry.id,
+      };
       await dataSource.capture(
         logId: target.logId,
         type: entryType,
         content: content,
       );
+      final List<FutureLogSnapshot> updatedSnapshots = await _loadSnapshots();
+      final FutureLogSnapshot updatedTarget = updatedSnapshots.singleWhere(
+        (snapshot) => snapshot.periodStart == periodStart,
+      );
+      final List<String> capturedEntryIds = <String>[
+        for (final FutureLogEntry entry in updatedTarget.entries)
+          if (!beforeEntryIds.contains(entry.id)) entry.id,
+      ];
 
-      if (!mounted) {
-        return;
-      }
-
+      if (!mounted) return;
       _entryController.clear();
       setState(() {
-        _snapshotsFuture = _loadSnapshots();
+        _snapshotsFuture = Future<List<FutureLogSnapshot>>.value(
+          updatedSnapshots,
+        );
         _saving = false;
       });
+      if (capturedEntryIds.length == 1) {
+        _showCaptureUndo(capturedEntryIds.single);
+      }
+      _restoreComposerFocus();
     } catch (error, stackTrace) {
       _reportUnexpectedFutureError('capture', error, stackTrace);
       if (!mounted) {
         return;
       }
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(l10n.saveEntryFailed)));
+      ref.read(daymarkNoticeProvider.notifier).showError(l10n.saveEntryFailed);
       setState(() => _saving = false);
+    }
+  }
+
+  void _showCaptureUndo(String entryId) {
+    final AppLocalizations l10n = AppLocalizations.of(context);
+    ref
+        .read(daymarkNoticeProvider.notifier)
+        .showUndo(
+          message: l10n.entryCreated,
+          actionLabel: l10n.undo,
+          onUndo: () => _undoCapture(entryId),
+        );
+  }
+
+  Future<void> _undoCapture(String entryId) async {
+    JournalActivityGuard.recordActivity(context);
+    try {
+      await ref
+          .read(entryCaptureUndoDataSourceProvider)
+          .undoCapture(entryId: entryId);
+      if (!mounted) return;
+      setState(() {
+        _snapshotsFuture = _loadSnapshots();
+      });
+      _restoreComposerFocus();
+    } catch (error, stackTrace) {
+      _reportUnexpectedFutureError('capture undo', error, stackTrace);
+      if (!mounted) return;
+      ref
+          .read(daymarkNoticeProvider.notifier)
+          .showError(AppLocalizations.of(context).undoCaptureFailed);
     }
   }
 
@@ -496,6 +582,8 @@ class _FutureScreenState extends ConsumerState<FutureScreen>
       }
     }
 
+    // Any deliberate journal action supersedes the short-lived capture Undo.
+    ref.read(daymarkNoticeProvider.notifier).dismiss();
     final AppLocalizations l10n = AppLocalizations.of(context);
     setState(() => _entryActionId = entry.id);
 
@@ -540,8 +628,7 @@ class _FutureScreenState extends ConsumerState<FutureScreen>
       final String message = action == _FutureEntryAction.reference
           ? l10n.referenceEntryFailed
           : l10n.taskActionFailed;
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(message)));
+      ref.read(daymarkNoticeProvider.notifier).showError(message);
       setState(() => _entryActionId = null);
     }
   }
@@ -577,6 +664,7 @@ class _FutureScreenState extends ConsumerState<FutureScreen>
       _snapshotsFuture = _loadSnapshots();
     });
     _scheduleHorizonRollover();
+    _restoreComposerFocus();
   }
 
   void _scheduleHorizonRollover() {
