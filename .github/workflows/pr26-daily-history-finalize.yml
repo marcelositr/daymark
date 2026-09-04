@@ -1,0 +1,103 @@
+name: PR 26 Daily history finalizer
+
+on:
+  push:
+    branches: [feat/daily-history]
+
+permissions:
+  contents: write
+
+jobs:
+  finalize:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: feat/daily-history
+          fetch-depth: 0
+
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2
+        with:
+          flutter-version: '3.47.2'
+          channel: stable
+          cache: true
+
+      - name: Resolve locked dependencies
+        run: flutter pub get --enforce-lockfile
+
+      - name: Generate localization sources
+        run: flutter gen-l10n
+
+      - name: Add Today history launcher
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path('lib/features/journal/presentation/today_screen.dart')
+          text = path.read_text()
+
+          old_import = "import 'package:flutter_riverpod/flutter_riverpod.dart';\n"
+          new_import = old_import + "import 'package:go_router/go_router.dart';\n"
+          if text.count(old_import) != 1 or "package:go_router/go_router.dart" in text:
+              raise SystemExit('Today import marker mismatch')
+          text = text.replace(old_import, new_import, 1)
+
+          old_lock = """                IconButton(\n                  onPressed: _lock,\n                  tooltip: l10n.lockJournal,\n                  icon: const Icon(Icons.lock_outline),\n                ),\n"""
+          new_lock = """                IconButton(\n                  onPressed: _openHistory,\n                  tooltip: l10n.dailyHistory,\n                  icon: const Icon(Icons.history),\n                ),\n                IconButton(\n                  onPressed: _lock,\n                  tooltip: l10n.lockJournal,\n                  icon: const Icon(Icons.lock_outline),\n                ),\n"""
+          if text.count(old_lock) != 1:
+              raise SystemExit('Today lock marker mismatch')
+          text = text.replace(old_lock, new_lock, 1)
+
+          old_method = """  Future<void> _lock() async {\n"""
+          new_method = """  void _openHistory() {\n    final DateTime previousDate = _today.subtract(const Duration(days: 1));\n    context.push('/daily/${formatJournalMethodDate(previousDate)}');\n  }\n\n  Future<void> _lock() async {\n"""
+          if text.count(old_method) != 1:
+              raise SystemExit('Today lock method marker mismatch')
+          text = text.replace(old_method, new_method, 1)
+
+          path.write_text(text)
+          PY
+
+      - name: Format changed Dart
+        run: |
+          dart format \
+            lib/app/router.dart \
+            lib/core/session/journal_daily_history_session.dart \
+            lib/features/journal/data/daily_log_repository.dart \
+            lib/features/journal/presentation/daily_history_screen.dart \
+            lib/features/journal/presentation/today_screen.dart \
+            test/journal/daily_history_screen_test.dart \
+            test/journal/daily_log_repository_test.dart \
+            test/session/daily_history_session_test.dart
+
+      - name: Analyze
+        run: flutter analyze
+
+      - name: Focused Daily history tests
+        run: |
+          flutter test \
+            test/journal/daily_log_repository_test.dart \
+            test/journal/daily_history_screen_test.dart \
+            test/session/daily_history_session_test.dart
+
+      - name: Remove finalizer and publish
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/pr26-daily-history-finalize.yml
+          if [ -f .github/pr26-daily-history-trigger ]; then
+            git rm .github/pr26-daily-history-trigger
+          fi
+          git add \
+            lib/app/router.dart \
+            lib/core/session/journal_daily_history_session.dart \
+            lib/features/journal/data/daily_log_repository.dart \
+            lib/features/journal/presentation/daily_history_screen.dart \
+            lib/features/journal/presentation/today_screen.dart \
+            lib/l10n/app_en.arb \
+            lib/l10n/app_pt.arb \
+            lib/l10n/app_pt_BR.arb \
+            test/journal/daily_history_screen_test.dart \
+            test/journal/daily_log_repository_test.dart \
+            test/session/daily_history_session_test.dart
+          git commit -m "feat(journal): finalize Daily history"
+          git push origin HEAD:feat/daily-history
