@@ -20,7 +20,10 @@ void main() {
     );
 
     expect(find.text('Create your journal'), findsOneWidget);
-    expect(find.widgetWithText(OutlinedButton, 'Restore backup'), findsOneWidget);
+    expect(
+      find.widgetWithText(OutlinedButton, 'Restore backup'),
+      findsOneWidget,
+    );
   });
 
   testWidgets('locked journal offers encrypted backup restore', (tester) async {
@@ -31,7 +34,10 @@ void main() {
     );
 
     expect(find.text('Unlock Daymark'), findsOneWidget);
-    expect(find.widgetWithText(OutlinedButton, 'Restore backup'), findsOneWidget);
+    expect(
+      find.widgetWithText(OutlinedButton, 'Restore backup'),
+      findsOneWidget,
+    );
   });
 
   testWidgets('canceling backup selection keeps the locked journal unchanged', (
