@@ -2,7 +2,9 @@ import 'package:daymark/features/journal/data/daily_log_repository.dart';
 import 'package:daymark/features/journal/domain/journal_domain.dart';
 import 'package:daymark/features/journal/presentation/today_screen.dart';
 import 'package:daymark/l10n/app_localizations.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -132,6 +134,117 @@ void main() {
     expect(find.byType(SnackBar), findsNothing);
 
     await tester.pumpWidget(const SizedBox.shrink());
+  });
+
+  testWidgets('Daily reflection isolates open Tasks and deliberate decisions', (
+    tester,
+  ) async {
+    final _MemoryTodayJournal dataSource = _MemoryTodayJournal(
+      entries: [
+        const DailyLogEntry(
+          id: 'task-open',
+          type: JournalEntryType.task,
+          taskState: JournalTaskState.open,
+          content: 'Decide this task',
+          ordinal: 0,
+        ),
+        const DailyLogEntry(
+          id: 'note-1',
+          type: JournalEntryType.note,
+          taskState: null,
+          content: 'Keep this note out of reflection',
+          ordinal: 1,
+        ),
+        const DailyLogEntry(
+          id: 'task-done',
+          type: JournalEntryType.task,
+          taskState: JournalTaskState.completed,
+          content: 'Already completed',
+          ordinal: 2,
+        ),
+      ],
+    );
+
+    await _pumpToday(tester, dataSource);
+
+    await tester.tap(find.byTooltip('Start reflection'));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text(
+        'Review each open Task and deliberately decide what happens to it.',
+      ),
+      findsOneWidget,
+    );
+    expect(find.text('Decide this task'), findsOneWidget);
+    expect(find.text('Keep this note out of reflection'), findsNothing);
+    expect(find.text('Already completed'), findsNothing);
+    expect(find.byType(TextField), findsNothing);
+    expect(find.text('Reference'), findsNothing);
+
+    await tester.tap(find.text('•'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Complete'));
+    await tester.pumpAndSettle();
+
+    expect(dataSource.entries.first.taskState, JournalTaskState.completed);
+    expect(find.text('No open Tasks to reflect on.'), findsOneWidget);
+
+    await tester.tap(find.byTooltip('Finish reflection'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Keep this note out of reflection'), findsOneWidget);
+    expect(find.text('Already completed'), findsOneWidget);
+    expect(find.byType(TextField), findsOneWidget);
+  });
+
+  testWidgets('Linux composer autofocuses and Ctrl+Enter captures', (
+    tester,
+  ) async {
+    debugDefaultTargetPlatformOverride = TargetPlatform.linux;
+    addTearDown(() => debugDefaultTargetPlatformOverride = null);
+
+    final _MemoryTodayJournal dataSource = _MemoryTodayJournal();
+    await _pumpToday(tester, dataSource);
+
+    final Finder field = find.byType(TextField);
+    expect(tester.widget<TextField>(field).autofocus, isTrue);
+
+    await tester.enterText(field, 'Keyboard capture');
+    await tester.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
+    await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+    await tester.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
+    await tester.pumpAndSettle();
+
+    expect(dataSource.entries, hasLength(1));
+    expect(dataSource.entries.single.content, 'Keyboard capture');
+    expect(find.text('Keyboard capture'), findsOneWidget);
+  });
+
+  testWidgets('Today exposes entry type and Task state to semantics', (
+    tester,
+  ) async {
+    final SemanticsHandle semantics = tester.ensureSemantics();
+    addTearDown(semantics.dispose);
+
+    final _MemoryTodayJournal dataSource = _MemoryTodayJournal(
+      entries: [
+        const DailyLogEntry(
+          id: 'task-1',
+          type: JournalEntryType.task,
+          taskState: JournalTaskState.open,
+          content: 'Accessible task',
+          ordinal: 0,
+        ),
+      ],
+    );
+
+    await _pumpToday(tester, dataSource);
+
+    expect(
+      find.bySemanticsLabel('Task, Open, Accessible task'),
+      findsOneWidget,
+    );
   });
 
   testWidgets('failed Task action leaves the Task open and reports failure', (
