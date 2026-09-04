@@ -304,6 +304,8 @@ Manual full encrypted backup and restore are initial product requirements.
 
 Backups must be encrypted by default, portable between supported platforms, independent of device-bound key stores, versioned, authenticated before restore, recoverable without the original device when portable credentials are available, and capable of evolving to include attachments without moving outside the security boundary.
 
+The encrypted backup/restore service and format-v1 safety foundation are implemented. The remaining vacation-ready slice is user-facing file selection, confirmation, and session-lifecycle integration around that existing service. Do not redesign the container format merely to expose UI.
+
 Automatic backup scheduling, retention rotation, remote synchronization, and cloud-specific integrations are later concerns.
 
 Human-readable Markdown or JSON export is a separate portability feature and may intentionally produce plaintext after explicit user action.
@@ -381,7 +383,7 @@ The permanent `.github/workflows/ci.yml` gates:
 9. Android debug APK build;
 10. dependency/security review for pull requests.
 
-Draft PRs run the lightweight `dev-check`. Ready/non-Draft PRs run full merge-tier jobs and `merge-gate`. Validation evidence is exact-head-specific.
+Draft PRs may run the lightweight `dev-check`. When the user has explicitly agreed to local-first execution, the same pinned generation/formatter/analyzer/test/build ladder may be used as the primary development feedback path so GitHub latency does not control implementation speed. Ready/non-Draft PRs still run full merge-tier jobs and `merge-gate`, and the live `main` ruleset remains authoritative. Validation evidence is exact-head-specific.
 
 ## Testing strategy
 
@@ -416,21 +418,28 @@ GitHub Actions are pinned to immutable commit SHAs. Pull-request dependency revi
 
 Daymark establishes correctness and safety before product polish.
 
-The current dependency sequence is:
+The foundational and core method sequence through PR #26 is complete:
 
-1. define Bullet Journal domain semantics and product/security constraints;
-2. establish pinned Flutter scaffold and repeatable CI/build baseline;
-3. establish relational schema, identifiers, and migration strategy;
-4. implement and validate encryption/key management;
-5. specify and validate encrypted portable backup/restore;
-6. wire application/data/presentation boundaries;
-7. build end-to-end Today/Daily flow;
-8. add deliberate Task actions and lifecycle protection;
-9. build real Monthly and Future destinations;
-10. expose deliberate scheduling (`<`) from Today/Monthly Tasks into real Future destinations;
-11. build a real minimal Collections surface as a non-Future method-native owning structure;
-12. expose deliberate forward migration (`>`) from Today/Monthly open Tasks into an existing Collection, with retained-Collections refresh coverage;
-13. continue Collection references, next-Monthly accessibility, Index, Search, backup UI, exports, platform hooks, accessibility, and packaging as separate focused slices.
+1. product/domain/security constraints and pinned Flutter scaffold;
+2. relational schema and migration strategy;
+3. encrypted persistence, key management, and Argon2id baseline;
+4. authenticated portable encrypted backup/restore foundation;
+5. serialized journal application/session boundaries;
+6. Today/Daily Rapid Logging, Task terminal actions, lifecycle lock protection, and Daily history;
+7. current and historical Monthly Logs;
+8. rolling Future Log and deliberate scheduling (`<`);
+9. Collections, forward migration (`>`), and Collection references;
+10. deliberate Index and local read-only Search.
+
+The current vacation-ready stabilization sequence is intentionally narrower than the older roadmap:
+
+1. expose the existing encrypted backup/restore foundation through safe user-facing file selection and session lifecycle;
+2. add explicit open export, expected as structured JSON plus Markdown, with a clear plaintext security boundary;
+3. expose the existing System / Light / Dark appearance choice without introducing a broad settings subsystem;
+4. perform packaging/release hardening, including versioning, Android signing setup, Linux/Android release builds, install/upgrade smoke tests, dependency/security review, and controlled real backup/restore verification;
+5. freeze feature work and fix only blockers/regressions needed for the vacation-ready prerelease.
+
+Direct retrieval navigation from Index/Search, richer Reflection, OS-level immediate-lock integration, device-assisted unlock, non-blocking accessibility/keyboard refinement, and other deferred capabilities remain later focused slices. They must not be pulled into the stabilization window merely because they appeared in an older development-order list.
 
 Do not implement convenience features ahead of the contracts that govern their persistence and security.
 
