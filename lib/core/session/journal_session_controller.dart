@@ -61,6 +61,10 @@ final class JournalSessionController extends AsyncNotifier<JournalAccessState> {
     }
   }
 
+  Future<void> reauthenticate({required String masterPassword}) {
+    return _requireManager().reauthenticate(masterPassword: masterPassword);
+  }
+
   Future<void> createBackup({
     required File backupFile,
     required String masterPassword,

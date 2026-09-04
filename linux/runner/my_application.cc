@@ -1,6 +1,8 @@
 #include "my_application.h"
 
 #include <flutter_linux/flutter_linux.h>
+#include <gio/gio.h>
+#include <unistd.h>
 #ifdef GDK_WINDOWING_X11
 #include <gdk/gdkx.h>
 #endif
@@ -10,9 +12,69 @@
 struct _MyApplication {
   GtkApplication parent_instance;
   char** dart_entrypoint_arguments;
+  FlMethodChannel* system_lock_channel;
+  GDBusConnection* system_bus;
+  guint system_lock_subscription_id;
 };
 
 G_DEFINE_TYPE(MyApplication, my_application, GTK_TYPE_APPLICATION)
+
+static constexpr char kSystemLockChannel[] =
+    "io.github.marcelositr.daymark/system_lock";
+static constexpr char kSystemLockMethod[] = "locked";
+
+static void emit_system_lock(MyApplication* self) {
+  if (self->system_lock_channel == nullptr) {
+    return;
+  }
+
+  fl_method_channel_invoke_method(self->system_lock_channel, kSystemLockMethod,
+                                  nullptr, nullptr, nullptr, nullptr);
+}
+
+static void system_lock_signal_cb(GDBusConnection* connection,
+                                  const gchar* sender_name,
+                                  const gchar* object_path,
+                                  const gchar* interface_name,
+                                  const gchar* signal_name,
+                                  GVariant* parameters,
+                                  gpointer user_data) {
+  MyApplication* self = MY_APPLICATION(user_data);
+  emit_system_lock(self);
+}
+
+static void subscribe_system_lock(MyApplication* self) {
+  if (self->system_bus != nullptr) {
+    return;
+  }
+
+  g_autoptr(GError) error = nullptr;
+  self->system_bus = g_bus_get_sync(G_BUS_TYPE_SYSTEM, nullptr, &error);
+  if (self->system_bus == nullptr) {
+    g_warning("Daymark system-lock integration unavailable: %s",
+              error->message);
+    return;
+  }
+
+  g_autoptr(GVariant) result = g_dbus_connection_call_sync(
+      self->system_bus, "org.freedesktop.login1", "/org/freedesktop/login1",
+      "org.freedesktop.login1.Manager", "GetSessionByPID",
+      g_variant_new("(u)", static_cast<guint32>(getpid())),
+      G_VARIANT_TYPE("(o)"), G_DBUS_CALL_FLAGS_NONE, -1, nullptr, &error);
+  if (result == nullptr) {
+    g_warning("Daymark could not resolve the current login session: %s",
+              error->message);
+    return;
+  }
+
+  const gchar* session_path = nullptr;
+  g_variant_get(result, "(&o)", &session_path);
+
+  self->system_lock_subscription_id = g_dbus_connection_signal_subscribe(
+      self->system_bus, "org.freedesktop.login1",
+      "org.freedesktop.login1.Session", "Lock", session_path, nullptr,
+      G_DBUS_SIGNAL_FLAGS_NONE, system_lock_signal_cb, self, nullptr);
+}
 
 // Called when first Flutter frame received.
 static void first_frame_cb(MyApplication* self, FlView* view) {
@@ -75,6 +137,13 @@ static void my_application_activate(GApplication* application) {
 
   fl_register_plugins(FL_PLUGIN_REGISTRY(view));
 
+  g_autoptr(FlStandardMethodCodec) system_lock_codec =
+      fl_standard_method_codec_new();
+  self->system_lock_channel = fl_method_channel_new(
+      fl_engine_get_binary_messenger(fl_view_get_engine(view)),
+      kSystemLockChannel, FL_METHOD_CODEC(system_lock_codec));
+  subscribe_system_lock(self);
+
   gtk_widget_grab_focus(GTK_WIDGET(view));
 }
 
@@ -119,6 +188,15 @@ static void my_application_shutdown(GApplication* application) {
 // Implements GObject::dispose.
 static void my_application_dispose(GObject* object) {
   MyApplication* self = MY_APPLICATION(object);
+
+  if (self->system_bus != nullptr && self->system_lock_subscription_id != 0) {
+    g_dbus_connection_signal_unsubscribe(self->system_bus,
+                                         self->system_lock_subscription_id);
+    self->system_lock_subscription_id = 0;
+  }
+
+  g_clear_object(&self->system_lock_channel);
+  g_clear_object(&self->system_bus);
   g_clear_pointer(&self->dart_entrypoint_arguments, g_strfreev);
   G_OBJECT_CLASS(my_application_parent_class)->dispose(object);
 }

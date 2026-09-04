@@ -1,27 +1,38 @@
 import 'dart:convert';
-import 'dart:typed_data';
 
+import 'package:daymark/core/crypto/security_exception.dart';
 import 'package:daymark/core/export/export_file_gateway.dart';
 import 'package:daymark/core/export/open_export_service.dart';
 import 'package:daymark/core/session/journal_session_controller.dart';
 import 'package:daymark/l10n/app_localizations.dart';
 import 'package:daymark/presentation/daymark_notice.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'export_file_gateway_provider.dart';
 
+enum OpenExportOutcome { saved, copied }
+
+enum _OpenExportAction { copy, save }
+
 Future<void> showOpenExportDialog(BuildContext context) async {
-  final bool? saved = await showDialog<bool>(
+  final OpenExportOutcome? outcome = await showDialog<OpenExportOutcome>(
     context: context,
     barrierDismissible: false,
     builder: (dialogContext) => const OpenExportDialog(),
   );
 
-  if (saved == true && context.mounted) {
-    final AppLocalizations l10n = AppLocalizations.of(context);
-    daymarkNoticeControllerOf(context).showInfo(l10n.openExportSaved);
+  if (outcome == null || !context.mounted) {
+    return;
   }
+
+  final AppLocalizations l10n = AppLocalizations.of(context);
+  final String message = switch (outcome) {
+    OpenExportOutcome.saved => l10n.openExportSaved,
+    OpenExportOutcome.copied => l10n.openExportCopied,
+  };
+  daymarkNoticeControllerOf(context).showInfo(message);
 }
 
 final class OpenExportDialog extends ConsumerStatefulWidget {
@@ -32,8 +43,19 @@ final class OpenExportDialog extends ConsumerStatefulWidget {
 }
 
 final class _OpenExportDialogState extends ConsumerState<OpenExportDialog> {
-  bool _busy = false;
+  final TextEditingController _passwordController = TextEditingController();
+
+  OpenExportFormat _format = OpenExportFormat.markdown;
+  _OpenExportAction? _busyAction;
   String? _errorMessage;
+
+  bool get _busy => _busyAction != null;
+
+  @override
+  void dispose() {
+    _passwordController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -48,7 +70,41 @@ final class _OpenExportDialogState extends ConsumerState<OpenExportDialog> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Text(l10n.openExportMessage),
-            const SizedBox(height: 12),
+            const SizedBox(height: 16),
+            TextField(
+              controller: _passwordController,
+              enabled: !_busy,
+              autofocus: true,
+              obscureText: true,
+              autocorrect: false,
+              enableSuggestions: false,
+              autofillHints: const <String>[AutofillHints.password],
+              textInputAction: TextInputAction.done,
+              onSubmitted: _busy
+                  ? null
+                  : (_) => _perform(_OpenExportAction.save),
+              decoration: InputDecoration(labelText: l10n.masterPassword),
+            ),
+            const SizedBox(height: 16),
+            SegmentedButton<OpenExportFormat>(
+              segments: <ButtonSegment<OpenExportFormat>>[
+                ButtonSegment<OpenExportFormat>(
+                  value: OpenExportFormat.markdown,
+                  label: Text(l10n.openExportFormatMarkdown),
+                ),
+                ButtonSegment<OpenExportFormat>(
+                  value: OpenExportFormat.json,
+                  label: Text(l10n.openExportFormatJson),
+                ),
+              ],
+              selected: <OpenExportFormat>{_format},
+              onSelectionChanged: _busy
+                  ? null
+                  : (selection) {
+                      setState(() => _format = selection.single);
+                    },
+            ),
+            const SizedBox(height: 16),
             Text(
               l10n.openExportWarning,
               style: TextStyle(color: Theme.of(context).colorScheme.error),
@@ -65,58 +121,86 @@ final class _OpenExportDialogState extends ConsumerState<OpenExportDialog> {
       ),
       actions: [
         TextButton(
-          onPressed: _busy ? null : () => Navigator.of(context).pop(false),
+          onPressed: _busy ? null : () => Navigator.of(context).pop(),
           child: Text(MaterialLocalizations.of(context).cancelButtonLabel),
         ),
         OutlinedButton(
-          onPressed: _busy ? null : () => _export(OpenExportFormat.markdown),
-          child: Text(l10n.exportMarkdown),
-        ),
-        FilledButton(
-          onPressed: _busy ? null : () => _export(OpenExportFormat.json),
-          child: _busy
+          onPressed: _busy ? null : () => _perform(_OpenExportAction.copy),
+          child: _busyAction == _OpenExportAction.copy
               ? const SizedBox.square(
                   dimension: 18,
                   child: CircularProgressIndicator(strokeWidth: 2),
                 )
-              : Text(l10n.exportJson),
+              : Text(l10n.openExportCopy),
+        ),
+        FilledButton(
+          onPressed: _busy ? null : () => _perform(_OpenExportAction.save),
+          child: _busyAction == _OpenExportAction.save
+              ? const SizedBox.square(
+                  dimension: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : Text(l10n.openExportSave),
         ),
       ],
     );
   }
 
-  Future<void> _export(OpenExportFormat format) async {
+  Future<void> _perform(_OpenExportAction action) async {
     final AppLocalizations l10n = AppLocalizations.of(context);
+    final String password = _passwordController.text;
+    if (password.isEmpty) {
+      setState(() => _errorMessage = l10n.masterPasswordRequired);
+      return;
+    }
+
     setState(() {
-      _busy = true;
+      _busyAction = action;
       _errorMessage = null;
     });
 
     Uint8List? bytes;
     try {
-      final OpenExportDocument document = await ref
-          .read(journalSessionControllerProvider.notifier)
-          .createOpenExport(format: format);
-      bytes = Uint8List.fromList(utf8.encode(document.contents));
+      final JournalSessionController controller = ref.read(
+        journalSessionControllerProvider.notifier,
+      );
 
+      // Reauthenticate before creating any plaintext representation.
+      await controller.reauthenticate(masterPassword: password);
+
+      final OpenExportDocument document = await controller.createOpenExport(
+        format: _format,
+      );
+
+      if (action == _OpenExportAction.copy) {
+        await Clipboard.setData(ClipboardData(text: document.contents));
+        if (mounted) {
+          Navigator.of(context).pop(OpenExportOutcome.copied);
+        }
+        return;
+      }
+
+      bytes = Uint8List.fromList(utf8.encode(document.contents));
       final bool saved = await ref
           .read(exportFileGatewayProvider)
           .saveExport(
             bytes: bytes,
-            suggestedName: _exportFileName(DateTime.now(), format),
+            suggestedName: _exportFileName(DateTime.now(), _format),
             dialogTitle: l10n.openExportTitle,
           );
 
       if (!saved) {
         if (mounted) {
-          setState(() => _busy = false);
+          setState(() => _busyAction = null);
         }
         return;
       }
 
       if (mounted) {
-        Navigator.of(context).pop(true);
+        Navigator.of(context).pop(OpenExportOutcome.saved);
       }
+    } on JournalUnlockException {
+      _setError(l10n.openExportAuthenticationFailed);
     } on ExportFileSelectionException {
       _setError(l10n.openExportFileSelectionFailed);
     } catch (error, stackTrace) {
@@ -129,7 +213,11 @@ final class _OpenExportDialogState extends ConsumerState<OpenExportDialog> {
           library: 'daymark',
         ),
       );
-      _setError(l10n.openExportFailed);
+      _setError(
+        action == _OpenExportAction.copy
+            ? l10n.openExportCopyFailed
+            : l10n.openExportFailed,
+      );
     } finally {
       final Uint8List? buffer = bytes;
       if (buffer != null) {
@@ -143,7 +231,7 @@ final class _OpenExportDialogState extends ConsumerState<OpenExportDialog> {
       return;
     }
     setState(() {
-      _busy = false;
+      _busyAction = null;
       _errorMessage = message;
     });
   }

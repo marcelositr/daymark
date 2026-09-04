@@ -186,6 +186,34 @@ void main() {
     expect(reopened.isClosed, isFalse);
   });
 
+  test('reauthentication validates the password without replacing the live session', () async {
+    const String password = 'reauthentication password';
+    final JournalSession session = await manager.create(
+      masterPassword: password,
+    );
+
+    await expectLater(
+      manager.reauthenticate(masterPassword: 'wrong password'),
+      throwsA(isA<JournalUnlockException>()),
+    );
+
+    final JournalAccessState afterFailure = await manager.inspect();
+    expect(afterFailure, isA<JournalUnlocked>());
+    expect(
+      identical((afterFailure as JournalUnlocked).session, session),
+      isTrue,
+    );
+
+    await manager.reauthenticate(masterPassword: password);
+
+    final JournalAccessState afterSuccess = await manager.inspect();
+    expect(afterSuccess, isA<JournalUnlocked>());
+    expect(
+      identical((afterSuccess as JournalUnlocked).session, session),
+      isTrue,
+    );
+  });
+
   test('empty password cannot attempt an existing journal unlock', () async {
     await manager.create(masterPassword: 'right password');
     await manager.lock();

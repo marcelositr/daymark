@@ -87,7 +87,9 @@ Release validation must cover the applicable user-data boundaries, including:
 - verify manual lock/unlock;
 - verify Appearance persistence;
 - create and restore an encrypted backup using controlled data;
-- create JSON and Markdown Open Export files;
+- verify Open Export rejects a wrong reauthentication password without producing plaintext;
+- create JSON and Markdown Open Export files after successful reauthentication;
+- copy both Open Export formats to the system clipboard and verify the plaintext warning/notice flow;
 - inspect native shared-library requirements with `ldd`;
 - verify no unexpected plaintext journal database is created.
 
@@ -111,7 +113,7 @@ Before public distribution, test the signed release APK on physical Android hard
 - install as a clean application when the release lineage permits it;
 - create/open journal data and restart;
 - lock/unlock;
-- exercise backup/export file-provider flows;
+- exercise backup/export file-provider flows, Open Export reauthentication, and clipboard copy;
 - verify Appearance persistence;
 - test install-over upgrade from every predecessor lineage the release claims to support;
 - confirm existing encrypted journal data remains readable after the supported upgrade.
@@ -203,6 +205,7 @@ Before creating a future tag or GitHub Release, require all applicable gates:
 - Linux release build and manual smoke test green;
 - signed Android release build and physical-device smoke test green;
 - backup/restore compatibility check green for supported predecessors;
+- Open Export reauthentication, file-save, and clipboard-copy manual checks green on applicable release targets;
 - clean-install and install-over upgrade checks green where applicable;
 - dependency/security review complete;
 - no signing secrets or local-only files in Git;
