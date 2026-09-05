@@ -4,13 +4,9 @@ import 'package:flutter/material.dart';
 
 /// Disposable UI experiment for the proposed Monthly Tracker.
 ///
-/// Run with:
-///   flutter run -d linux -t lib/prototypes/monthly_tracker_prototype.dart
-///
-/// This prototype is intentionally isolated from Daymark routing, persistence,
-/// domain services, and localization. It exists only to validate whether the
-/// daily interaction and the five-line graph remain readable across compact,
-/// square-ish, landscape, and desktop layouts.
+/// This revision tests two questions only:
+/// 1. Does the graph read better as a horizontal canvas on every screen shape?
+/// 2. Is 3, 4, or 5 simultaneous trackers the practical limit?
 void main() {
   runApp(const _TrackerPrototypeApp());
 }
@@ -51,6 +47,7 @@ class _TrackerPrototypeScreenState extends State<_TrackerPrototypeScreen> {
   ];
 
   late final List<_TrackerDemo> _trackers;
+  int _visibleCount = 3;
   int _simulatedToday = 30;
   int? _focusedTracker;
 
@@ -63,142 +60,44 @@ class _TrackerPrototypeScreenState extends State<_TrackerPrototypeScreen> {
         color: _slotColors[0],
         startDay: 1,
         endDay: 30,
-        marks: <int, int>{
-          1: 1,
-          2: 1,
-          4: -1,
-          5: 1,
-          6: 1,
-          8: 1,
-          9: -1,
-          10: 1,
-          12: 1,
-          13: 1,
-          15: 1,
-          16: 1,
-          18: -1,
-          19: 1,
-          20: 1,
-          22: 1,
-          24: 1,
-          25: -1,
-          27: 1,
-          28: 1,
-          30: 1,
-        },
+        marks: _marks(<int>[1, 2, 4, 5, 6, 8, 10, 12, 13, 15, 16, 19, 20, 22, 24, 27, 28, 30], <int>[9, 18, 25]),
       ),
       _TrackerDemo(
         name: 'Não fumar',
         color: _slotColors[1],
         startDay: 1,
         endDay: 30,
-        marks: <int, int>{
-          1: 1,
-          2: 1,
-          3: 1,
-          4: 1,
-          5: 1,
-          6: -1,
-          7: 1,
-          8: 1,
-          9: 1,
-          10: 1,
-          11: 1,
-          12: 1,
-          13: -1,
-          14: 1,
-          15: 1,
-          16: 1,
-          17: 1,
-          18: 1,
-          20: 1,
-          21: -1,
-          22: 1,
-          23: 1,
-          24: 1,
-          25: 1,
-          26: 1,
-          27: 1,
-          29: -1,
-          30: 1,
-        },
+        marks: _marks(<int>[1, 2, 3, 4, 5, 7, 8, 9, 10, 11, 12, 14, 15, 16, 17, 18, 20, 22, 23, 24, 25, 26, 27, 30], <int>[6, 13, 21, 29]),
       ),
       _TrackerDemo(
         name: 'Passear com o cachorro',
         color: _slotColors[2],
         startDay: 1,
         endDay: 30,
-        marks: <int, int>{
-          1: -1,
-          2: 1,
-          3: 1,
-          4: 1,
-          6: 1,
-          7: -1,
-          8: 1,
-          9: 1,
-          10: 1,
-          11: 1,
-          13: 1,
-          14: -1,
-          15: 1,
-          16: 1,
-          18: 1,
-          19: -1,
-          20: 1,
-          21: 1,
-          22: 1,
-          24: 1,
-          25: 1,
-          26: -1,
-          27: 1,
-          28: 1,
-          30: 1,
-        },
+        marks: _marks(<int>[2, 3, 4, 6, 8, 9, 10, 11, 13, 15, 16, 18, 20, 21, 22, 24, 25, 27, 28, 30], <int>[1, 7, 14, 19, 26]),
       ),
       _TrackerDemo(
         name: 'Ler 3 páginas',
         color: _slotColors[3],
         startDay: 4,
         endDay: 22,
-        endReason: 'encerrado antes do fim',
-        marks: <int, int>{
-          4: 1,
-          5: 1,
-          6: 1,
-          7: -1,
-          8: 1,
-          10: 1,
-          11: 1,
-          12: -1,
-          13: 1,
-          14: 1,
-          15: 1,
-          17: 1,
-          18: -1,
-          19: 1,
-          21: 1,
-          22: 1,
-        },
+        marks: _marks(<int>[4, 5, 6, 8, 10, 11, 13, 14, 15, 17, 19, 21, 22], <int>[7, 12, 18]),
       ),
       _TrackerDemo(
         name: 'Novena',
         color: _slotColors[4],
         startDay: 7,
         endDay: 15,
-        endReason: 'concluído no período previsto',
-        marks: <int, int>{
-          7: 1,
-          8: 1,
-          9: 1,
-          10: -1,
-          11: 1,
-          12: 1,
-          14: 1,
-          15: 1,
-        },
+        marks: _marks(<int>[7, 8, 9, 11, 12, 14, 15], <int>[10]),
       ),
     ];
+  }
+
+  static Map<int, int> _marks(List<int> positive, List<int> negative) {
+    return <int, int>{
+      for (final int day in positive) day: 1,
+      for (final int day in negative) day: -1,
+    };
   }
 
   @override
@@ -209,74 +108,75 @@ class _TrackerPrototypeScreenState extends State<_TrackerPrototypeScreen> {
       body: SafeArea(
         child: LayoutBuilder(
           builder: (BuildContext context, BoxConstraints viewport) {
-            final double width = viewport.maxWidth;
-            final bool wide = width >= 900;
-            final String layoutName = switch (width) {
-              < 520 => 'compacto / celular vertical',
-              < 760 => 'intermediário / quase quadrado',
-              < 900 => 'horizontal compacto',
-              _ => 'desktop largo',
-            };
+            final bool portrait = viewport.maxHeight > viewport.maxWidth;
+            final double horizontalPadding = viewport.maxWidth < 520 ? 12 : 20;
 
-            return Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 1180),
-                child: ListView(
-                  padding: EdgeInsets.fromLTRB(
-                    width < 520 ? 12 : 20,
-                    20,
-                    width < 520 ? 12 : 20,
-                    32,
-                  ),
-                  children: <Widget>[
-                    Text(
-                      'Monthly Tracker — protótipo descartável',
-                      style: theme.textTheme.headlineSmall,
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      'Layout detectado: $layoutName (${width.round()} px). '
-                      'Redimensione a janela para testar vertical, quadrado, '
-                      'horizontal e desktop sem mudar o conceito do gráfico.',
-                      style: theme.textTheme.bodyMedium,
-                    ),
-                    const SizedBox(height: 20),
-                    if (wide)
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: <Widget>[
-                          Expanded(
-                            flex: 4,
-                            child: _buildDailyCard(theme),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            flex: 6,
-                            child: _buildGraphCard(theme, width),
-                          ),
-                        ],
-                      )
-                    else ...<Widget>[
-                      _buildDailyCard(theme),
-                      const SizedBox(height: 16),
-                      _buildGraphCard(theme, width),
-                    ],
-                    const SizedBox(height: 16),
-                    _buildPeriodsCard(theme),
-                    const SizedBox(height: 16),
-                    _SectionCard(
-                      title: 'O que este teste NÃO decide',
-                      child: Text(
-                        'Não há banco, schema, integração com Today/Monthly, '
-                        'notificações, criação real de Tracker ou escolha de '
-                        'cores. A única pergunta agora é: o registro +/− e o '
-                        'gráfico conjunto continuam claros em telas diferentes?',
-                        style: theme.textTheme.bodyMedium,
-                      ),
-                    ),
-                  ],
-                ),
+            return ListView(
+              padding: EdgeInsets.fromLTRB(
+                horizontalPadding,
+                18,
+                horizontalPadding,
+                28,
               ),
+              children: <Widget>[
+                Text(
+                  'Monthly Tracker — teste de densidade',
+                  style: theme.textTheme.headlineSmall,
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  portrait
+                      ? 'Tela vertical: o gráfico continua sendo uma peça horizontal, usando toda a largura.'
+                      : 'Tela horizontal: o gráfico usa toda a largura disponível, sem dividir espaço com o registro diário.',
+                  style: theme.textTheme.bodyMedium,
+                ),
+                const SizedBox(height: 18),
+                _SectionCard(
+                  title: 'Quantas linhas continuam legíveis?',
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      SegmentedButton<int>(
+                        showSelectedIcon: false,
+                        segments: const <ButtonSegment<int>>[
+                          ButtonSegment<int>(value: 3, label: Text('3')),
+                          ButtonSegment<int>(value: 4, label: Text('4')),
+                          ButtonSegment<int>(value: 5, label: Text('5')),
+                        ],
+                        selected: <int>{_visibleCount},
+                        onSelectionChanged: (Set<int> value) {
+                          setState(() {
+                            _visibleCount = value.single;
+                            if (_focusedTracker != null &&
+                                _focusedTracker! >= _visibleCount) {
+                              _focusedTracker = null;
+                            }
+                          });
+                        },
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Troque entre 3, 4 e 5 sem mudar os dados. A ideia é descobrir o limite visual, não defender o número 5.',
+                        style: theme.textTheme.bodySmall,
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 14),
+                _buildGraphCard(theme, viewport, portrait),
+                const SizedBox(height: 14),
+                _buildDailyCard(theme),
+                const SizedBox(height: 14),
+                _SectionCard(
+                  title: 'O que observar',
+                  child: Text(
+                    '1) compare 3, 4 e 5 linhas; 2) redimensione para vertical, quadrado e horizontal; '
+                    '3) toque numa legenda quando houver cruzamentos; 4) veja se o mês inteiro ainda pode ser lido de uma vez. '
+                    'Nada aqui decide banco, schema ou produto final.',
+                    style: theme.textTheme.bodyMedium,
+                  ),
+                ),
+              ],
             );
           },
         ),
@@ -284,10 +184,69 @@ class _TrackerPrototypeScreenState extends State<_TrackerPrototypeScreen> {
     );
   }
 
+  Widget _buildGraphCard(
+    ThemeData theme,
+    BoxConstraints viewport,
+    bool portrait,
+  ) {
+    final List<_TrackerDemo> visible = _trackers.take(_visibleCount).toList();
+
+    return _SectionCard(
+      title: 'Gráfico conjunto — $_visibleCount Trackers',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: <Widget>[
+              for (int index = 0; index < visible.length; index++)
+                _LegendChip(
+                  tracker: visible[index],
+                  selected: _focusedTracker == index,
+                  dimmed: _focusedTracker != null && _focusedTracker != index,
+                  onTap: () {
+                    setState(() {
+                      _focusedTracker = _focusedTracker == index ? null : index;
+                    });
+                  },
+                ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          LayoutBuilder(
+            builder: (BuildContext context, BoxConstraints box) {
+              final double width = box.maxWidth;
+              final double desiredHeight = portrait
+                  ? math.min(260, math.max(190, width / 1.65))
+                  : math.min(340, math.max(220, viewport.maxHeight * 0.48));
+              return SizedBox(
+                width: width,
+                height: desiredHeight,
+                child: CustomPaint(
+                  painter: _TrackerGraphPainter(
+                    trackers: visible,
+                    throughDay: _simulatedToday,
+                    focusedTracker: _focusedTracker,
+                    daysInMonth: _daysInMonth,
+                    textColor: theme.colorScheme.onSurface,
+                    gridColor: theme.colorScheme.outlineVariant,
+                    compact: width < 520,
+                  ),
+                ),
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildDailyCard(ThemeData theme) {
+    final List<_TrackerDemo> visible = _trackers.take(_visibleCount).toList();
     final List<int> activeIndexes = <int>[
-      for (int index = 0; index < _trackers.length; index++)
-        if (_trackers[index].isActiveOn(_simulatedToday)) index,
+      for (int index = 0; index < visible.length; index++)
+        if (visible[index].isActiveOn(_simulatedToday)) index,
     ];
 
     return _SectionCard(
@@ -305,118 +264,18 @@ class _TrackerPrototypeScreenState extends State<_TrackerPrototypeScreen> {
               setState(() => _simulatedToday = value.round());
             },
           ),
-          const SizedBox(height: 4),
           for (final int index in activeIndexes)
             _DailyTrackerRow(
-              tracker: _trackers[index],
-              value: _trackers[index].valueOn(_simulatedToday),
+              tracker: visible[index],
+              value: visible[index].valueOn(_simulatedToday),
               onPositive: () => _toggleMark(index, 1),
               onNegative: () => _toggleMark(index, -1),
             ),
-          if (activeIndexes.isEmpty)
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 12),
-              child: Text('Nenhum Tracker ativo neste dia.'),
-            ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 6),
           Text(
-            'Check positivo = +1. Check negativo = -1. Sem check = 0. '
-            'O zero nunca precisa ser marcado.',
+            'Check positivo = +1. Check negativo = -1. Sem check = 0.',
             style: theme.textTheme.bodySmall,
           ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildGraphCard(ThemeData theme, double viewportWidth) {
-    return _SectionCard(
-      title: 'Gráfico conjunto — mês inteiro na largura disponível',
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: <Widget>[
-              for (int index = 0; index < _trackers.length; index++)
-                _LegendChip(
-                  tracker: _trackers[index],
-                  selected: _focusedTracker == index,
-                  dimmed:
-                      _focusedTracker != null && _focusedTracker != index,
-                  onTap: () {
-                    setState(() {
-                      _focusedTracker = _focusedTracker == index ? null : index;
-                    });
-                  },
-                ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          Text(
-            'Toque numa legenda para destacar uma linha. Não há rolagem '
-            'horizontal: os 30 dias sempre cabem na largura disponível.',
-            style: theme.textTheme.bodySmall,
-          ),
-          const SizedBox(height: 12),
-          LayoutBuilder(
-            builder: (BuildContext context, BoxConstraints box) {
-              final double graphHeight = switch (viewportWidth) {
-                < 520 => 230,
-                < 760 => 260,
-                < 900 => 280,
-                _ => 320,
-              };
-              return SizedBox(
-                width: box.maxWidth,
-                height: graphHeight,
-                child: CustomPaint(
-                  painter: _TrackerGraphPainter(
-                    trackers: _trackers,
-                    throughDay: _simulatedToday,
-                    focusedTracker: _focusedTracker,
-                    daysInMonth: _daysInMonth,
-                    textColor: theme.colorScheme.onSurface,
-                    gridColor: theme.colorScheme.outlineVariant,
-                    compact: box.maxWidth < 520,
-                  ),
-                ),
-              );
-            },
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPeriodsCard(ThemeData theme) {
-    return _SectionCard(
-      title: 'Períodos usados para forçar casos difíceis',
-      child: Column(
-        children: <Widget>[
-          for (final _TrackerDemo tracker in _trackers)
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 5),
-              child: Row(
-                children: <Widget>[
-                  Container(width: 18, height: 3, color: tracker.color),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      tracker.endReason == null
-                          ? tracker.name
-                          : '${tracker.name} · ${tracker.endReason}',
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    '${tracker.startDay}–${tracker.endDay}',
-                    style: theme.textTheme.bodySmall,
-                  ),
-                ],
-              ),
-            ),
         ],
       ),
     );
@@ -502,6 +361,7 @@ class _DailyTrackerRow extends StatelessWidget {
             ),
             icon: const Icon(Icons.check),
           ),
+          const SizedBox(width: 4),
           IconButton(
             tooltip: 'Não cumpri (-1)',
             onPressed: onNegative,
@@ -542,13 +402,13 @@ class _LegendChip extends StatelessWidget {
       avatar: Container(
         width: 14,
         height: 3,
-        color: tracker.color.withValues(alpha: dimmed ? 0.28 : 1),
+        color: tracker.color.withValues(alpha: dimmed ? 0.25 : 1),
       ),
       label: Text(
         tracker.name,
         style: TextStyle(
           color: dimmed
-              ? Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.42)
+              ? Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.38)
               : null,
         ),
       ),
@@ -563,14 +423,12 @@ class _TrackerDemo {
     required this.startDay,
     required this.endDay,
     required Map<int, int> marks,
-    this.endReason,
   }) : marks = Map<int, int>.from(marks);
 
   final String name;
   final Color color;
   final int startDay;
   final int endDay;
-  final String? endReason;
   final Map<int, int> marks;
 
   bool isActiveOn(int day) => day >= startDay && day <= endDay;
@@ -604,8 +462,8 @@ class _TrackerGraphPainter extends CustomPainter {
 
   static const double _left = 42;
   static const double _right = 12;
-  static const double _top = 24;
-  static const double _bottom = 36;
+  static const double _top = 20;
+  static const double _bottom = 34;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -620,38 +478,25 @@ class _TrackerGraphPainter extends CustomPainter {
       ..strokeWidth = 1;
 
     for (final double y in <double>[yPositive, yZero, yNegative]) {
-      canvas.drawLine(
-        Offset(_left, y),
-        Offset(size.width - _right, y),
-        gridPaint,
-      );
+      canvas.drawLine(Offset(_left, y), Offset(size.width - _right, y), gridPaint);
     }
 
-    _drawText(canvas, '+1', Offset(6, yPositive - 8), textColor, 12);
-    _drawText(canvas, '0', Offset(16, yZero - 8), textColor, 12);
-    _drawText(canvas, '-1', Offset(6, yNegative - 8), textColor, 12);
+    _drawText(canvas, '+1', Offset(7, yPositive - 7), textColor, 12);
+    _drawText(canvas, '0', Offset(18, yZero - 7), textColor, 12);
+    _drawText(canvas, '-1', Offset(7, yNegative - 7), textColor, 12);
 
     for (int day = 1; day <= daysInMonth; day++) {
-      if (!_showDayLabel(day)) continue;
+      final bool showLabel = compact
+          ? day == 1 || day == daysInMonth || day % 5 == 0
+          : day == 1 || day == daysInMonth || day % 2 == 0;
+      if (!showLabel) continue;
       final double x = _xForDay(day, graphWidth);
-      _drawCenteredText(
+      _drawText(
         canvas,
         '$day',
-        Offset(x, size.height - 22),
-        textColor.withValues(alpha: 0.72),
+        Offset(x - 6, size.height - 22),
+        textColor.withValues(alpha: 0.7),
         compact ? 9 : 10,
-      );
-    }
-
-    if (throughDay >= 1 && throughDay <= daysInMonth) {
-      final double todayX = _xForDay(throughDay, graphWidth);
-      final Paint todayPaint = Paint()
-        ..color = textColor.withValues(alpha: 0.18)
-        ..strokeWidth = 1;
-      canvas.drawLine(
-        Offset(todayX, _top - 6),
-        Offset(todayX, yNegative + 6),
-        todayPaint,
       );
     }
 
@@ -662,13 +507,13 @@ class _TrackerGraphPainter extends CustomPainter {
 
       final bool dimmed = focusedTracker != null && focusedTracker != index;
       final Paint linePaint = Paint()
-        ..color = tracker.color.withValues(alpha: dimmed ? 0.14 : 0.92)
-        ..strokeWidth = focusedTracker == index ? 3.4 : (compact ? 2.0 : 2.3)
+        ..color = tracker.color.withValues(alpha: dimmed ? 0.12 : 0.9)
+        ..strokeWidth = focusedTracker == index ? 3.4 : 2.2
         ..style = PaintingStyle.stroke
         ..strokeCap = StrokeCap.round
         ..strokeJoin = StrokeJoin.round;
       final Paint pointPaint = Paint()
-        ..color = tracker.color.withValues(alpha: dimmed ? 0.14 : 1)
+        ..color = tracker.color.withValues(alpha: dimmed ? 0.12 : 1)
         ..style = PaintingStyle.fill;
 
       final Path path = Path();
@@ -697,16 +542,10 @@ class _TrackerGraphPainter extends CustomPainter {
             -1 => yNegative,
             _ => yZero,
           };
-          canvas.drawCircle(Offset(x, y), compact ? 2.3 : 3.0, pointPaint);
+          canvas.drawCircle(Offset(x, y), compact ? 2.4 : 3.0, pointPaint);
         }
       }
     }
-  }
-
-  bool _showDayLabel(int day) {
-    if (day == 1 || day == daysInMonth) return true;
-    if (compact) return day % 5 == 0;
-    return day % 2 == 0;
   }
 
   double _xForDay(int day, double graphWidth) {
@@ -729,23 +568,6 @@ class _TrackerGraphPainter extends CustomPainter {
       textDirection: TextDirection.ltr,
     )..layout();
     painter.paint(canvas, offset);
-  }
-
-  void _drawCenteredText(
-    Canvas canvas,
-    String text,
-    Offset center,
-    Color color,
-    double fontSize,
-  ) {
-    final TextPainter painter = TextPainter(
-      text: TextSpan(
-        text: text,
-        style: TextStyle(color: color, fontSize: fontSize),
-      ),
-      textDirection: TextDirection.ltr,
-    )..layout();
-    painter.paint(canvas, Offset(center.dx - painter.width / 2, center.dy));
   }
 
   @override
