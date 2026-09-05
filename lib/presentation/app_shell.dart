@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../features/journal/presentation/backup_dialog.dart';
 import '../features/journal/presentation/open_export_dialog.dart';
 import '../l10n/app_localizations.dart';
+import 'about_dialog.dart';
 import 'app_section_scope.dart';
 import 'appearance_dialog.dart';
 
@@ -20,6 +21,7 @@ class _AppShellState extends State<AppShell> {
   static const int _backupAction = 6;
   static const int _exportAction = 7;
   static const int _appearanceAction = 8;
+  static const int _aboutAction = 9;
 
   late final ValueNotifier<int> _currentSectionIndex;
 
@@ -111,6 +113,11 @@ class _AppShellState extends State<AppShell> {
                             onPressed: () => showAppearanceDialog(context),
                             tooltip: l10n.appearance,
                             icon: const Icon(Icons.palette_outlined),
+                          ),
+                          IconButton(
+                            onPressed: () => showDaymarkAboutDialog(context),
+                            tooltip: l10n.about,
+                            icon: const Icon(Icons.info_outline),
                           ),
                         ],
                       ),
@@ -206,6 +213,11 @@ class _AppShellState extends State<AppShell> {
                 title: Text(l10n.appearance),
                 onTap: () => Navigator.of(sheetContext).pop(_appearanceAction),
               ),
+              ListTile(
+                leading: const Icon(Icons.info_outline),
+                title: Text(l10n.about),
+                onTap: () => Navigator.of(sheetContext).pop(_aboutAction),
+              ),
             ],
           ),
         );
@@ -224,6 +236,10 @@ class _AppShellState extends State<AppShell> {
     }
     if (action == _appearanceAction) {
       await showAppearanceDialog(context);
+      return;
+    }
+    if (action == _aboutAction) {
+      await showDaymarkAboutDialog(context);
       return;
     }
     _goToBranch(action);

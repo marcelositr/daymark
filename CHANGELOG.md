@@ -18,6 +18,8 @@ This file is for user-visible behavior, data compatibility, security, packaging,
 - Database schema v2 adds persisted Tracker periods and explicit `+1 / -1` marks with a tested additive migration from the published alpha.2 schema v1.
 - Daymark now ships dedicated application branding assets and launcher/application icons for Android and Linux.
 - Journal entry type/state and Tracker selection expose explicit accessibility semantics instead of relying only on visual Bullet Journal marks or color.
+- Daymark now includes a localized About surface with the application version, project identity, `devnux.com.br/daymark`, source repository, issue-reporting location, GPL-3.0-or-later license, author identity, existing branding, and Flutter open-source license disclosure.
+- GitHub Issue Forms now provide structured Bug Report and Feature Request entry points, disable blank issues, warn users not to publish sensitive journal/security data, and route vulnerability reports to the repository security policy.
 
 ### Changed
 
