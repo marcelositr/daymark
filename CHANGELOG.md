@@ -1,46 +1,62 @@
 # Changelog
 
-All notable release-facing changes to Daymark will be documented in this file.
+All notable release-facing changes to Daymark are documented in this file.
 
 This file is for user-visible behavior, data compatibility, security, packaging, and contributor-facing release changes. Development continuity and session handoff belong in `PROJECT.md`.
 
 ## Unreleased
 
+No post-alpha.3 changes are staged yet. The functional product scope is frozen; future entries are expected to be maintenance fixes rather than new features unless the maintainer explicitly reverses that policy.
+
+## [1.0.0-alpha.3] - 2026-09-05
+
+Feature-complete Daymark prerelease consolidating the post-alpha.2 product line for Linux and Android.
+
 ### Added
 
-- Search results and Index items now navigate directly to their real Daily, Monthly, Future, or Collection source while preserving historical read-only behavior.
-- Index items can be deliberately reordered or removed without changing the underlying journal structures.
+- Search results and Index items navigate directly to their real Daily, Monthly, Future, or Collection source while preserving historical read-only behavior.
+- Index items can be deliberately reordered or removed without changing underlying journal structures.
 - Collection references can be removed without deleting or mutating the source Entry.
 - Today includes contextual Daily Reflection for open Tasks with deliberate Complete, Migrate, Schedule, and Discard decisions.
-- Fresh captures expose a narrow immediate Undo action without introducing generic Edit/Delete behavior.
-- Open Export can copy the selected Markdown or JSON representation directly to the system clipboard.
+- Fresh captures expose a narrow immediate Undo action without introducing general Edit/Delete behavior.
+- Open Export can copy selected Markdown or JSON directly to the system clipboard.
 - Optional finite Monthly Trackers add deliberate daily `+ / -` marking, a combined five-color `+1 / 0 / -1` reflection graph, early ending, historical read-only viewing, and compact active-Tracker controls in Today.
 - Database schema v2 adds persisted Tracker periods and explicit `+1 / -1` marks with a tested additive migration from the published alpha.2 schema v1.
-- Daymark now ships dedicated application branding assets and launcher/application icons for Android and Linux.
+- Daymark ships dedicated application branding assets and launcher/application icons for Android and Linux.
 - Journal entry type/state and Tracker selection expose explicit accessibility semantics instead of relying only on visual Bullet Journal marks or color.
-- Daymark now includes a localized About surface with the application version, project identity, `devnux.com.br/daymark`, source repository, issue-reporting location, GPL-3.0-or-later license, author identity, existing branding, and Flutter open-source license disclosure.
-- GitHub Issue Forms now provide structured Bug Report and Feature Request entry points, disable blank issues, warn users not to publish sensitive journal/security data, and route vulnerability reports to the repository security policy.
+- Daymark includes a localized About surface with application version, project identity, `devnux.com.br/daymark`, source repository, bug-reporting location, GPL-3.0-or-later license, author identity, existing branding, and Flutter open-source license disclosure.
+- GitHub public support intake includes a structured Bug Report form, disables blank issues, warns users not to publish sensitive journal/security data, and routes vulnerability reports to the repository security policy.
 
 ### Changed
 
+- Prerelease packaging advances to `1.0.0-alpha.3+3`.
 - Linux keyboard focus and keyboard submission behavior are consistent across Today, Monthly, Future, Collections, and Search.
 - Journal entry rows are the primary action target instead of requiring precise clicks on the Bullet Journal marker.
 - Transient application feedback uses one in-layout Daymark notice channel that does not cover Rapid Logging controls.
-- Open Export now uses one format selector with Copy and Save actions rather than separate format-specific save buttons.
-- Open Export advances to format version 2 and includes Tracker periods plus explicit Tracker marks while preserving the published meaning of version-1 fields.
-- Material 3 remains the technical base while Daymark now applies a shared restrained visual control system for fields, buttons, menus, dialogs, navigation, and Tracker controls.
+- Open Export uses one format selector with Copy and Save actions rather than separate format-specific save buttons.
+- Open Export advances to format version 2 and includes Tracker periods plus explicit Tracker marks while preserving published version-1 field meaning.
+- Material 3 remains the technical base while Daymark applies a shared restrained visual control system for fields, buttons, menus, dialogs, navigation, and Tracker controls.
 - Principal journal screens use one responsive bounded page frame: compact Android layouts use tighter margins while wide Linux windows center journal content instead of stretching reading lines across the full window.
-- Typography hierarchy and selected navigation states are consistent across the primary journal surfaces.
+- Typography hierarchy and selected navigation states are consistent across primary journal surfaces.
 - Empty journal/search/history states use one quiet presentation treatment instead of scattered one-off text placement.
 - Relevant selectors and post-action flows restore composer/search focus on Linux, reducing pointer round-trips without changing Android touch behavior.
+- Daymark's functional scope is now explicitly **feature-complete and frozen**. Normal development after this release is limited to bugs, security, compatibility/migration, supported-platform/toolchain, packaging/release, accessibility/localization, and documentation maintenance.
+- Feature Request intake is removed. Public Issues are for bugs; security vulnerabilities use the private/security-policy path.
+- Linux and Android remain the supported product platforms, and English plus Portuguese (Brazil) remain the supported product languages. Additional platforms/languages are not roadmap items under the freeze.
+- Device-assisted/biometric unlock, recovery-secret UX, cloud/accounts/network features, AI features, collaboration, richer planner/search/collection systems, automatic backup scheduling, attachments, dashboards, gamification, and freeform editing are explicitly not planned under the frozen scope.
 
 ### Security
 
-- Open Export now requires master-password reauthentication before Daymark creates any plaintext representation.
+- Open Export requires master-password reauthentication before Daymark creates any plaintext representation.
 - Reauthentication validates the existing authenticated key envelope with temporary key material that is destroyed immediately without replacing or reopening the live journal session.
 - The Open Export warning explicitly covers both saved plaintext files and the system clipboard, including clipboard-manager retention risk.
-- Android device non-interactive events and Linux systemd-logind session-lock signals now request immediate Daymark lock through the same serialized journal-session path as manual and inactivity locking.
-- Device-assisted/biometric unlock remains deferred rather than storing the master password or introducing an incomplete device-bound key path.
+- Android device non-interactive events and Linux systemd-logind session-lock signals request immediate Daymark lock through the same serialized journal-session path as manual and inactivity locking.
+- The portable master-password model remains Daymark's unlock security model; device-assisted/biometric unlock is intentionally not planned rather than being left as unfinished release work.
+
+### Compatibility
+
+- Schema v1 from public `v1.0.0-alpha.2` migrates additively to schema v2 for Trackers; alpha.3 release validation must prove preservation of representative alpha.2 journal data through direct signed install-over and encrypted-backup restore paths.
+- Published key-envelope interpretation, 48-byte journal-key serialization, encrypted backup boundary, Open Export versioning, and Android signing identity remain compatibility-sensitive.
 
 ## [1.0.0-alpha.2] - 2026-09-04
 
@@ -79,17 +95,17 @@ First controlled distributable Daymark prerelease for Linux and Android.
 - Android release builds require explicit local release signing and fail closed instead of silently using the debug key.
 - Android release packaging refreshes generated plugin configuration before the `--no-pub` release build to avoid a stale development-only `integration_test` registrant.
 - English is the canonical and fallback UI locale; an exact Brazilian Portuguese system locale selects Portuguese (Brazil).
-- Device-assisted secure-storage integration is deferred until the portable master-password/recovery security baseline is complete.
+- Device-assisted secure-storage integration was deferred at the alpha.2 historical checkpoint while the portable master-password/recovery security baseline was being established.
 - Android OS-managed app-data backup and device-transfer paths are explicitly excluded; portable migration is reserved for Daymark's encrypted backup/restore design.
 - Encrypted restore is available only while the journal is locked or absent, preventing replacement of files beneath a live encrypted database session.
 - The native file-selection dependency is pinned to `file_picker 12.1.3` for Linux/Android compatibility with Daymark's current Flutter and AGP 9 toolchain.
-- Journal access now remains behind one stable router/application root instead of replacing the root application when lock state changes.
+- Journal access remains behind one stable router/application root instead of replacing the root application when lock state changes.
 - Journal operations and session closing are serialized so manual or automatic lock does not close encrypted persistence underneath an in-flight journal operation.
 - Master-password creation and unlock reject an empty password before cryptographic work begins.
-- Portuguese parent localization resources include the journal-access, Daily Log, Monthly Log, Future Log, Collection, migration, reference, Index, and Search strings used by the Brazilian Portuguese locale.
+- Portuguese parent localization resources include journal-access, Daily Log, Monthly Log, Future Log, Collection, migration, reference, Index, and Search strings used by the Brazilian Portuguese locale.
 - Compact navigation keeps four core journal destinations directly visible and groups Search and Index under a minimal More sheet, while expanded desktop navigation exposes both directly.
-- Human and AI contributors follow a staged validation workflow that prefers the fastest trustworthy feedback path: pinned local-first generation/formatting/analysis/tests/builds when explicitly agreed, Draft CI when remote evidence is useful, then full exact-head non-Draft CI / `merge-gate` and explicit user merge approval.
-- AI handoff guidance records concrete failure-prevention rules for localization generation, pinned formatting, widget-test diagnosis, safe interactive-shell command blocks, temporary CI probes, SHA-specific validation evidence, retained-navigation refresh behavior, and local-first execution without transferring debugging responsibility to the user.
+- Human and AI contributors follow a staged validation workflow that prefers the fastest trustworthy feedback path: pinned local-first generation/formatting/analysis/tests/builds when explicitly agreed, Draft CI when remote evidence is useful, then full exact-head non-Draft CI / `merge-gate` and explicit maintainer merge approval.
+- AI handoff guidance records failure-prevention rules for localization generation, pinned formatting, widget-test diagnosis, safe interactive-shell command blocks, temporary CI probes, SHA-specific evidence, retained-navigation refresh behavior, and local-first execution.
 - Returning from application background re-evaluates the inactivity deadline immediately instead of trusting a platform timer to have continued firing while suspended.
 - Task terminal actions preserve the original journal entry and change only its Task state, keeping journal history visible.
 - Future Log is explicitly month-addressed rather than a second day-level calendar, preserving the method-native distinction between Monthly and Future surfaces.
@@ -116,7 +132,7 @@ First controlled distributable Daymark prerelease for Linux and Android.
 - Master passwords protect the random journal key through Argon2id and XChaCha20-Poly1305 rather than being used directly as database passwords.
 - Key-envelope and encrypted-database tests cover wrong credentials, corrupted authenticated data, incorrect database keys, unkeyed SQLite access, and representative plaintext leakage.
 - Representative Linux and physical Android profile-mode benchmarks were recorded for Argon2id parameter selection.
-- The initial Argon2id production baseline is frozen at 19 MiB memory, 2 iterations, parallelism 1, and 32-byte output; parameters remain explicit in each key envelope for future strengthening and compatibility handling.
+- The initial Argon2id production baseline is frozen at 19 MiB memory, 2 iterations, parallelism 1, and 32-byte output; parameters remain explicit in each key envelope for compatible security maintenance.
 - Unlocked journal sessions own the encrypted database and mutable journal-key material; closing the session closes persistence before key destruction.
 - Open Export is an explicit plaintext security boundary: exported JSON and Markdown are not encrypted and are deliberately distinct from Daymark encrypted backup.
 - The inactivity guard fails closed if the wall clock moves backwards relative to the last recorded journal interaction.
