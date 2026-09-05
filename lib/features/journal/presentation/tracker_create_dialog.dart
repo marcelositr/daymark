@@ -40,9 +40,7 @@ Future<TrackerDraft?> showTrackerCreateDialog({
                       controller: titleController,
                       autofocus: true,
                       textInputAction: TextInputAction.done,
-                      decoration: InputDecoration(
-                        labelText: l10n.trackerTitle,
-                      ),
+                      decoration: InputDecoration(labelText: l10n.trackerTitle),
                     ),
                     const SizedBox(height: 16),
                     _DateButton(
@@ -94,7 +92,9 @@ Future<TrackerDraft?> showTrackerCreateDialog({
               actions: <Widget>[
                 TextButton(
                   onPressed: () => Navigator.of(dialogContext).pop(),
-                  child: Text(MaterialLocalizations.of(context).cancelButtonLabel),
+                  child: Text(
+                    MaterialLocalizations.of(context).cancelButtonLabel,
+                  ),
                 ),
                 FilledButton(
                   onPressed: () {

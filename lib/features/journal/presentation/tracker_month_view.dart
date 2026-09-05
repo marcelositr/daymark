@@ -42,8 +42,8 @@ class _TrackerMonthViewState extends State<TrackerMonthView> {
 
   @override
   Widget build(BuildContext context) {
-    final bool portrait = MediaQuery.sizeOf(context).height >
-        MediaQuery.sizeOf(context).width;
+    final bool portrait =
+        MediaQuery.sizeOf(context).height > MediaQuery.sizeOf(context).width;
     final String selectedDate = _methodDate(
       widget.snapshot.periodStart,
       widget.selectedDay,
@@ -209,7 +209,9 @@ class _TrackerDataPanel extends StatelessWidget {
                 final bool active = tracker.isActiveOn(selectedDate);
                 final bool focused = tracker.id == focusedTrackerId;
                 final bool busy = tracker.id == busyTrackerId;
-                final int? value = active ? tracker.valueOn(selectedDate) : null;
+                final int? value = active
+                    ? tracker.valueOn(selectedDate)
+                    : null;
                 final bool canEnd =
                     writable &&
                     active &&
@@ -220,8 +222,9 @@ class _TrackerDataPanel extends StatelessWidget {
                 return DecoratedBox(
                   decoration: BoxDecoration(
                     color: focused
-                        ? trackerSlotColors[tracker.colorSlot]
-                              .withValues(alpha: 0.08)
+                        ? trackerSlotColors[tracker.colorSlot].withValues(
+                            alpha: 0.08,
+                          )
                         : null,
                     borderRadius: BorderRadius.circular(8),
                   ),
@@ -266,7 +269,9 @@ class _TrackerDataPanel extends StatelessWidget {
                                   ),
                                   Text(
                                     '${tracker.startDate} – ${tracker.effectiveEndDate}',
-                                    style: Theme.of(context).textTheme.bodySmall,
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .bodySmall,
                                   ),
                                 ],
                               ),
@@ -287,7 +292,8 @@ class _TrackerDataPanel extends StatelessWidget {
                             visualDensity: VisualDensity.compact,
                             onPressed: () => onSetMark(
                               tracker,
-                              value == 1 && tracker.hasExplicitMark(selectedDate)
+                              value == 1 &&
+                                      tracker.hasExplicitMark(selectedDate)
                                   ? null
                                   : 1,
                             ),
@@ -307,7 +313,8 @@ class _TrackerDataPanel extends StatelessWidget {
                             visualDensity: VisualDensity.compact,
                             onPressed: () => onSetMark(
                               tracker,
-                              value == -1 && tracker.hasExplicitMark(selectedDate)
+                              value == -1 &&
+                                      tracker.hasExplicitMark(selectedDate)
                                   ? null
                                   : -1,
                             ),
@@ -332,14 +339,11 @@ class _TrackerDataPanel extends StatelessWidget {
                         ] else if (active)
                           Padding(
                             padding: const EdgeInsets.symmetric(horizontal: 8),
-                            child: Text(
-                              switch (value) {
-                                1 => '+1',
-                                -1 => '-1',
-                                _ => '0',
-                              },
-                              style: Theme.of(context).textTheme.labelLarge,
-                            ),
+                            child: Text(switch (value) {
+                              1 => '+1',
+                              -1 => '-1',
+                              _ => '0',
+                            }, style: Theme.of(context).textTheme.labelLarge),
                           ),
                       ],
                     ),
@@ -349,7 +353,10 @@ class _TrackerDataPanel extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 6),
-          Text(l10n.trackerZeroMeaning, style: Theme.of(context).textTheme.bodySmall),
+          Text(
+            l10n.trackerZeroMeaning,
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
         ],
       ),
     );
@@ -483,8 +490,8 @@ class _TrackerGraphPainter extends CustomPainter {
     _drawTrackerLines(
       canvas,
       dayPoint: (int day, int value) {
-        final double x = left +
-            ((day - 1) / (snapshot.daysInMonth - 1)) * graphWidth;
+        final double x =
+            left + ((day - 1) / (snapshot.daysInMonth - 1)) * graphWidth;
         final double y = switch (value) {
           1 => yPositive,
           -1 => yNegative,
@@ -522,8 +529,8 @@ class _TrackerGraphPainter extends CustomPainter {
     _drawTrackerLines(
       canvas,
       dayPoint: (int day, int value) {
-        final double y = top +
-            ((day - 1) / (snapshot.daysInMonth - 1)) * graphHeight;
+        final double y =
+            top + ((day - 1) / (snapshot.daysInMonth - 1)) * graphHeight;
         final double x = switch (value) {
           1 => xPositive,
           -1 => xNegative,
@@ -551,14 +558,18 @@ class _TrackerGraphPainter extends CustomPainter {
       ..strokeWidth = 1
       ..isAntiAlias = true;
     for (final double y in <double>[yPositive, yZero, yNegative]) {
-      canvas.drawLine(Offset(left, y), Offset(size.width - right, y), gridPaint);
+      canvas.drawLine(
+        Offset(left, y),
+        Offset(size.width - right, y),
+        gridPaint,
+      );
     }
     _drawText(canvas, '+1', const Offset(4, 1), textColor, 10);
     _drawText(canvas, '0', Offset(14, yZero - 6), textColor, 10);
     _drawText(canvas, '-1', Offset(4, yNegative - 6), textColor, 10);
     for (final int day in _dayLabels(snapshot.daysInMonth)) {
-      final double x = left +
-          ((day - 1) / (snapshot.daysInMonth - 1)) * graphWidth;
+      final double x =
+          left + ((day - 1) / (snapshot.daysInMonth - 1)) * graphWidth;
       _drawText(
         canvas,
         '$day',
@@ -584,14 +595,18 @@ class _TrackerGraphPainter extends CustomPainter {
       ..strokeWidth = 1
       ..isAntiAlias = true;
     for (final double x in <double>[xNegative, xZero, xPositive]) {
-      canvas.drawLine(Offset(x, top), Offset(x, size.height - bottom), gridPaint);
+      canvas.drawLine(
+        Offset(x, top),
+        Offset(x, size.height - bottom),
+        gridPaint,
+      );
     }
     _drawText(canvas, '-1', Offset(xNegative - 7, 2), textColor, 9);
     _drawText(canvas, '0', Offset(xZero - 3, 2), textColor, 9);
     _drawText(canvas, '+1', Offset(xPositive - 8, 2), textColor, 9);
     for (final int day in _dayLabels(snapshot.daysInMonth)) {
-      final double y = top +
-          ((day - 1) / (snapshot.daysInMonth - 1)) * graphHeight;
+      final double y =
+          top + ((day - 1) / (snapshot.daysInMonth - 1)) * graphHeight;
       _drawText(
         canvas,
         '$day',
@@ -614,10 +629,12 @@ class _TrackerGraphPainter extends CustomPainter {
     for (final TrackerRecord tracker in snapshot.trackers) {
       final DateTime start = DateTime.parse(tracker.startDate);
       final DateTime end = DateTime.parse(tracker.effectiveEndDate);
-      final int firstDay = start.year == month.year && start.month == month.month
+      final int firstDay =
+          start.year == month.year && start.month == month.month
           ? start.day
           : 1;
-      final int naturalLastDay = end.year == month.year && end.month == month.month
+      final int naturalLastDay =
+          end.year == month.year && end.month == month.month
           ? end.day
           : snapshot.daysInMonth;
       final int lastDay = math.min(naturalLastDay, visibleThrough);
@@ -658,7 +675,9 @@ class _TrackerGraphPainter extends CustomPainter {
 
       if (dimmed) continue;
       for (int index = 0; index < points.length; index++) {
-        final double radius = explicit[index] ? pointRadius + 0.55 : pointRadius;
+        final double radius = explicit[index]
+            ? pointRadius + 0.55
+            : pointRadius;
         final Paint outer = Paint()
           ..color = surfaceColor
           ..style = PaintingStyle.fill

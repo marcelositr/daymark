@@ -75,7 +75,8 @@ final class TrackerRepository {
     int Function()? nowUtcMicros,
   }) : _idGenerator = idGenerator ?? const Uuid().v7,
        _nowUtcMicros =
-           nowUtcMicros ?? (() => DateTime.now().toUtc().microsecondsSinceEpoch);
+           nowUtcMicros ??
+           (() => DateTime.now().toUtc().microsecondsSinceEpoch);
 
   final DaymarkDatabase _database;
   final String Function() _idGenerator;
@@ -86,19 +87,21 @@ final class TrackerRepository {
     final String monthEnd = _formatDate(
       DateTime(month.year, month.month + 1, 0),
     );
-    final List<QueryRow> rows = await _database.customSelect(
-      '''
+    final List<QueryRow> rows = await _database
+        .customSelect(
+          '''
       SELECT id, title, start_date, planned_end_date, ended_date, color_slot
       FROM trackers
       WHERE start_date <= ?
         AND COALESCE(ended_date, planned_end_date) >= ?
       ORDER BY color_slot, start_date, created_at, id
       ''',
-      variables: <Variable>[
-        Variable<String>(monthEnd),
-        Variable<String>(periodStart),
-      ],
-    ).get();
+          variables: <Variable>[
+            Variable<String>(monthEnd),
+            Variable<String>(periodStart),
+          ],
+        )
+        .get();
 
     final List<TrackerRecord> trackers = <TrackerRecord>[];
     for (final QueryRow row in rows) {
@@ -120,19 +123,21 @@ final class TrackerRepository {
 
   Future<List<TrackerRecord>> loadForDay(String methodDate) async {
     _requireMethodDate(methodDate);
-    final List<QueryRow> rows = await _database.customSelect(
-      '''
+    final List<QueryRow> rows = await _database
+        .customSelect(
+          '''
       SELECT id, title, start_date, planned_end_date, ended_date, color_slot
       FROM trackers
       WHERE start_date <= ?
         AND COALESCE(ended_date, planned_end_date) >= ?
       ORDER BY color_slot, created_at, id
       ''',
-      variables: <Variable>[
-        Variable<String>(methodDate),
-        Variable<String>(methodDate),
-      ],
-    ).get();
+          variables: <Variable>[
+            Variable<String>(methodDate),
+            Variable<String>(methodDate),
+          ],
+        )
+        .get();
 
     final List<TrackerRecord> trackers = <TrackerRecord>[];
     for (final QueryRow row in rows) {
@@ -165,18 +170,20 @@ final class TrackerRepository {
     }
 
     return _database.transaction(() async {
-      final List<QueryRow> occupiedRows = await _database.customSelect(
-        '''
+      final List<QueryRow> occupiedRows = await _database
+          .customSelect(
+            '''
         SELECT DISTINCT color_slot
         FROM trackers
         WHERE start_date <= ?
           AND COALESCE(ended_date, planned_end_date) >= ?
         ''',
-        variables: <Variable>[
-          Variable<String>(plannedEndDate),
-          Variable<String>(startDate),
-        ],
-      ).get();
+            variables: <Variable>[
+              Variable<String>(plannedEndDate),
+              Variable<String>(startDate),
+            ],
+          )
+          .get();
       final Set<int> occupied = <int>{
         for (final QueryRow row in occupiedRows) row.read<int>('color_slot'),
       };
@@ -305,15 +312,17 @@ final class TrackerRepository {
   }
 
   Future<QueryRow> _requireTracker(String trackerId) async {
-    final List<QueryRow> rows = await _database.customSelect(
-      '''
+    final List<QueryRow> rows = await _database
+        .customSelect(
+          '''
       SELECT id, title, start_date, planned_end_date, ended_date, color_slot
       FROM trackers
       WHERE id = ?
       LIMIT 1
       ''',
-      variables: <Variable>[Variable<String>(trackerId)],
-    ).get();
+          variables: <Variable>[Variable<String>(trackerId)],
+        )
+        .get();
     if (rows.isEmpty) {
       throw JournalNotFoundException('Tracker', trackerId);
     }
@@ -326,8 +335,9 @@ final class TrackerRepository {
     required String marksThrough,
   }) async {
     final String id = row.read<String>('id');
-    final List<QueryRow> markRows = await _database.customSelect(
-      '''
+    final List<QueryRow> markRows = await _database
+        .customSelect(
+          '''
       SELECT method_date, value
       FROM tracker_marks
       WHERE tracker_id = ?
@@ -335,12 +345,13 @@ final class TrackerRepository {
         AND method_date <= ?
       ORDER BY method_date
       ''',
-      variables: <Variable>[
-        Variable<String>(id),
-        Variable<String>(marksFrom),
-        Variable<String>(marksThrough),
-      ],
-    ).get();
+          variables: <Variable>[
+            Variable<String>(id),
+            Variable<String>(marksFrom),
+            Variable<String>(marksThrough),
+          ],
+        )
+        .get();
 
     return TrackerRecord(
       id: id,

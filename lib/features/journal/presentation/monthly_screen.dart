@@ -305,9 +305,7 @@ class _MonthlyScreenState extends ConsumerState<MonthlyScreen>
                           );
                         }
                         if (snapshot.hasError) {
-                          return Center(
-                            child: Text(l10n.monthlyLogLoadFailed),
-                          );
+                          return Center(child: Text(l10n.monthlyLogLoadFailed));
                         }
                         return switch (_section) {
                           _MonthlyViewSection.calendar => _buildCalendar(
@@ -320,7 +318,8 @@ class _MonthlyScreenState extends ConsumerState<MonthlyScreen>
                             l10n,
                             snapshot.data,
                           ),
-                          _MonthlyViewSection.tracker => const SizedBox.shrink(),
+                          _MonthlyViewSection.tracker =>
+                            const SizedBox.shrink(),
                         };
                       },
                     ),
@@ -337,10 +336,7 @@ class _MonthlyScreenState extends ConsumerState<MonthlyScreen>
     );
   }
 
-  Widget _buildTrackerSection(
-    BuildContext context,
-    AppLocalizations l10n,
-  ) {
+  Widget _buildTrackerSection(BuildContext context, AppLocalizations l10n) {
     return FutureBuilder<TrackerMonthSnapshot>(
       future: _trackerFuture,
       builder: (context, snapshot) {

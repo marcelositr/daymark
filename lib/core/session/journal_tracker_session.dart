@@ -30,11 +30,8 @@ extension JournalTrackerSession on JournalSession {
     required int? value,
   }) {
     return run(
-      () => TrackerRepository(database).setMark(
-        trackerId: trackerId,
-        methodDate: methodDate,
-        value: value,
-      ),
+      () => TrackerRepository(database)
+          .setMark(trackerId: trackerId, methodDate: methodDate, value: value),
     );
   }
 
@@ -43,10 +40,9 @@ extension JournalTrackerSession on JournalSession {
     required String methodDate,
   }) {
     return run(
-      () => TrackerRepository(database).endEarly(
-        trackerId: trackerId,
-        methodDate: methodDate,
-      ),
+      () =>
+          TrackerRepository(database)
+              .endEarly(trackerId: trackerId, methodDate: methodDate),
     );
   }
 }

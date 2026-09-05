@@ -254,42 +254,46 @@ class _TodayScreenState extends ConsumerState<TodayScreen>
   Widget _buildTodayTrackers(AppLocalizations l10n) {
     return FutureBuilder<List<TrackerRecord>>(
       future: _trackerFuture,
-      builder: (BuildContext context, AsyncSnapshot<List<TrackerRecord>> snapshot) {
-        if (snapshot.connectionState != ConnectionState.done ||
-            snapshot.hasError ||
-            !snapshot.hasData ||
-            snapshot.requireData.isEmpty) {
-          return const SizedBox.shrink();
-        }
+      builder:
+          (BuildContext context, AsyncSnapshot<List<TrackerRecord>> snapshot) {
+            if (snapshot.connectionState != ConnectionState.done ||
+                snapshot.hasError ||
+                !snapshot.hasData ||
+                snapshot.requireData.isEmpty) {
+              return const SizedBox.shrink();
+            }
 
-        final String methodDate = formatJournalMethodDate(_today);
-        return Padding(
-          padding: const EdgeInsets.only(top: 12),
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              border: Border.all(
-                color: Theme.of(context).colorScheme.outlineVariant,
-              ),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: <Widget>[
-                  Text(
-                    l10n.todayTrackers,
-                    style: Theme.of(context).textTheme.labelLarge,
+            final String methodDate = formatJournalMethodDate(_today);
+            return Padding(
+              padding: const EdgeInsets.only(top: 12),
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  border: Border.all(
+                    color: Theme.of(context).colorScheme.outlineVariant,
                   ),
-                  const SizedBox(height: 4),
-                  for (final TrackerRecord tracker in snapshot.requireData)
-                    _buildTodayTrackerRow(l10n, tracker, methodDate),
-                ],
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 8,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: <Widget>[
+                      Text(
+                        l10n.todayTrackers,
+                        style: Theme.of(context).textTheme.labelLarge,
+                      ),
+                      const SizedBox(height: 4),
+                      for (final TrackerRecord tracker in snapshot.requireData)
+                        _buildTodayTrackerRow(l10n, tracker, methodDate),
+                    ],
+                  ),
+                ),
               ),
-            ),
-          ),
-        );
-      },
+            );
+          },
     );
   }
 
@@ -834,10 +838,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen>
       return;
     }
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted &&
-          !_reflecting &&
-          !_saving &&
-          _trackerActionId == null) {
+      if (mounted && !_reflecting && !_saving && _trackerActionId == null) {
         _entryFocusNode.requestFocus();
       }
     });

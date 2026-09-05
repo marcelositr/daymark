@@ -116,10 +116,12 @@ void main() {
       ) VALUES ('tracker-1', '2026-09-04', -1, 2, 2)
     ''');
 
-    await database.customStatement("DELETE FROM trackers WHERE id = 'tracker-1'");
-    final row = await database.customSelect(
-      'SELECT COUNT(*) AS count FROM tracker_marks',
-    ).getSingle();
+    await database.customStatement(
+      "DELETE FROM trackers WHERE id = 'tracker-1'",
+    );
+    final row = await database
+        .customSelect('SELECT COUNT(*) AS count FROM tracker_marks')
+        .getSingle();
     expect(row.read<int>('count'), 0);
   });
 }
