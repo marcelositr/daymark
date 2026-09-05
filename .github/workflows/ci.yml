@@ -25,14 +25,10 @@ jobs:
   dev-check:
     name: dev-check
     if: github.event_name == 'pull_request' && github.event.pull_request.draft
-    permissions:
-      contents: write
     runs-on: ubuntu-24.04
     steps:
       - name: Check out repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-        with:
-          ref: ${{ github.event.pull_request.head.sha }}
 
       - name: Set up Flutter 3.47.2
         uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2
@@ -52,20 +48,6 @@ jobs:
 
       - name: Verify Drift migration snapshot
         run: dart run drift_dev make-migrations
-
-      - name: Commit generated Drift artifacts and restore CI
-        shell: bash
-        run: |
-          if git diff --quiet -- lib/core/database/daymark_database.g.dart drift_schemas; then
-            exit 0
-          fi
-          git fetch --no-tags --depth=1 origin main
-          git checkout FETCH_HEAD -- .github/workflows/ci.yml
-          git config user.name "Marcelo Trindade"
-          git config user.email "49993899+marcelositr@users.noreply.github.com"
-          git add .github/workflows/ci.yml lib/core/database/daymark_database.g.dart drift_schemas
-          git commit -m "chore(database): record tracker schema v2"
-          git push origin HEAD:${{ github.head_ref }}
 
       - name: Reject stale Drift generated artifacts
         run: git diff --exit-code -- lib/core/database/daymark_database.g.dart drift_schemas

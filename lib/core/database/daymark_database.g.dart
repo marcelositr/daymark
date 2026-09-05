@@ -3561,6 +3561,894 @@ class IndexItemsCompanion extends UpdateCompanion<IndexItem> {
   }
 }
 
+class Trackers extends Table with TableInfo<Trackers, Tracker> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  Trackers(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL PRIMARY KEY',
+  );
+  static const VerificationMeta _titleMeta = const VerificationMeta('title');
+  late final GeneratedColumn<String> title = GeneratedColumn<String>(
+    'title',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL CHECK (length(trim(title)) > 0)',
+  );
+  static const VerificationMeta _startDateMeta = const VerificationMeta(
+    'startDate',
+  );
+  late final GeneratedColumn<String> startDate = GeneratedColumn<String>(
+    'start_date',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL CHECK (length(start_date) = 10)',
+  );
+  static const VerificationMeta _plannedEndDateMeta = const VerificationMeta(
+    'plannedEndDate',
+  );
+  late final GeneratedColumn<String> plannedEndDate = GeneratedColumn<String>(
+    'planned_end_date',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL CHECK (length(planned_end_date) = 10)',
+  );
+  static const VerificationMeta _endedDateMeta = const VerificationMeta(
+    'endedDate',
+  );
+  late final GeneratedColumn<String> endedDate = GeneratedColumn<String>(
+    'ended_date',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    $customConstraints: 'CHECK (ended_date IS NULL OR length(ended_date) = 10)',
+  );
+  static const VerificationMeta _colorSlotMeta = const VerificationMeta(
+    'colorSlot',
+  );
+  late final GeneratedColumn<int> colorSlot = GeneratedColumn<int>(
+    'color_slot',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL CHECK (color_slot BETWEEN 0 AND 4)',
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  late final GeneratedColumn<int> createdAt = GeneratedColumn<int>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL CHECK (created_at >= 0)',
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  late final GeneratedColumn<int> updatedAt = GeneratedColumn<int>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL CHECK (updated_at >= created_at)',
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    title,
+    startDate,
+    plannedEndDate,
+    endedDate,
+    colorSlot,
+    createdAt,
+    updatedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'trackers';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<Tracker> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('title')) {
+      context.handle(
+        _titleMeta,
+        title.isAcceptableOrUnknown(data['title']!, _titleMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_titleMeta);
+    }
+    if (data.containsKey('start_date')) {
+      context.handle(
+        _startDateMeta,
+        startDate.isAcceptableOrUnknown(data['start_date']!, _startDateMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_startDateMeta);
+    }
+    if (data.containsKey('planned_end_date')) {
+      context.handle(
+        _plannedEndDateMeta,
+        plannedEndDate.isAcceptableOrUnknown(
+          data['planned_end_date']!,
+          _plannedEndDateMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_plannedEndDateMeta);
+    }
+    if (data.containsKey('ended_date')) {
+      context.handle(
+        _endedDateMeta,
+        endedDate.isAcceptableOrUnknown(data['ended_date']!, _endedDateMeta),
+      );
+    }
+    if (data.containsKey('color_slot')) {
+      context.handle(
+        _colorSlotMeta,
+        colorSlot.isAcceptableOrUnknown(data['color_slot']!, _colorSlotMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_colorSlotMeta);
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_updatedAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  Tracker map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return Tracker(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      title: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}title'],
+      )!,
+      startDate: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}start_date'],
+      )!,
+      plannedEndDate: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}planned_end_date'],
+      )!,
+      endedDate: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}ended_date'],
+      ),
+      colorSlot: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}color_slot'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}updated_at'],
+      )!,
+    );
+  }
+
+  @override
+  Trackers createAlias(String alias) {
+    return Trackers(attachedDatabase, alias);
+  }
+
+  @override
+  List<String> get customConstraints => const [
+    'CHECK(planned_end_date >= start_date)',
+    'CHECK(ended_date IS NULL OR(ended_date >= start_date AND ended_date <= planned_end_date))',
+  ];
+  @override
+  bool get dontWriteConstraints => true;
+}
+
+class Tracker extends DataClass implements Insertable<Tracker> {
+  final String id;
+  final String title;
+  final String startDate;
+  final String plannedEndDate;
+  final String? endedDate;
+  final int colorSlot;
+  final int createdAt;
+  final int updatedAt;
+  const Tracker({
+    required this.id,
+    required this.title,
+    required this.startDate,
+    required this.plannedEndDate,
+    this.endedDate,
+    required this.colorSlot,
+    required this.createdAt,
+    required this.updatedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['title'] = Variable<String>(title);
+    map['start_date'] = Variable<String>(startDate);
+    map['planned_end_date'] = Variable<String>(plannedEndDate);
+    if (!nullToAbsent || endedDate != null) {
+      map['ended_date'] = Variable<String>(endedDate);
+    }
+    map['color_slot'] = Variable<int>(colorSlot);
+    map['created_at'] = Variable<int>(createdAt);
+    map['updated_at'] = Variable<int>(updatedAt);
+    return map;
+  }
+
+  TrackersCompanion toCompanion(bool nullToAbsent) {
+    return TrackersCompanion(
+      id: Value(id),
+      title: Value(title),
+      startDate: Value(startDate),
+      plannedEndDate: Value(plannedEndDate),
+      endedDate: endedDate == null && nullToAbsent
+          ? const Value.absent()
+          : Value(endedDate),
+      colorSlot: Value(colorSlot),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+    );
+  }
+
+  factory Tracker.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return Tracker(
+      id: serializer.fromJson<String>(json['id']),
+      title: serializer.fromJson<String>(json['title']),
+      startDate: serializer.fromJson<String>(json['start_date']),
+      plannedEndDate: serializer.fromJson<String>(json['planned_end_date']),
+      endedDate: serializer.fromJson<String?>(json['ended_date']),
+      colorSlot: serializer.fromJson<int>(json['color_slot']),
+      createdAt: serializer.fromJson<int>(json['created_at']),
+      updatedAt: serializer.fromJson<int>(json['updated_at']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'title': serializer.toJson<String>(title),
+      'start_date': serializer.toJson<String>(startDate),
+      'planned_end_date': serializer.toJson<String>(plannedEndDate),
+      'ended_date': serializer.toJson<String?>(endedDate),
+      'color_slot': serializer.toJson<int>(colorSlot),
+      'created_at': serializer.toJson<int>(createdAt),
+      'updated_at': serializer.toJson<int>(updatedAt),
+    };
+  }
+
+  Tracker copyWith({
+    String? id,
+    String? title,
+    String? startDate,
+    String? plannedEndDate,
+    Value<String?> endedDate = const Value.absent(),
+    int? colorSlot,
+    int? createdAt,
+    int? updatedAt,
+  }) => Tracker(
+    id: id ?? this.id,
+    title: title ?? this.title,
+    startDate: startDate ?? this.startDate,
+    plannedEndDate: plannedEndDate ?? this.plannedEndDate,
+    endedDate: endedDate.present ? endedDate.value : this.endedDate,
+    colorSlot: colorSlot ?? this.colorSlot,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+  );
+  Tracker copyWithCompanion(TrackersCompanion data) {
+    return Tracker(
+      id: data.id.present ? data.id.value : this.id,
+      title: data.title.present ? data.title.value : this.title,
+      startDate: data.startDate.present ? data.startDate.value : this.startDate,
+      plannedEndDate: data.plannedEndDate.present
+          ? data.plannedEndDate.value
+          : this.plannedEndDate,
+      endedDate: data.endedDate.present ? data.endedDate.value : this.endedDate,
+      colorSlot: data.colorSlot.present ? data.colorSlot.value : this.colorSlot,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('Tracker(')
+          ..write('id: $id, ')
+          ..write('title: $title, ')
+          ..write('startDate: $startDate, ')
+          ..write('plannedEndDate: $plannedEndDate, ')
+          ..write('endedDate: $endedDate, ')
+          ..write('colorSlot: $colorSlot, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    title,
+    startDate,
+    plannedEndDate,
+    endedDate,
+    colorSlot,
+    createdAt,
+    updatedAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is Tracker &&
+          other.id == this.id &&
+          other.title == this.title &&
+          other.startDate == this.startDate &&
+          other.plannedEndDate == this.plannedEndDate &&
+          other.endedDate == this.endedDate &&
+          other.colorSlot == this.colorSlot &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt);
+}
+
+class TrackersCompanion extends UpdateCompanion<Tracker> {
+  final Value<String> id;
+  final Value<String> title;
+  final Value<String> startDate;
+  final Value<String> plannedEndDate;
+  final Value<String?> endedDate;
+  final Value<int> colorSlot;
+  final Value<int> createdAt;
+  final Value<int> updatedAt;
+  final Value<int> rowid;
+  const TrackersCompanion({
+    this.id = const Value.absent(),
+    this.title = const Value.absent(),
+    this.startDate = const Value.absent(),
+    this.plannedEndDate = const Value.absent(),
+    this.endedDate = const Value.absent(),
+    this.colorSlot = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  TrackersCompanion.insert({
+    required String id,
+    required String title,
+    required String startDate,
+    required String plannedEndDate,
+    this.endedDate = const Value.absent(),
+    required int colorSlot,
+    required int createdAt,
+    required int updatedAt,
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       title = Value(title),
+       startDate = Value(startDate),
+       plannedEndDate = Value(plannedEndDate),
+       colorSlot = Value(colorSlot),
+       createdAt = Value(createdAt),
+       updatedAt = Value(updatedAt);
+  static Insertable<Tracker> custom({
+    Expression<String>? id,
+    Expression<String>? title,
+    Expression<String>? startDate,
+    Expression<String>? plannedEndDate,
+    Expression<String>? endedDate,
+    Expression<int>? colorSlot,
+    Expression<int>? createdAt,
+    Expression<int>? updatedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (title != null) 'title': title,
+      if (startDate != null) 'start_date': startDate,
+      if (plannedEndDate != null) 'planned_end_date': plannedEndDate,
+      if (endedDate != null) 'ended_date': endedDate,
+      if (colorSlot != null) 'color_slot': colorSlot,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  TrackersCompanion copyWith({
+    Value<String>? id,
+    Value<String>? title,
+    Value<String>? startDate,
+    Value<String>? plannedEndDate,
+    Value<String?>? endedDate,
+    Value<int>? colorSlot,
+    Value<int>? createdAt,
+    Value<int>? updatedAt,
+    Value<int>? rowid,
+  }) {
+    return TrackersCompanion(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      startDate: startDate ?? this.startDate,
+      plannedEndDate: plannedEndDate ?? this.plannedEndDate,
+      endedDate: endedDate ?? this.endedDate,
+      colorSlot: colorSlot ?? this.colorSlot,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (title.present) {
+      map['title'] = Variable<String>(title.value);
+    }
+    if (startDate.present) {
+      map['start_date'] = Variable<String>(startDate.value);
+    }
+    if (plannedEndDate.present) {
+      map['planned_end_date'] = Variable<String>(plannedEndDate.value);
+    }
+    if (endedDate.present) {
+      map['ended_date'] = Variable<String>(endedDate.value);
+    }
+    if (colorSlot.present) {
+      map['color_slot'] = Variable<int>(colorSlot.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<int>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<int>(updatedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('TrackersCompanion(')
+          ..write('id: $id, ')
+          ..write('title: $title, ')
+          ..write('startDate: $startDate, ')
+          ..write('plannedEndDate: $plannedEndDate, ')
+          ..write('endedDate: $endedDate, ')
+          ..write('colorSlot: $colorSlot, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class TrackerMarks extends Table with TableInfo<TrackerMarks, TrackerMark> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  TrackerMarks(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _trackerIdMeta = const VerificationMeta(
+    'trackerId',
+  );
+  late final GeneratedColumn<String> trackerId = GeneratedColumn<String>(
+    'tracker_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL REFERENCES trackers(id)ON DELETE CASCADE',
+  );
+  static const VerificationMeta _methodDateMeta = const VerificationMeta(
+    'methodDate',
+  );
+  late final GeneratedColumn<String> methodDate = GeneratedColumn<String>(
+    'method_date',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL CHECK (length(method_date) = 10)',
+  );
+  static const VerificationMeta _valueMeta = const VerificationMeta('value');
+  late final GeneratedColumn<int> value = GeneratedColumn<int>(
+    'value',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL CHECK (value IN (-1, 1))',
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  late final GeneratedColumn<int> createdAt = GeneratedColumn<int>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL CHECK (created_at >= 0)',
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  late final GeneratedColumn<int> updatedAt = GeneratedColumn<int>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL CHECK (updated_at >= created_at)',
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    trackerId,
+    methodDate,
+    value,
+    createdAt,
+    updatedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'tracker_marks';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<TrackerMark> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('tracker_id')) {
+      context.handle(
+        _trackerIdMeta,
+        trackerId.isAcceptableOrUnknown(data['tracker_id']!, _trackerIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_trackerIdMeta);
+    }
+    if (data.containsKey('method_date')) {
+      context.handle(
+        _methodDateMeta,
+        methodDate.isAcceptableOrUnknown(data['method_date']!, _methodDateMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_methodDateMeta);
+    }
+    if (data.containsKey('value')) {
+      context.handle(
+        _valueMeta,
+        value.isAcceptableOrUnknown(data['value']!, _valueMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_valueMeta);
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_updatedAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {trackerId, methodDate};
+  @override
+  TrackerMark map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return TrackerMark(
+      trackerId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}tracker_id'],
+      )!,
+      methodDate: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}method_date'],
+      )!,
+      value: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}value'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}updated_at'],
+      )!,
+    );
+  }
+
+  @override
+  TrackerMarks createAlias(String alias) {
+    return TrackerMarks(attachedDatabase, alias);
+  }
+
+  @override
+  bool get withoutRowId => true;
+  @override
+  List<String> get customConstraints => const [
+    'PRIMARY KEY(tracker_id, method_date)',
+  ];
+  @override
+  bool get dontWriteConstraints => true;
+}
+
+class TrackerMark extends DataClass implements Insertable<TrackerMark> {
+  final String trackerId;
+  final String methodDate;
+  final int value;
+  final int createdAt;
+  final int updatedAt;
+  const TrackerMark({
+    required this.trackerId,
+    required this.methodDate,
+    required this.value,
+    required this.createdAt,
+    required this.updatedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['tracker_id'] = Variable<String>(trackerId);
+    map['method_date'] = Variable<String>(methodDate);
+    map['value'] = Variable<int>(value);
+    map['created_at'] = Variable<int>(createdAt);
+    map['updated_at'] = Variable<int>(updatedAt);
+    return map;
+  }
+
+  TrackerMarksCompanion toCompanion(bool nullToAbsent) {
+    return TrackerMarksCompanion(
+      trackerId: Value(trackerId),
+      methodDate: Value(methodDate),
+      value: Value(value),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+    );
+  }
+
+  factory TrackerMark.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return TrackerMark(
+      trackerId: serializer.fromJson<String>(json['tracker_id']),
+      methodDate: serializer.fromJson<String>(json['method_date']),
+      value: serializer.fromJson<int>(json['value']),
+      createdAt: serializer.fromJson<int>(json['created_at']),
+      updatedAt: serializer.fromJson<int>(json['updated_at']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'tracker_id': serializer.toJson<String>(trackerId),
+      'method_date': serializer.toJson<String>(methodDate),
+      'value': serializer.toJson<int>(value),
+      'created_at': serializer.toJson<int>(createdAt),
+      'updated_at': serializer.toJson<int>(updatedAt),
+    };
+  }
+
+  TrackerMark copyWith({
+    String? trackerId,
+    String? methodDate,
+    int? value,
+    int? createdAt,
+    int? updatedAt,
+  }) => TrackerMark(
+    trackerId: trackerId ?? this.trackerId,
+    methodDate: methodDate ?? this.methodDate,
+    value: value ?? this.value,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+  );
+  TrackerMark copyWithCompanion(TrackerMarksCompanion data) {
+    return TrackerMark(
+      trackerId: data.trackerId.present ? data.trackerId.value : this.trackerId,
+      methodDate: data.methodDate.present
+          ? data.methodDate.value
+          : this.methodDate,
+      value: data.value.present ? data.value.value : this.value,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('TrackerMark(')
+          ..write('trackerId: $trackerId, ')
+          ..write('methodDate: $methodDate, ')
+          ..write('value: $value, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(trackerId, methodDate, value, createdAt, updatedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is TrackerMark &&
+          other.trackerId == this.trackerId &&
+          other.methodDate == this.methodDate &&
+          other.value == this.value &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt);
+}
+
+class TrackerMarksCompanion extends UpdateCompanion<TrackerMark> {
+  final Value<String> trackerId;
+  final Value<String> methodDate;
+  final Value<int> value;
+  final Value<int> createdAt;
+  final Value<int> updatedAt;
+  const TrackerMarksCompanion({
+    this.trackerId = const Value.absent(),
+    this.methodDate = const Value.absent(),
+    this.value = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+  });
+  TrackerMarksCompanion.insert({
+    required String trackerId,
+    required String methodDate,
+    required int value,
+    required int createdAt,
+    required int updatedAt,
+  }) : trackerId = Value(trackerId),
+       methodDate = Value(methodDate),
+       value = Value(value),
+       createdAt = Value(createdAt),
+       updatedAt = Value(updatedAt);
+  static Insertable<TrackerMark> custom({
+    Expression<String>? trackerId,
+    Expression<String>? methodDate,
+    Expression<int>? value,
+    Expression<int>? createdAt,
+    Expression<int>? updatedAt,
+  }) {
+    return RawValuesInsertable({
+      if (trackerId != null) 'tracker_id': trackerId,
+      if (methodDate != null) 'method_date': methodDate,
+      if (value != null) 'value': value,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+    });
+  }
+
+  TrackerMarksCompanion copyWith({
+    Value<String>? trackerId,
+    Value<String>? methodDate,
+    Value<int>? value,
+    Value<int>? createdAt,
+    Value<int>? updatedAt,
+  }) {
+    return TrackerMarksCompanion(
+      trackerId: trackerId ?? this.trackerId,
+      methodDate: methodDate ?? this.methodDate,
+      value: value ?? this.value,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (trackerId.present) {
+      map['tracker_id'] = Variable<String>(trackerId.value);
+    }
+    if (methodDate.present) {
+      map['method_date'] = Variable<String>(methodDate.value);
+    }
+    if (value.present) {
+      map['value'] = Variable<int>(value.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<int>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<int>(updatedAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('TrackerMarksCompanion(')
+          ..write('trackerId: $trackerId, ')
+          ..write('methodDate: $methodDate, ')
+          ..write('value: $value, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$DaymarkDatabase extends GeneratedDatabase {
   _$DaymarkDatabase(QueryExecutor e) : super(e);
   $DaymarkDatabaseManager get managers => $DaymarkDatabaseManager(this);
@@ -3592,6 +4480,16 @@ abstract class _$DaymarkDatabase extends GeneratedDatabase {
     'index_items_collection_target',
     'CREATE UNIQUE INDEX index_items_collection_target ON index_items (collection_id) WHERE collection_id IS NOT NULL',
   );
+  late final Trackers trackers = Trackers(this);
+  late final Index trackersPeriod = Index(
+    'trackers_period',
+    'CREATE INDEX trackers_period ON trackers (start_date, planned_end_date, ended_date)',
+  );
+  late final TrackerMarks trackerMarks = TrackerMarks(this);
+  late final Index trackerMarksMethodDate = Index(
+    'tracker_marks_method_date',
+    'CREATE INDEX tracker_marks_method_date ON tracker_marks (method_date)',
+  );
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -3611,6 +4509,10 @@ abstract class _$DaymarkDatabase extends GeneratedDatabase {
     indexItems,
     indexItemsLogTarget,
     indexItemsCollectionTarget,
+    trackers,
+    trackersPeriod,
+    trackerMarks,
+    trackerMarksMethodDate,
   ];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules([
@@ -3648,6 +4550,13 @@ abstract class _$DaymarkDatabase extends GeneratedDatabase {
         limitUpdateKind: UpdateKind.delete,
       ),
       result: [TableUpdate('entry_signifiers', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'trackers',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('tracker_marks', kind: UpdateKind.delete)],
     ),
   ]);
 }
@@ -7542,6 +8451,658 @@ typedef $IndexItemsProcessedTableManager =
       IndexItem,
       PrefetchHooks Function({bool logId, bool collectionId})
     >;
+typedef $TrackersCreateCompanionBuilder = TrackersCompanion Function({
+  required String id,
+  required String title,
+  required String startDate,
+  required String plannedEndDate,
+  Value<String?> endedDate,
+  required int colorSlot,
+  required int createdAt,
+  required int updatedAt,
+  Value<int> rowid,
+});
+typedef $TrackersUpdateCompanionBuilder = TrackersCompanion Function({
+  Value<String> id,
+  Value<String> title,
+  Value<String> startDate,
+  Value<String> plannedEndDate,
+  Value<String?> endedDate,
+  Value<int> colorSlot,
+  Value<int> createdAt,
+  Value<int> updatedAt,
+  Value<int> rowid,
+});
+
+final class $TrackersReferences
+    extends BaseReferences<_$DaymarkDatabase, Trackers, Tracker> {
+  $TrackersReferences(super.$_db, super.$_table, super.$_typedResult);
+
+  static MultiTypedResultKey<TrackerMarks, List<TrackerMark>>
+  _trackerMarksRefsTable(_$DaymarkDatabase db) => MultiTypedResultKey.fromTable(
+    db.trackerMarks,
+    aliasName: 'trackers__id__tracker_marks__tracker_id',
+  );
+
+  $TrackerMarksProcessedTableManager get trackerMarksRefs {
+    final manager = $TrackerMarksTableManager(
+      $_db,
+      $_db.trackerMarks,
+    ).filter((f) => f.trackerId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_trackerMarksRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+}
+
+class $TrackersFilterComposer extends Composer<_$DaymarkDatabase, Trackers> {
+  $TrackersFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get title => $composableBuilder(
+    column: $table.title,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get startDate => $composableBuilder(
+    column: $table.startDate,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get plannedEndDate => $composableBuilder(
+    column: $table.plannedEndDate,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get endedDate => $composableBuilder(
+    column: $table.endedDate,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get colorSlot => $composableBuilder(
+    column: $table.colorSlot,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  Expression<bool> trackerMarksRefs(
+    Expression<bool> Function($TrackerMarksFilterComposer f) f,
+  ) {
+    final $TrackerMarksFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.trackerMarks,
+      getReferencedColumn: (t) => t.trackerId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $TrackerMarksFilterComposer(
+            $db: $db,
+            $table: $db.trackerMarks,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+}
+
+class $TrackersOrderingComposer extends Composer<_$DaymarkDatabase, Trackers> {
+  $TrackersOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get title => $composableBuilder(
+    column: $table.title,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get startDate => $composableBuilder(
+    column: $table.startDate,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get plannedEndDate => $composableBuilder(
+    column: $table.plannedEndDate,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get endedDate => $composableBuilder(
+    column: $table.endedDate,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get colorSlot => $composableBuilder(
+    column: $table.colorSlot,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $TrackersAnnotationComposer
+    extends Composer<_$DaymarkDatabase, Trackers> {
+  $TrackersAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get title =>
+      $composableBuilder(column: $table.title, builder: (column) => column);
+
+  GeneratedColumn<String> get startDate =>
+      $composableBuilder(column: $table.startDate, builder: (column) => column);
+
+  GeneratedColumn<String> get plannedEndDate => $composableBuilder(
+    column: $table.plannedEndDate,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get endedDate =>
+      $composableBuilder(column: $table.endedDate, builder: (column) => column);
+
+  GeneratedColumn<int> get colorSlot =>
+      $composableBuilder(column: $table.colorSlot, builder: (column) => column);
+
+  GeneratedColumn<int> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<int> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  Expression<T> trackerMarksRefs<T extends Object>(
+    Expression<T> Function($TrackerMarksAnnotationComposer a) f,
+  ) {
+    final $TrackerMarksAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.trackerMarks,
+      getReferencedColumn: (t) => t.trackerId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $TrackerMarksAnnotationComposer(
+            $db: $db,
+            $table: $db.trackerMarks,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+}
+
+class $TrackersTableManager
+    extends
+        RootTableManager<
+          _$DaymarkDatabase,
+          Trackers,
+          Tracker,
+          $TrackersFilterComposer,
+          $TrackersOrderingComposer,
+          $TrackersAnnotationComposer,
+          $TrackersCreateCompanionBuilder,
+          $TrackersUpdateCompanionBuilder,
+          (Tracker, $TrackersReferences),
+          Tracker,
+          PrefetchHooks Function({bool trackerMarksRefs})
+        > {
+  $TrackersTableManager(_$DaymarkDatabase db, Trackers table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $TrackersFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $TrackersOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $TrackersAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> title = const Value.absent(),
+                Value<String> startDate = const Value.absent(),
+                Value<String> plannedEndDate = const Value.absent(),
+                Value<String?> endedDate = const Value.absent(),
+                Value<int> colorSlot = const Value.absent(),
+                Value<int> createdAt = const Value.absent(),
+                Value<int> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => TrackersCompanion(
+                id: id,
+                title: title,
+                startDate: startDate,
+                plannedEndDate: plannedEndDate,
+                endedDate: endedDate,
+                colorSlot: colorSlot,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String title,
+                required String startDate,
+                required String plannedEndDate,
+                Value<String?> endedDate = const Value.absent(),
+                required int colorSlot,
+                required int createdAt,
+                required int updatedAt,
+                Value<int> rowid = const Value.absent(),
+              }) => TrackersCompanion.insert(
+                id: id,
+                title: title,
+                startDate: startDate,
+                plannedEndDate: plannedEndDate,
+                endedDate: endedDate,
+                colorSlot: colorSlot,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (e.readTable(table), $TrackersReferences(db, table, e)),
+              )
+              .toList(),
+          prefetchHooksCallback: ({trackerMarksRefs = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [if (trackerMarksRefs) db.trackerMarks],
+              addJoins: null,
+              getPrefetchedDataCallback: (items) async {
+                return [
+                  if (trackerMarksRefs)
+                    await $_getPrefetchedData<Tracker, Trackers, TrackerMark>(
+                      currentTable: table,
+                      referencedTable: $TrackersReferences
+                          ._trackerMarksRefsTable(db),
+                      managerFromTypedResult: (p0) =>
+                          $TrackersReferences(db, table, p0).trackerMarksRefs,
+                      referencedItemsForCurrentItem: (item, referencedItems) =>
+                          referencedItems.where((e) => e.trackerId == item.id),
+                      typedResults: items,
+                    ),
+                ];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $TrackersProcessedTableManager =
+    ProcessedTableManager<
+      _$DaymarkDatabase,
+      Trackers,
+      Tracker,
+      $TrackersFilterComposer,
+      $TrackersOrderingComposer,
+      $TrackersAnnotationComposer,
+      $TrackersCreateCompanionBuilder,
+      $TrackersUpdateCompanionBuilder,
+      (Tracker, $TrackersReferences),
+      Tracker,
+      PrefetchHooks Function({bool trackerMarksRefs})
+    >;
+typedef $TrackerMarksCreateCompanionBuilder = TrackerMarksCompanion Function({
+  required String trackerId,
+  required String methodDate,
+  required int value,
+  required int createdAt,
+  required int updatedAt,
+});
+typedef $TrackerMarksUpdateCompanionBuilder = TrackerMarksCompanion Function({
+  Value<String> trackerId,
+  Value<String> methodDate,
+  Value<int> value,
+  Value<int> createdAt,
+  Value<int> updatedAt,
+});
+
+final class $TrackerMarksReferences
+    extends BaseReferences<_$DaymarkDatabase, TrackerMarks, TrackerMark> {
+  $TrackerMarksReferences(super.$_db, super.$_table, super.$_typedResult);
+
+  static Trackers _trackerIdTable(_$DaymarkDatabase db) =>
+      db.trackers.createAlias('tracker_marks__tracker_id__trackers__id');
+
+  $TrackersProcessedTableManager get trackerId {
+    final $_column = $_itemColumn<String>('tracker_id')!;
+
+    final manager = $TrackersTableManager(
+      $_db,
+      $_db.trackers,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_trackerIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $TrackerMarksFilterComposer
+    extends Composer<_$DaymarkDatabase, TrackerMarks> {
+  $TrackerMarksFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get methodDate => $composableBuilder(
+    column: $table.methodDate,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get value => $composableBuilder(
+    column: $table.value,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $TrackersFilterComposer get trackerId {
+    final $TrackersFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.trackerId,
+      referencedTable: $db.trackers,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $TrackersFilterComposer(
+            $db: $db,
+            $table: $db.trackers,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $TrackerMarksOrderingComposer
+    extends Composer<_$DaymarkDatabase, TrackerMarks> {
+  $TrackerMarksOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get methodDate => $composableBuilder(
+    column: $table.methodDate,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get value => $composableBuilder(
+    column: $table.value,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $TrackersOrderingComposer get trackerId {
+    final $TrackersOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.trackerId,
+      referencedTable: $db.trackers,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $TrackersOrderingComposer(
+            $db: $db,
+            $table: $db.trackers,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $TrackerMarksAnnotationComposer
+    extends Composer<_$DaymarkDatabase, TrackerMarks> {
+  $TrackerMarksAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get methodDate => $composableBuilder(
+    column: $table.methodDate,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get value =>
+      $composableBuilder(column: $table.value, builder: (column) => column);
+
+  GeneratedColumn<int> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<int> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  $TrackersAnnotationComposer get trackerId {
+    final $TrackersAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.trackerId,
+      referencedTable: $db.trackers,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $TrackersAnnotationComposer(
+            $db: $db,
+            $table: $db.trackers,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $TrackerMarksTableManager
+    extends
+        RootTableManager<
+          _$DaymarkDatabase,
+          TrackerMarks,
+          TrackerMark,
+          $TrackerMarksFilterComposer,
+          $TrackerMarksOrderingComposer,
+          $TrackerMarksAnnotationComposer,
+          $TrackerMarksCreateCompanionBuilder,
+          $TrackerMarksUpdateCompanionBuilder,
+          (TrackerMark, $TrackerMarksReferences),
+          TrackerMark,
+          PrefetchHooks Function({bool trackerId})
+        > {
+  $TrackerMarksTableManager(_$DaymarkDatabase db, TrackerMarks table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $TrackerMarksFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $TrackerMarksOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $TrackerMarksAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> trackerId = const Value.absent(),
+                Value<String> methodDate = const Value.absent(),
+                Value<int> value = const Value.absent(),
+                Value<int> createdAt = const Value.absent(),
+                Value<int> updatedAt = const Value.absent(),
+              }) => TrackerMarksCompanion(
+                trackerId: trackerId,
+                methodDate: methodDate,
+                value: value,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+              ),
+          createCompanionCallback:
+              ({
+                required String trackerId,
+                required String methodDate,
+                required int value,
+                required int createdAt,
+                required int updatedAt,
+              }) => TrackerMarksCompanion.insert(
+                trackerId: trackerId,
+                methodDate: methodDate,
+                value: value,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) =>
+                    (e.readTable(table), $TrackerMarksReferences(db, table, e)),
+              )
+              .toList(),
+          prefetchHooksCallback: ({trackerId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (trackerId) {
+                      state = state.withJoin(
+                        currentTable: table,
+                        currentColumn: table.trackerId,
+                        referencedTable: $TrackerMarksReferences
+                            ._trackerIdTable(db),
+                        referencedColumn: $TrackerMarksReferences
+                            ._trackerIdTable(db)
+                            .id,
+                      ) as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $TrackerMarksProcessedTableManager =
+    ProcessedTableManager<
+      _$DaymarkDatabase,
+      TrackerMarks,
+      TrackerMark,
+      $TrackerMarksFilterComposer,
+      $TrackerMarksOrderingComposer,
+      $TrackerMarksAnnotationComposer,
+      $TrackerMarksCreateCompanionBuilder,
+      $TrackerMarksUpdateCompanionBuilder,
+      (TrackerMark, $TrackerMarksReferences),
+      TrackerMark,
+      PrefetchHooks Function({bool trackerId})
+    >;
 
 class $DaymarkDatabaseManager {
   final _$DaymarkDatabase _db;
@@ -7564,4 +9125,8 @@ class $DaymarkDatabaseManager {
       $EntrySignifiersTableManager(_db, _db.entrySignifiers);
   $IndexItemsTableManager get indexItems =>
       $IndexItemsTableManager(_db, _db.indexItems);
+  $TrackersTableManager get trackers =>
+      $TrackersTableManager(_db, _db.trackers);
+  $TrackerMarksTableManager get trackerMarks =>
+      $TrackerMarksTableManager(_db, _db.trackerMarks);
 }
