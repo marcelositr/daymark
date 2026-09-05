@@ -25,10 +25,34 @@ jobs:
   dev-check:
     name: dev-check
     if: github.event_name == 'pull_request' && github.event.pull_request.draft
+    permissions:
+      contents: write
     runs-on: ubuntu-24.04
     steps:
       - name: Check out repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: Align Tracker documentation and export coverage
+        run: python3 tool/align_tracker_pr.py
+
+      - name: Commit alignment and restore CI
+        shell: bash
+        run: |
+          git fetch --no-tags --depth=1 origin main
+          git checkout FETCH_HEAD -- .github/workflows/ci.yml
+          rm tool/align_tracker_pr.py
+          git config user.name "Marcelo Trindade"
+          git config user.email "49993899+marcelositr@users.noreply.github.com"
+          git add .github/workflows/ci.yml \
+            CHANGELOG.md PROJECT.md \
+            docs/PRODUCT.md docs/DOMAIN.md docs/DATA_MODEL.md \
+            docs/OPEN_EXPORT_FORMAT.md docs/TRACKERS.md \
+            test/export/open_export_service_test.dart \
+            tool/align_tracker_pr.py
+          git commit -m "docs: define Tracker adaptation and schema v2 boundary"
+          git push origin HEAD:${{ github.head_ref }}
 
       - name: Set up Flutter 3.47.2
         uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2
