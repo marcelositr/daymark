@@ -13,6 +13,7 @@ abstract final class DaymarkTheme {
     );
 
     final ColorScheme colors = base.colorScheme;
+    final TextTheme text = base.textTheme;
 
     final BorderRadius controlRadius = BorderRadius.circular(
       DaymarkDesign.controlRadius,
@@ -44,6 +45,24 @@ abstract final class DaymarkTheme {
     );
 
     return base.copyWith(
+      textTheme: text.copyWith(
+        headlineSmall: text.headlineSmall?.copyWith(
+          fontWeight: FontWeight.w600,
+          height: 1.2,
+          letterSpacing: -0.2,
+        ),
+        titleMedium: text.titleMedium?.copyWith(
+          fontWeight: FontWeight.w600,
+          height: 1.25,
+        ),
+        titleSmall: text.titleSmall?.copyWith(
+          fontWeight: FontWeight.w600,
+          height: 1.25,
+        ),
+        bodyLarge: text.bodyLarge?.copyWith(height: 1.45),
+        bodyMedium: text.bodyMedium?.copyWith(height: 1.4),
+        bodySmall: text.bodySmall?.copyWith(height: 1.35),
+      ),
       inputDecorationTheme: InputDecorationTheme(
         isDense: true,
         contentPadding: const EdgeInsets.symmetric(
@@ -107,6 +126,9 @@ abstract final class DaymarkTheme {
         minWidth: 72,
         useIndicator: true,
         indicatorShape: controlShape,
+        selectedLabelTextStyle: text.labelMedium?.copyWith(
+          fontWeight: FontWeight.w600,
+        ),
       ),
       navigationBarTheme: NavigationBarThemeData(
         height: DaymarkDesign.navigationBarHeight,

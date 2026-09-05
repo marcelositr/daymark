@@ -7,6 +7,7 @@ import 'package:daymark/features/journal/domain/journal_domain.dart';
 import 'package:daymark/l10n/app_localizations.dart';
 import 'package:daymark/presentation/app_section_scope.dart';
 import 'package:daymark/presentation/daymark_notice.dart';
+import 'package:daymark/presentation/daymark_page_frame.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -179,13 +180,10 @@ class _CollectionsScreenState extends ConsumerState<CollectionsScreen> {
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = AppLocalizations.of(context);
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
-        child: _selectedCollectionId == null
-            ? _buildCollectionList(l10n)
-            : _buildCollection(l10n),
-      ),
+    return DaymarkPageFrame(
+      child: _selectedCollectionId == null
+          ? _buildCollectionList(l10n)
+          : _buildCollection(l10n),
     );
   }
 

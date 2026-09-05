@@ -12,6 +12,8 @@ void main() {
       final ThemeData theme = entry.value;
 
       expect(theme.useMaterial3, isTrue);
+      expect(theme.textTheme.headlineSmall?.fontWeight, FontWeight.w600);
+      expect(theme.textTheme.bodyLarge?.height, 1.45);
       expect(theme.inputDecorationTheme.isDense, isTrue);
       expect(theme.inputDecorationTheme.border, isA<OutlineInputBorder>());
       expect(theme.filledButtonTheme.style, isNotNull);

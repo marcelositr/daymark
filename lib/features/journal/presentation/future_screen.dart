@@ -8,6 +8,7 @@ import 'package:daymark/l10n/app_localizations.dart';
 import 'package:daymark/presentation/app_section_scope.dart';
 import 'package:daymark/presentation/daymark_controls.dart';
 import 'package:daymark/presentation/daymark_notice.dart';
+import 'package:daymark/presentation/daymark_page_frame.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -157,47 +158,44 @@ class _FutureScreenState extends ConsumerState<FutureScreen>
   Widget build(BuildContext context) {
     final AppLocalizations l10n = AppLocalizations.of(context);
 
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    l10n.future,
-                    style: Theme.of(context).textTheme.headlineSmall,
-                  ),
+    return DaymarkPageFrame(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  l10n.future,
+                  style: Theme.of(context).textTheme.headlineSmall,
                 ),
-                IconButton(
-                  onPressed: _lock,
-                  tooltip: l10n.lockJournal,
-                  icon: const Icon(Icons.lock_outline),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            Expanded(
-              child: FutureBuilder<List<FutureLogSnapshot>>(
-                future: _snapshotsFuture,
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState != ConnectionState.done) {
-                    return const Center(child: CircularProgressIndicator());
-                  }
-                  if (snapshot.hasError || !snapshot.hasData) {
-                    return Center(child: Text(l10n.futureLogLoadFailed));
-                  }
-                  return _buildOverview(context, l10n, snapshot.requireData);
-                },
               ),
+              IconButton(
+                onPressed: _lock,
+                tooltip: l10n.lockJournal,
+                icon: const Icon(Icons.lock_outline),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Expanded(
+            child: FutureBuilder<List<FutureLogSnapshot>>(
+              future: _snapshotsFuture,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState != ConnectionState.done) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                if (snapshot.hasError || !snapshot.hasData) {
+                  return Center(child: Text(l10n.futureLogLoadFailed));
+                }
+                return _buildOverview(context, l10n, snapshot.requireData);
+              },
             ),
-            const DaymarkNoticeRegion(),
-            const SizedBox(height: 12),
-            _buildComposer(context, l10n),
-          ],
-        ),
+          ),
+          const DaymarkNoticeRegion(),
+          const SizedBox(height: 12),
+          _buildComposer(context, l10n),
+        ],
       ),
     );
   }

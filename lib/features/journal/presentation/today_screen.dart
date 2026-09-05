@@ -9,6 +9,7 @@ import 'package:daymark/l10n/app_localizations.dart';
 import 'package:daymark/presentation/app_section_scope.dart';
 import 'package:daymark/presentation/daymark_controls.dart';
 import 'package:daymark/presentation/daymark_notice.dart';
+import 'package:daymark/presentation/daymark_page_frame.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -185,71 +186,68 @@ class _TodayScreenState extends ConsumerState<TodayScreen>
     final bool busy =
         _saving || _entryActionId != null || _trackerActionId != null;
 
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    MaterialLocalizations.of(context).formatFullDate(_today),
-                    style: Theme.of(context).textTheme.headlineSmall,
-                  ),
+    return DaymarkPageFrame(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  MaterialLocalizations.of(context).formatFullDate(_today),
+                  style: Theme.of(context).textTheme.headlineSmall,
                 ),
-                IconButton(
-                  onPressed: busy ? null : _toggleReflection,
-                  tooltip: _reflecting
-                      ? l10n.finishReflection
-                      : l10n.startReflection,
-                  icon: Icon(
-                    _reflecting ? Icons.fact_check : Icons.fact_check_outlined,
-                  ),
-                ),
-                IconButton(
-                  onPressed: _openHistory,
-                  tooltip: l10n.dailyHistory,
-                  icon: const Icon(Icons.history),
-                ),
-                IconButton(
-                  onPressed: _lock,
-                  tooltip: l10n.lockJournal,
-                  icon: const Icon(Icons.lock_outline),
-                ),
-              ],
-            ),
-            if (_reflecting) ...[
-              const SizedBox(height: 8),
-              Text(
-                l10n.dailyReflectionPrompt,
-                style: Theme.of(context).textTheme.bodySmall,
               ),
-            ] else
-              _buildTodayTrackers(l10n),
-            const SizedBox(height: 16),
-            Expanded(
-              child: FutureBuilder<DailyLogSnapshot>(
-                future: _snapshotFuture,
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState != ConnectionState.done) {
-                    return const Center(child: CircularProgressIndicator());
-                  }
-                  if (snapshot.hasError || !snapshot.hasData) {
-                    return Center(child: Text(l10n.dailyLogLoadFailed));
-                  }
-                  return _buildEntries(context, l10n, snapshot.requireData);
-                },
+              IconButton(
+                onPressed: busy ? null : _toggleReflection,
+                tooltip: _reflecting
+                    ? l10n.finishReflection
+                    : l10n.startReflection,
+                icon: Icon(
+                  _reflecting ? Icons.fact_check : Icons.fact_check_outlined,
+                ),
               ),
-            ),
-            const DaymarkNoticeRegion(),
-            if (!_reflecting) ...[
-              const SizedBox(height: 12),
-              _buildComposer(l10n),
+              IconButton(
+                onPressed: _openHistory,
+                tooltip: l10n.dailyHistory,
+                icon: const Icon(Icons.history),
+              ),
+              IconButton(
+                onPressed: _lock,
+                tooltip: l10n.lockJournal,
+                icon: const Icon(Icons.lock_outline),
+              ),
             ],
+          ),
+          if (_reflecting) ...[
+            const SizedBox(height: 8),
+            Text(
+              l10n.dailyReflectionPrompt,
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+          ] else
+            _buildTodayTrackers(l10n),
+          const SizedBox(height: 16),
+          Expanded(
+            child: FutureBuilder<DailyLogSnapshot>(
+              future: _snapshotFuture,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState != ConnectionState.done) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                if (snapshot.hasError || !snapshot.hasData) {
+                  return Center(child: Text(l10n.dailyLogLoadFailed));
+                }
+                return _buildEntries(context, l10n, snapshot.requireData);
+              },
+            ),
+          ),
+          const DaymarkNoticeRegion(),
+          if (!_reflecting) ...[
+            const SizedBox(height: 12),
+            _buildComposer(l10n),
           ],
-        ),
+        ],
       ),
     );
   }

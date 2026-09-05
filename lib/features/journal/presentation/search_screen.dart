@@ -9,6 +9,7 @@ import 'package:daymark/features/journal/presentation/source_navigation.dart';
 import 'package:daymark/l10n/app_localizations.dart';
 import 'package:daymark/presentation/app_section_scope.dart';
 import 'package:daymark/presentation/daymark_notice.dart';
+import 'package:daymark/presentation/daymark_page_frame.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -95,49 +96,46 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = AppLocalizations.of(context);
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    l10n.search,
-                    style: Theme.of(context).textTheme.headlineSmall,
-                  ),
-                ),
-                IconButton(
-                  onPressed: _searching ? null : _lock,
-                  tooltip: l10n.lockJournal,
-                  icon: const Icon(Icons.lock_outline),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: _controller,
-              focusNode: _searchFocusNode,
-              autofocus: defaultTargetPlatform == TargetPlatform.linux,
-              enabled: !_searching,
-              textInputAction: TextInputAction.search,
-              onSubmitted: (_) => _runSearch(),
-              decoration: InputDecoration(
-                hintText: l10n.searchHint,
-                suffixIcon: IconButton(
-                  onPressed: _searching ? null : _runSearch,
-                  tooltip: l10n.searchAction,
-                  icon: const Icon(Icons.search),
+    return DaymarkPageFrame(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  l10n.search,
+                  style: Theme.of(context).textTheme.headlineSmall,
                 ),
               ),
+              IconButton(
+                onPressed: _searching ? null : _lock,
+                tooltip: l10n.lockJournal,
+                icon: const Icon(Icons.lock_outline),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          TextField(
+            controller: _controller,
+            focusNode: _searchFocusNode,
+            autofocus: defaultTargetPlatform == TargetPlatform.linux,
+            enabled: !_searching,
+            textInputAction: TextInputAction.search,
+            onSubmitted: (_) => _runSearch(),
+            decoration: InputDecoration(
+              hintText: l10n.searchHint,
+              suffixIcon: IconButton(
+                onPressed: _searching ? null : _runSearch,
+                tooltip: l10n.searchAction,
+                icon: const Icon(Icons.search),
+              ),
             ),
-            const SizedBox(height: 16),
-            Expanded(child: _buildResults(context, l10n)),
-            const DaymarkNoticeRegion(),
-          ],
-        ),
+          ),
+          const SizedBox(height: 16),
+          Expanded(child: _buildResults(context, l10n)),
+          const DaymarkNoticeRegion(),
+        ],
       ),
     );
   }

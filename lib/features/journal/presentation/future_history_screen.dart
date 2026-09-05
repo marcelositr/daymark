@@ -5,6 +5,7 @@ import 'package:daymark/features/journal/data/future_log_repository.dart';
 import 'package:daymark/features/journal/domain/journal_domain.dart';
 import 'package:daymark/l10n/app_localizations.dart';
 import 'package:daymark/presentation/daymark_notice.dart';
+import 'package:daymark/presentation/daymark_page_frame.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -62,63 +63,60 @@ class _FutureHistoryScreenState extends ConsumerState<FutureHistoryScreen> {
     final AppLocalizations l10n = AppLocalizations.of(context);
     final MaterialLocalizations material = MaterialLocalizations.of(context);
 
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 16, 24, 16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Row(
-              children: [
-                IconButton(
-                  onPressed: () => context.go('/future'),
-                  tooltip: material.backButtonTooltip,
-                  icon: const Icon(Icons.arrow_back),
-                ),
-                Expanded(
-                  child: Text(
-                    material.formatMonthYear(_month),
-                    textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.headlineSmall,
-                  ),
-                ),
-                IconButton(
-                  onPressed: _lock,
-                  tooltip: l10n.lockJournal,
-                  icon: const Icon(Icons.lock_outline),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Text(
-              l10n.futureHistoryReadOnly,
-              style: Theme.of(context).textTheme.bodySmall,
-            ),
-            const SizedBox(height: 16),
-            Expanded(
-              child: FutureBuilder<FutureLogSnapshot?>(
-                future: _snapshotFuture,
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState != ConnectionState.done) {
-                    return const Center(child: CircularProgressIndicator());
-                  }
-                  if (snapshot.hasError) {
-                    return Center(child: Text(l10n.futureLogLoadFailed));
-                  }
-                  final FutureLogSnapshot? future = snapshot.data;
-                  if (future == null || future.entries.isEmpty) {
-                    return Align(
-                      alignment: AlignmentDirectional.topStart,
-                      child: Text(l10n.emptyFutureMonth),
-                    );
-                  }
-                  return _buildEntries(context, future.entries);
-                },
+    return DaymarkPageFrame(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              IconButton(
+                onPressed: () => context.go('/future'),
+                tooltip: material.backButtonTooltip,
+                icon: const Icon(Icons.arrow_back),
               ),
+              Expanded(
+                child: Text(
+                  material.formatMonthYear(_month),
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.headlineSmall,
+                ),
+              ),
+              IconButton(
+                onPressed: _lock,
+                tooltip: l10n.lockJournal,
+                icon: const Icon(Icons.lock_outline),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            l10n.futureHistoryReadOnly,
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
+          const SizedBox(height: 16),
+          Expanded(
+            child: FutureBuilder<FutureLogSnapshot?>(
+              future: _snapshotFuture,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState != ConnectionState.done) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                if (snapshot.hasError) {
+                  return Center(child: Text(l10n.futureLogLoadFailed));
+                }
+                final FutureLogSnapshot? future = snapshot.data;
+                if (future == null || future.entries.isEmpty) {
+                  return Align(
+                    alignment: AlignmentDirectional.topStart,
+                    child: Text(l10n.emptyFutureMonth),
+                  );
+                }
+                return _buildEntries(context, future.entries);
+              },
             ),
-            const DaymarkNoticeRegion(),
-          ],
-        ),
+          ),
+          const DaymarkNoticeRegion(),
+        ],
       ),
     );
   }
