@@ -56,18 +56,22 @@ class _AppShellState extends State<AppShell> {
     final List<NavigationDestination> bottomDestinations = [
       NavigationDestination(
         icon: const Icon(Icons.today_outlined),
+        selectedIcon: const Icon(Icons.today),
         label: l10n.today,
       ),
       NavigationDestination(
         icon: const Icon(Icons.calendar_month_outlined),
+        selectedIcon: const Icon(Icons.calendar_month),
         label: l10n.monthly,
       ),
       NavigationDestination(
         icon: const Icon(Icons.event_outlined),
+        selectedIcon: const Icon(Icons.event),
         label: l10n.future,
       ),
       NavigationDestination(
         icon: const Icon(Icons.book_outlined),
+        selectedIcon: const Icon(Icons.book),
         label: l10n.collections,
       ),
       NavigationDestination(
@@ -114,18 +118,22 @@ class _AppShellState extends State<AppShell> {
                     destinations: [
                       NavigationRailDestination(
                         icon: const Icon(Icons.today_outlined),
+                        selectedIcon: const Icon(Icons.today),
                         label: Text(l10n.today),
                       ),
                       NavigationRailDestination(
                         icon: const Icon(Icons.calendar_month_outlined),
+                        selectedIcon: const Icon(Icons.calendar_month),
                         label: Text(l10n.monthly),
                       ),
                       NavigationRailDestination(
                         icon: const Icon(Icons.event_outlined),
+                        selectedIcon: const Icon(Icons.event),
                         label: Text(l10n.future),
                       ),
                       NavigationRailDestination(
                         icon: const Icon(Icons.book_outlined),
+                        selectedIcon: const Icon(Icons.book),
                         label: Text(l10n.collections),
                       ),
                       NavigationRailDestination(

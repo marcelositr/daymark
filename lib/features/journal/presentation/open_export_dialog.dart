@@ -87,6 +87,7 @@ final class _OpenExportDialogState extends ConsumerState<OpenExportDialog> {
             ),
             const SizedBox(height: 16),
             SegmentedButton<OpenExportFormat>(
+              showSelectedIcon: false,
               segments: <ButtonSegment<OpenExportFormat>>[
                 ButtonSegment<OpenExportFormat>(
                   value: OpenExportFormat.markdown,

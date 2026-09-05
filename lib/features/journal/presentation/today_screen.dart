@@ -7,7 +7,10 @@ import 'package:daymark/features/journal/data/tracker_repository.dart';
 import 'package:daymark/features/journal/domain/journal_domain.dart';
 import 'package:daymark/l10n/app_localizations.dart';
 import 'package:daymark/presentation/app_section_scope.dart';
+import 'package:daymark/presentation/daymark_controls.dart';
+import 'package:daymark/presentation/daymark_empty_state.dart';
 import 'package:daymark/presentation/daymark_notice.dart';
+import 'package:daymark/presentation/daymark_page_frame.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -16,11 +19,12 @@ import 'package:go_router/go_router.dart';
 
 import 'entry_capture_undo.dart';
 import 'entry_collection_reference_dialog.dart';
+import 'entry_semantics.dart';
 import 'journal_activity_guard.dart';
 import 'task_collection_migration_dialog.dart';
 import 'task_schedule_dialog.dart';
 import 'tracker_data_source.dart';
-import 'tracker_month_view.dart';
+import 'tracker_visuals.dart';
 
 abstract interface class TodayJournalDataSource {
   Future<DailyLogSnapshot> load(String methodDate);
@@ -184,71 +188,68 @@ class _TodayScreenState extends ConsumerState<TodayScreen>
     final bool busy =
         _saving || _entryActionId != null || _trackerActionId != null;
 
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    MaterialLocalizations.of(context).formatFullDate(_today),
-                    style: Theme.of(context).textTheme.headlineSmall,
-                  ),
+    return DaymarkPageFrame(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  MaterialLocalizations.of(context).formatFullDate(_today),
+                  style: Theme.of(context).textTheme.headlineSmall,
                 ),
-                IconButton(
-                  onPressed: busy ? null : _toggleReflection,
-                  tooltip: _reflecting
-                      ? l10n.finishReflection
-                      : l10n.startReflection,
-                  icon: Icon(
-                    _reflecting ? Icons.fact_check : Icons.fact_check_outlined,
-                  ),
-                ),
-                IconButton(
-                  onPressed: _openHistory,
-                  tooltip: l10n.dailyHistory,
-                  icon: const Icon(Icons.history),
-                ),
-                IconButton(
-                  onPressed: _lock,
-                  tooltip: l10n.lockJournal,
-                  icon: const Icon(Icons.lock_outline),
-                ),
-              ],
-            ),
-            if (_reflecting) ...[
-              const SizedBox(height: 8),
-              Text(
-                l10n.dailyReflectionPrompt,
-                style: Theme.of(context).textTheme.bodySmall,
               ),
-            ] else
-              _buildTodayTrackers(l10n),
-            const SizedBox(height: 16),
-            Expanded(
-              child: FutureBuilder<DailyLogSnapshot>(
-                future: _snapshotFuture,
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState != ConnectionState.done) {
-                    return const Center(child: CircularProgressIndicator());
-                  }
-                  if (snapshot.hasError || !snapshot.hasData) {
-                    return Center(child: Text(l10n.dailyLogLoadFailed));
-                  }
-                  return _buildEntries(context, l10n, snapshot.requireData);
-                },
+              IconButton(
+                onPressed: busy ? null : _toggleReflection,
+                tooltip: _reflecting
+                    ? l10n.finishReflection
+                    : l10n.startReflection,
+                icon: Icon(
+                  _reflecting ? Icons.fact_check : Icons.fact_check_outlined,
+                ),
               ),
-            ),
-            const DaymarkNoticeRegion(),
-            if (!_reflecting) ...[
-              const SizedBox(height: 12),
-              _buildComposer(l10n),
+              IconButton(
+                onPressed: _openHistory,
+                tooltip: l10n.dailyHistory,
+                icon: const Icon(Icons.history),
+              ),
+              IconButton(
+                onPressed: _lock,
+                tooltip: l10n.lockJournal,
+                icon: const Icon(Icons.lock_outline),
+              ),
             ],
+          ),
+          if (_reflecting) ...[
+            const SizedBox(height: 8),
+            Text(
+              l10n.dailyReflectionPrompt,
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+          ] else
+            _buildTodayTrackers(l10n),
+          const SizedBox(height: 16),
+          Expanded(
+            child: FutureBuilder<DailyLogSnapshot>(
+              future: _snapshotFuture,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState != ConnectionState.done) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                if (snapshot.hasError || !snapshot.hasData) {
+                  return Center(child: Text(l10n.dailyLogLoadFailed));
+                }
+                return _buildEntries(context, l10n, snapshot.requireData);
+              },
+            ),
+          ),
+          const DaymarkNoticeRegion(),
+          if (!_reflecting) ...[
+            const SizedBox(height: 12),
+            _buildComposer(l10n),
           ],
-        ),
+        ],
       ),
     );
   }
@@ -314,14 +315,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen>
       padding: const EdgeInsets.symmetric(vertical: 2),
       child: Row(
         children: <Widget>[
-          Container(
-            width: 4,
-            height: 26,
-            decoration: BoxDecoration(
-              color: color,
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
+          DaymarkTrackerStripe(color: color),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
@@ -339,9 +333,10 @@ class _TodayScreenState extends ConsumerState<TodayScreen>
               ),
             )
           else ...<Widget>[
-            IconButton(
+            DaymarkTrackerMarkButton(
               tooltip: l10n.trackerFulfilled,
-              visualDensity: VisualDensity.compact,
+              selected: value == 1,
+              color: color,
               onPressed: actionsBlocked
                   ? null
                   : () => _setTrackerMark(
@@ -350,17 +345,12 @@ class _TodayScreenState extends ConsumerState<TodayScreen>
                           ? null
                           : 1,
                     ),
-              style: IconButton.styleFrom(
-                backgroundColor: value == 1
-                    ? color.withValues(alpha: 0.14)
-                    : null,
-                foregroundColor: value == 1 ? color : null,
-              ),
-              icon: const Icon(Icons.check),
+              icon: Icons.check,
             ),
-            IconButton(
+            DaymarkTrackerMarkButton(
               tooltip: l10n.trackerNotFulfilled,
-              visualDensity: VisualDensity.compact,
+              selected: value == -1,
+              color: color,
               onPressed: actionsBlocked
                   ? null
                   : () => _setTrackerMark(
@@ -369,13 +359,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen>
                           ? null
                           : -1,
                     ),
-              style: IconButton.styleFrom(
-                backgroundColor: value == -1
-                    ? color.withValues(alpha: 0.14)
-                    : null,
-                foregroundColor: value == -1 ? color : null,
-              ),
-              icon: const Icon(Icons.close),
+              icon: Icons.close,
             ),
           ],
         ],
@@ -398,15 +382,9 @@ class _TodayScreenState extends ConsumerState<TodayScreen>
         : snapshot.entries;
 
     if (visibleEntries.isEmpty) {
-      return Align(
-        alignment: AlignmentDirectional.topStart,
-        child: Padding(
-          padding: const EdgeInsets.only(top: 24),
-          child: Text(
-            _reflecting ? l10n.dailyReflectionEmpty : l10n.emptyDailyLog,
-            style: Theme.of(context).textTheme.bodyLarge,
-          ),
-        ),
+      return DaymarkEmptyState(
+        message: _reflecting ? l10n.dailyReflectionEmpty : l10n.emptyDailyLog,
+        topPadding: 24,
       );
     }
 
@@ -453,7 +431,12 @@ class _TodayScreenState extends ConsumerState<TodayScreen>
         const SizedBox(width: 8),
         Expanded(
           child: Semantics(
-            label: _entrySemanticLabel(l10n, entry),
+            label: journalEntrySemanticLabel(
+              l10n,
+              type: entry.type,
+              taskState: entry.taskState,
+              content: entry.content,
+            ),
             child: ExcludeSemantics(
               child: Text(
                 entry.content,
@@ -518,31 +501,30 @@ class _TodayScreenState extends ConsumerState<TodayScreen>
     return Row(
       crossAxisAlignment: CrossAxisAlignment.end,
       children: [
-        DropdownButtonHideUnderline(
-          child: DropdownButton<JournalEntryType>(
-            value: _entryType,
-            onChanged: _saving
-                ? null
-                : (value) {
-                    if (value != null) {
-                      setState(() => _entryType = value);
-                    }
-                  },
-            items: [
-              DropdownMenuItem(
-                value: JournalEntryType.task,
-                child: Text(l10n.entryTask),
-              ),
-              DropdownMenuItem(
-                value: JournalEntryType.event,
-                child: Text(l10n.entryEvent),
-              ),
-              DropdownMenuItem(
-                value: JournalEntryType.note,
-                child: Text(l10n.entryNote),
-              ),
-            ],
-          ),
+        DaymarkDropdownButton<JournalEntryType>(
+          value: _entryType,
+          onChanged: _saving
+              ? null
+              : (value) {
+                  if (value != null) {
+                    setState(() => _entryType = value);
+                    _restoreComposerFocus();
+                  }
+                },
+          items: [
+            DropdownMenuItem(
+              value: JournalEntryType.task,
+              child: Text(l10n.entryTask),
+            ),
+            DropdownMenuItem(
+              value: JournalEntryType.event,
+              child: Text(l10n.entryEvent),
+            ),
+            DropdownMenuItem(
+              value: JournalEntryType.note,
+              child: Text(l10n.entryNote),
+            ),
+          ],
         ),
         const SizedBox(width: 12),
         Expanded(
@@ -910,26 +892,6 @@ String _entrySymbol(DailyLogEntry entry) => switch (entry.type) {
   JournalEntryType.event => '○',
   JournalEntryType.note => '–',
 };
-
-String _entrySemanticLabel(AppLocalizations l10n, DailyLogEntry entry) {
-  final String typeLabel = switch (entry.type) {
-    JournalEntryType.task => l10n.entryTask,
-    JournalEntryType.event => l10n.entryEvent,
-    JournalEntryType.note => l10n.entryNote,
-  };
-  if (entry.type != JournalEntryType.task) {
-    return '$typeLabel, ${entry.content}';
-  }
-
-  final String stateLabel = switch (entry.taskState) {
-    JournalTaskState.completed => l10n.taskStateCompleted,
-    JournalTaskState.migrated => l10n.taskStateMigrated,
-    JournalTaskState.scheduled => l10n.taskStateScheduled,
-    JournalTaskState.discarded => l10n.taskStateDiscarded,
-    JournalTaskState.open || null => l10n.taskStateOpen,
-  };
-  return '$typeLabel, $stateLabel, ${entry.content}';
-}
 
 void _reportUnexpectedJournalError(
   String operation,

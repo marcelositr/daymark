@@ -6,7 +6,9 @@ import 'package:daymark/features/journal/data/future_log_repository.dart';
 import 'package:daymark/features/journal/domain/journal_domain.dart';
 import 'package:daymark/l10n/app_localizations.dart';
 import 'package:daymark/presentation/app_section_scope.dart';
+import 'package:daymark/presentation/daymark_controls.dart';
 import 'package:daymark/presentation/daymark_notice.dart';
+import 'package:daymark/presentation/daymark_page_frame.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -14,6 +16,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'entry_capture_undo.dart';
 import 'entry_collection_reference_dialog.dart';
+import 'entry_semantics.dart';
 import 'journal_activity_guard.dart';
 
 abstract interface class FutureJournalDataSource {
@@ -156,47 +159,44 @@ class _FutureScreenState extends ConsumerState<FutureScreen>
   Widget build(BuildContext context) {
     final AppLocalizations l10n = AppLocalizations.of(context);
 
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    l10n.future,
-                    style: Theme.of(context).textTheme.headlineSmall,
-                  ),
+    return DaymarkPageFrame(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  l10n.future,
+                  style: Theme.of(context).textTheme.headlineSmall,
                 ),
-                IconButton(
-                  onPressed: _lock,
-                  tooltip: l10n.lockJournal,
-                  icon: const Icon(Icons.lock_outline),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            Expanded(
-              child: FutureBuilder<List<FutureLogSnapshot>>(
-                future: _snapshotsFuture,
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState != ConnectionState.done) {
-                    return const Center(child: CircularProgressIndicator());
-                  }
-                  if (snapshot.hasError || !snapshot.hasData) {
-                    return Center(child: Text(l10n.futureLogLoadFailed));
-                  }
-                  return _buildOverview(context, l10n, snapshot.requireData);
-                },
               ),
+              IconButton(
+                onPressed: _lock,
+                tooltip: l10n.lockJournal,
+                icon: const Icon(Icons.lock_outline),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Expanded(
+            child: FutureBuilder<List<FutureLogSnapshot>>(
+              future: _snapshotsFuture,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState != ConnectionState.done) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                if (snapshot.hasError || !snapshot.hasData) {
+                  return Center(child: Text(l10n.futureLogLoadFailed));
+                }
+                return _buildOverview(context, l10n, snapshot.requireData);
+              },
             ),
-            const DaymarkNoticeRegion(),
-            const SizedBox(height: 12),
-            _buildComposer(context, l10n),
-          ],
-        ),
+          ),
+          const DaymarkNoticeRegion(),
+          const SizedBox(height: 12),
+          _buildComposer(context, l10n),
+        ],
       ),
     );
   }
@@ -287,11 +287,23 @@ class _FutureScreenState extends ConsumerState<FutureScreen>
         SizedBox(width: 28, child: marker),
         const SizedBox(width: 8),
         Expanded(
-          child: Text(
-            entry.content,
-            style: entry.taskState == JournalTaskState.discarded
-                ? entryStyle?.copyWith(decoration: TextDecoration.lineThrough)
-                : entryStyle,
+          child: Semantics(
+            label: journalEntrySemanticLabel(
+              l10n,
+              type: entry.type,
+              taskState: entry.taskState,
+              content: entry.content,
+            ),
+            child: ExcludeSemantics(
+              child: Text(
+                entry.content,
+                style: entry.taskState == JournalTaskState.discarded
+                    ? entryStyle?.copyWith(
+                        decoration: TextDecoration.lineThrough,
+                      )
+                    : entryStyle,
+              ),
+            ),
           ),
         ),
       ],
@@ -338,58 +350,56 @@ class _FutureScreenState extends ConsumerState<FutureScreen>
         Row(
           children: [
             Expanded(
-              child: DropdownButtonHideUnderline(
-                child: DropdownButton<DateTime>(
-                  key: const ValueKey<String>('future-month-target'),
-                  value: _selectedMonth,
-                  isExpanded: true,
-                  onChanged: _saving
-                      ? null
-                      : (value) {
-                          if (value != null) {
-                            setState(() => _selectedMonth = value);
-                          }
-                        },
-                  items: [
-                    for (final DateTime month in _months)
-                      DropdownMenuItem<DateTime>(
-                        value: month,
-                        child: Text(
-                          MaterialLocalizations.of(context)
-                              .formatMonthYear(month),
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(width: 16),
-            DropdownButtonHideUnderline(
-              child: DropdownButton<JournalEntryType>(
-                key: const ValueKey<String>('future-entry-type'),
-                value: _entryType,
+              child: DaymarkDropdownButton<DateTime>(
+                dropdownKey: const ValueKey<String>('future-month-target'),
+                value: _selectedMonth,
+                isExpanded: true,
                 onChanged: _saving
                     ? null
                     : (value) {
                         if (value != null) {
-                          setState(() => _entryType = value);
+                          setState(() => _selectedMonth = value);
+                          _restoreComposerFocus();
                         }
                       },
                 items: [
-                  DropdownMenuItem<JournalEntryType>(
-                    value: JournalEntryType.task,
-                    child: Text(l10n.entryTask),
-                  ),
-                  DropdownMenuItem<JournalEntryType>(
-                    value: JournalEntryType.event,
-                    child: Text(l10n.entryEvent),
-                  ),
-                  DropdownMenuItem<JournalEntryType>(
-                    value: JournalEntryType.note,
-                    child: Text(l10n.entryNote),
-                  ),
+                  for (final DateTime month in _months)
+                    DropdownMenuItem<DateTime>(
+                      value: month,
+                      child: Text(
+                        MaterialLocalizations.of(context)
+                            .formatMonthYear(month),
+                      ),
+                    ),
                 ],
               ),
+            ),
+            const SizedBox(width: 16),
+            DaymarkDropdownButton<JournalEntryType>(
+              dropdownKey: const ValueKey<String>('future-entry-type'),
+              value: _entryType,
+              onChanged: _saving
+                  ? null
+                  : (value) {
+                      if (value != null) {
+                        setState(() => _entryType = value);
+                        _restoreComposerFocus();
+                      }
+                    },
+              items: [
+                DropdownMenuItem<JournalEntryType>(
+                  value: JournalEntryType.task,
+                  child: Text(l10n.entryTask),
+                ),
+                DropdownMenuItem<JournalEntryType>(
+                  value: JournalEntryType.event,
+                  child: Text(l10n.entryEvent),
+                ),
+                DropdownMenuItem<JournalEntryType>(
+                  value: JournalEntryType.note,
+                  child: Text(l10n.entryNote),
+                ),
+              ],
             ),
           ],
         ),

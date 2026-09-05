@@ -8,7 +8,10 @@ import 'package:daymark/features/journal/data/tracker_repository.dart';
 import 'package:daymark/features/journal/domain/journal_domain.dart';
 import 'package:daymark/l10n/app_localizations.dart';
 import 'package:daymark/presentation/app_section_scope.dart';
+import 'package:daymark/presentation/daymark_controls.dart';
+import 'package:daymark/presentation/daymark_empty_state.dart';
 import 'package:daymark/presentation/daymark_notice.dart';
+import 'package:daymark/presentation/daymark_page_frame.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -16,6 +19,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'entry_capture_undo.dart';
 import 'entry_collection_reference_dialog.dart';
+import 'entry_semantics.dart';
 import 'journal_activity_guard.dart';
 import 'task_collection_migration_dialog.dart';
 import 'task_schedule_dialog.dart';
@@ -221,119 +225,113 @@ class _MonthlyScreenState extends ConsumerState<MonthlyScreen>
     final AppLocalizations l10n = AppLocalizations.of(context);
     final bool busy = _saving || _trackerSaving || _entryActionId != null;
 
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Row(
-              children: [
-                IconButton(
-                  onPressed: busy ? null : () => _selectMonth(-1),
-                  tooltip: l10n.previousMonth,
-                  icon: const Icon(Icons.chevron_left),
+    return DaymarkPageFrame(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              IconButton(
+                onPressed: busy ? null : () => _selectMonth(-1),
+                tooltip: l10n.previousMonth,
+                icon: const Icon(Icons.chevron_left),
+              ),
+              Expanded(
+                child: Text(
+                  MaterialLocalizations.of(context).formatMonthYear(_month),
+                  style: Theme.of(context).textTheme.headlineSmall,
                 ),
-                Expanded(
-                  child: Text(
-                    MaterialLocalizations.of(context).formatMonthYear(_month),
-                    style: Theme.of(context).textTheme.headlineSmall,
-                  ),
+              ),
+              IconButton(
+                onPressed: busy || _followingCurrentMonth
+                    ? null
+                    : () => _selectMonth(1),
+                tooltip: l10n.nextMonth,
+                icon: const Icon(Icons.chevron_right),
+              ),
+              IconButton(
+                onPressed: _lock,
+                tooltip: l10n.lockJournal,
+                icon: const Icon(Icons.lock_outline),
+              ),
+            ],
+          ),
+          if (!_followingCurrentMonth) ...[
+            const SizedBox(height: 4),
+            Text(
+              l10n.monthlyHistoryReadOnly,
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+          ],
+          const SizedBox(height: 12),
+          Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: SegmentedButton<_MonthlyViewSection>(
+              showSelectedIcon: false,
+              segments: [
+                ButtonSegment<_MonthlyViewSection>(
+                  value: _MonthlyViewSection.calendar,
+                  label: Text(l10n.monthlyCalendar),
                 ),
-                IconButton(
-                  onPressed: busy || _followingCurrentMonth
-                      ? null
-                      : () => _selectMonth(1),
-                  tooltip: l10n.nextMonth,
-                  icon: const Icon(Icons.chevron_right),
+                ButtonSegment<_MonthlyViewSection>(
+                  value: _MonthlyViewSection.tasks,
+                  label: Text(l10n.monthlyTasks),
                 ),
-                IconButton(
-                  onPressed: _lock,
-                  tooltip: l10n.lockJournal,
-                  icon: const Icon(Icons.lock_outline),
+                ButtonSegment<_MonthlyViewSection>(
+                  value: _MonthlyViewSection.tracker,
+                  label: Text(l10n.monthlyTracker),
                 ),
               ],
+              selected: <_MonthlyViewSection>{_section},
+              onSelectionChanged: busy
+                  ? null
+                  : (selection) {
+                      _entryController.clear();
+                      setState(() => _section = selection.single);
+                      if (_section == _MonthlyViewSection.tracker) {
+                        _entryFocusNode.unfocus();
+                      } else {
+                        _restoreComposerFocus();
+                      }
+                    },
             ),
-            if (!_followingCurrentMonth) ...[
-              const SizedBox(height: 4),
-              Text(
-                l10n.monthlyHistoryReadOnly,
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
-            ],
+          ),
+          const SizedBox(height: 16),
+          Expanded(
+            child: _section == _MonthlyViewSection.tracker
+                ? _buildTrackerSection(context, l10n)
+                : FutureBuilder<MonthlyLogSnapshot?>(
+                    future: _snapshotFuture,
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState != ConnectionState.done) {
+                        return const Center(child: CircularProgressIndicator());
+                      }
+                      if (snapshot.hasError) {
+                        return Center(child: Text(l10n.monthlyLogLoadFailed));
+                      }
+                      return switch (_section) {
+                        _MonthlyViewSection.calendar => _buildCalendar(
+                          context,
+                          l10n,
+                          snapshot.data,
+                        ),
+                        _MonthlyViewSection.tasks => _buildTasks(
+                          context,
+                          l10n,
+                          snapshot.data,
+                        ),
+                        _MonthlyViewSection.tracker => const SizedBox.shrink(),
+                      };
+                    },
+                  ),
+          ),
+          const DaymarkNoticeRegion(),
+          if (_followingCurrentMonth &&
+              _section != _MonthlyViewSection.tracker) ...[
             const SizedBox(height: 12),
-            Align(
-              alignment: AlignmentDirectional.centerStart,
-              child: SegmentedButton<_MonthlyViewSection>(
-                showSelectedIcon: false,
-                segments: [
-                  ButtonSegment<_MonthlyViewSection>(
-                    value: _MonthlyViewSection.calendar,
-                    label: Text(l10n.monthlyCalendar),
-                  ),
-                  ButtonSegment<_MonthlyViewSection>(
-                    value: _MonthlyViewSection.tasks,
-                    label: Text(l10n.monthlyTasks),
-                  ),
-                  ButtonSegment<_MonthlyViewSection>(
-                    value: _MonthlyViewSection.tracker,
-                    label: Text(l10n.monthlyTracker),
-                  ),
-                ],
-                selected: <_MonthlyViewSection>{_section},
-                onSelectionChanged: busy
-                    ? null
-                    : (selection) {
-                        _entryController.clear();
-                        setState(() => _section = selection.single);
-                        if (_section == _MonthlyViewSection.tracker) {
-                          _entryFocusNode.unfocus();
-                        } else {
-                          _restoreComposerFocus();
-                        }
-                      },
-              ),
-            ),
-            const SizedBox(height: 16),
-            Expanded(
-              child: _section == _MonthlyViewSection.tracker
-                  ? _buildTrackerSection(context, l10n)
-                  : FutureBuilder<MonthlyLogSnapshot?>(
-                      future: _snapshotFuture,
-                      builder: (context, snapshot) {
-                        if (snapshot.connectionState != ConnectionState.done) {
-                          return const Center(
-                            child: CircularProgressIndicator(),
-                          );
-                        }
-                        if (snapshot.hasError) {
-                          return Center(child: Text(l10n.monthlyLogLoadFailed));
-                        }
-                        return switch (_section) {
-                          _MonthlyViewSection.calendar => _buildCalendar(
-                            context,
-                            l10n,
-                            snapshot.data,
-                          ),
-                          _MonthlyViewSection.tasks => _buildTasks(
-                            context,
-                            l10n,
-                            snapshot.data,
-                          ),
-                          _MonthlyViewSection.tracker =>
-                            const SizedBox.shrink(),
-                        };
-                      },
-                    ),
-            ),
-            const DaymarkNoticeRegion(),
-            if (_followingCurrentMonth &&
-                _section != _MonthlyViewSection.tracker) ...[
-              const SizedBox(height: 12),
-              _buildComposer(l10n),
-            ],
+            _buildComposer(l10n),
           ],
-        ),
+        ],
       ),
     );
   }
@@ -476,16 +474,7 @@ class _MonthlyScreenState extends ConsumerState<MonthlyScreen>
     final List<MonthlyLogEntry> taskEntries =
         snapshot?.taskEntries ?? const <MonthlyLogEntry>[];
     if (taskEntries.isEmpty) {
-      return Align(
-        alignment: AlignmentDirectional.topStart,
-        child: Padding(
-          padding: const EdgeInsets.only(top: 16),
-          child: Text(
-            l10n.emptyMonthlyTasks,
-            style: Theme.of(context).textTheme.bodyLarge,
-          ),
-        ),
-      );
+      return DaymarkEmptyState(message: l10n.emptyMonthlyTasks, topPadding: 16);
     }
 
     return ListView.separated(
@@ -530,11 +519,23 @@ class _MonthlyScreenState extends ConsumerState<MonthlyScreen>
         SizedBox(width: 28, child: marker),
         const SizedBox(width: 8),
         Expanded(
-          child: Text(
-            entry.content,
-            style: entry.taskState == JournalTaskState.discarded
-                ? entryStyle?.copyWith(decoration: TextDecoration.lineThrough)
-                : entryStyle,
+          child: Semantics(
+            label: journalEntrySemanticLabel(
+              l10n,
+              type: entry.type,
+              taskState: entry.taskState,
+              content: entry.content,
+            ),
+            child: ExcludeSemantics(
+              child: Text(
+                entry.content,
+                style: entry.taskState == JournalTaskState.discarded
+                    ? entryStyle?.copyWith(
+                        decoration: TextDecoration.lineThrough,
+                      )
+                    : entryStyle,
+              ),
+            ),
           ),
         ),
       ],
@@ -590,21 +591,20 @@ class _MonthlyScreenState extends ConsumerState<MonthlyScreen>
       crossAxisAlignment: CrossAxisAlignment.end,
       children: [
         if (calendar) ...[
-          DropdownButtonHideUnderline(
-            child: DropdownButton<int>(
-              value: _selectedDay,
-              onChanged: _saving
-                  ? null
-                  : (value) {
-                      if (value != null) {
-                        setState(() => _selectedDay = value);
-                      }
-                    },
-              items: [
-                for (int day = 1; day <= _daysInMonth(_month); day++)
-                  DropdownMenuItem<int>(value: day, child: Text('$day')),
-              ],
-            ),
+          DaymarkDropdownButton<int>(
+            value: _selectedDay,
+            onChanged: _saving
+                ? null
+                : (value) {
+                    if (value != null) {
+                      setState(() => _selectedDay = value);
+                      _restoreComposerFocus();
+                    }
+                  },
+            items: [
+              for (int day = 1; day <= _daysInMonth(_month); day++)
+                DropdownMenuItem<int>(value: day, child: Text('$day')),
+            ],
           ),
           const SizedBox(width: 12),
         ],

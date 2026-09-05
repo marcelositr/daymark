@@ -6,7 +6,9 @@ import 'package:daymark/features/journal/data/collection_repository.dart';
 import 'package:daymark/features/journal/domain/journal_domain.dart';
 import 'package:daymark/l10n/app_localizations.dart';
 import 'package:daymark/presentation/app_section_scope.dart';
+import 'package:daymark/presentation/daymark_empty_state.dart';
 import 'package:daymark/presentation/daymark_notice.dart';
+import 'package:daymark/presentation/daymark_page_frame.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -14,6 +16,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'entry_capture_undo.dart';
+import 'entry_semantics.dart';
 import 'journal_activity_guard.dart';
 
 abstract interface class CollectionsJournalDataSource {
@@ -179,13 +182,10 @@ class _CollectionsScreenState extends ConsumerState<CollectionsScreen> {
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = AppLocalizations.of(context);
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
-        child: _selectedCollectionId == null
-            ? _buildCollectionList(l10n)
-            : _buildCollection(l10n),
-      ),
+    return DaymarkPageFrame(
+      child: _selectedCollectionId == null
+          ? _buildCollectionList(l10n)
+          : _buildCollection(l10n),
     );
   }
 
@@ -221,10 +221,7 @@ class _CollectionsScreenState extends ConsumerState<CollectionsScreen> {
               }
               final collections = snapshot.requireData;
               if (collections.isEmpty) {
-                return Align(
-                  alignment: AlignmentDirectional.topStart,
-                  child: Text(l10n.emptyCollections),
-                );
+                return DaymarkEmptyState(message: l10n.emptyCollections);
               }
               return ListView.separated(
                 itemCount: collections.length,
@@ -332,8 +329,10 @@ class _CollectionsScreenState extends ConsumerState<CollectionsScreen> {
               selected: <JournalEntryType>{_entryType},
               onSelectionChanged: _saving
                   ? null
-                  : (selection) =>
-                        setState(() => _entryType = selection.single),
+                  : (selection) {
+                      setState(() => _entryType = selection.single);
+                      _restoreActiveFocus();
+                    },
             ),
             const SizedBox(height: 8),
             Row(
@@ -379,10 +378,7 @@ class _CollectionsScreenState extends ConsumerState<CollectionsScreen> {
     CollectionSnapshot collection,
   ) {
     if (collection.entries.isEmpty && collection.references.isEmpty) {
-      return Align(
-        alignment: AlignmentDirectional.topStart,
-        child: Text(l10n.emptyCollection),
-      );
+      return DaymarkEmptyState(message: l10n.emptyCollection);
     }
 
     return ListView(
@@ -435,11 +431,23 @@ class _CollectionsScreenState extends ConsumerState<CollectionsScreen> {
         ),
         const SizedBox(width: 8),
         Expanded(
-          child: Text(
-            entry.content,
-            style: discarded
-                ? contentStyle?.copyWith(decoration: TextDecoration.lineThrough)
-                : contentStyle,
+          child: Semantics(
+            label: journalEntrySemanticLabel(
+              l10n,
+              type: entry.type,
+              taskState: entry.taskState,
+              content: entry.content,
+            ),
+            child: ExcludeSemantics(
+              child: Text(
+                entry.content,
+                style: discarded
+                    ? contentStyle?.copyWith(
+                        decoration: TextDecoration.lineThrough,
+                      )
+                    : contentStyle,
+              ),
+            ),
           ),
         ),
       ],
@@ -487,11 +495,21 @@ class _CollectionsScreenState extends ConsumerState<CollectionsScreen> {
         SizedBox(width: 28, child: marker),
         const SizedBox(width: 8),
         Expanded(
-          child: Text(
-            entry.content,
-            style: discarded
-                ? style?.copyWith(decoration: TextDecoration.lineThrough)
-                : style,
+          child: Semantics(
+            label: journalEntrySemanticLabel(
+              l10n,
+              type: entry.type,
+              taskState: entry.taskState,
+              content: entry.content,
+            ),
+            child: ExcludeSemantics(
+              child: Text(
+                entry.content,
+                style: discarded
+                    ? style?.copyWith(decoration: TextDecoration.lineThrough)
+                    : style,
+              ),
+            ),
           ),
         ),
       ],

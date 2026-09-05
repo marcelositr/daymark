@@ -4,10 +4,14 @@ import 'package:daymark/core/session/journal_session_controller.dart';
 import 'package:daymark/features/journal/data/daily_log_repository.dart';
 import 'package:daymark/features/journal/domain/journal_domain.dart';
 import 'package:daymark/l10n/app_localizations.dart';
+import 'package:daymark/presentation/daymark_empty_state.dart';
 import 'package:daymark/presentation/daymark_notice.dart';
+import 'package:daymark/presentation/daymark_page_frame.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+
+import 'entry_semantics.dart';
 
 abstract interface class DailyHistoryDataSource {
   Future<DailyLogSnapshot?> find(String methodDate);
@@ -64,73 +68,67 @@ class _DailyHistoryScreenState extends ConsumerState<DailyHistoryScreen> {
     final AppLocalizations l10n = AppLocalizations.of(context);
     final MaterialLocalizations material = MaterialLocalizations.of(context);
 
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 16, 24, 16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Row(
-              children: [
-                IconButton(
-                  onPressed: _backToToday,
-                  tooltip: material.backButtonTooltip,
-                  icon: const Icon(Icons.arrow_back),
-                ),
-                IconButton(
-                  onPressed: _previousDay,
-                  tooltip: l10n.previousDay,
-                  icon: const Icon(Icons.chevron_left),
-                ),
-                Expanded(
-                  child: Text(
-                    material.formatFullDate(_viewedDate),
-                    textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.headlineSmall,
-                  ),
-                ),
-                IconButton(
-                  onPressed: _canGoNext ? _nextDay : null,
-                  tooltip: l10n.nextDay,
-                  icon: const Icon(Icons.chevron_right),
-                ),
-                IconButton(
-                  onPressed: _lock,
-                  tooltip: l10n.lockJournal,
-                  icon: const Icon(Icons.lock_outline),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Text(
-              l10n.dailyHistoryReadOnly,
-              style: Theme.of(context).textTheme.bodySmall,
-            ),
-            const SizedBox(height: 16),
-            Expanded(
-              child: FutureBuilder<DailyLogSnapshot?>(
-                future: _snapshotFuture,
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState != ConnectionState.done) {
-                    return const Center(child: CircularProgressIndicator());
-                  }
-                  if (snapshot.hasError) {
-                    return Center(child: Text(l10n.dailyHistoryLoadFailed));
-                  }
-                  final DailyLogSnapshot? daily = snapshot.data;
-                  if (daily == null || daily.entries.isEmpty) {
-                    return Align(
-                      alignment: AlignmentDirectional.topStart,
-                      child: Text(l10n.emptyHistoricalDaily),
-                    );
-                  }
-                  return _buildEntries(context, daily.entries);
-                },
+    return DaymarkPageFrame(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              IconButton(
+                onPressed: _backToToday,
+                tooltip: material.backButtonTooltip,
+                icon: const Icon(Icons.arrow_back),
               ),
+              IconButton(
+                onPressed: _previousDay,
+                tooltip: l10n.previousDay,
+                icon: const Icon(Icons.chevron_left),
+              ),
+              Expanded(
+                child: Text(
+                  material.formatFullDate(_viewedDate),
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.headlineSmall,
+                ),
+              ),
+              IconButton(
+                onPressed: _canGoNext ? _nextDay : null,
+                tooltip: l10n.nextDay,
+                icon: const Icon(Icons.chevron_right),
+              ),
+              IconButton(
+                onPressed: _lock,
+                tooltip: l10n.lockJournal,
+                icon: const Icon(Icons.lock_outline),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            l10n.dailyHistoryReadOnly,
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
+          const SizedBox(height: 16),
+          Expanded(
+            child: FutureBuilder<DailyLogSnapshot?>(
+              future: _snapshotFuture,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState != ConnectionState.done) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                if (snapshot.hasError) {
+                  return Center(child: Text(l10n.dailyHistoryLoadFailed));
+                }
+                final DailyLogSnapshot? daily = snapshot.data;
+                if (daily == null || daily.entries.isEmpty) {
+                  return DaymarkEmptyState(message: l10n.emptyHistoricalDaily);
+                }
+                return _buildEntries(context, daily.entries);
+              },
             ),
-            const DaymarkNoticeRegion(),
-          ],
-        ),
+          ),
+          const DaymarkNoticeRegion(),
+        ],
       ),
     );
   }
@@ -161,13 +159,23 @@ class _DailyHistoryScreenState extends ConsumerState<DailyHistoryScreen> {
               ),
               const SizedBox(width: 8),
               Expanded(
-                child: Text(
-                  entry.content,
-                  style: discarded
-                      ? entryStyle?.copyWith(
-                          decoration: TextDecoration.lineThrough,
-                        )
-                      : entryStyle,
+                child: Semantics(
+                  label: journalEntrySemanticLabel(
+                    AppLocalizations.of(context),
+                    type: entry.type,
+                    taskState: entry.taskState,
+                    content: entry.content,
+                  ),
+                  child: ExcludeSemantics(
+                    child: Text(
+                      entry.content,
+                      style: discarded
+                          ? entryStyle?.copyWith(
+                              decoration: TextDecoration.lineThrough,
+                            )
+                          : entryStyle,
+                    ),
+                  ),
                 ),
               ),
             ],

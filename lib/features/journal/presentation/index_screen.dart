@@ -7,7 +7,9 @@ import 'package:daymark/features/journal/data/index_repository.dart';
 import 'package:daymark/features/journal/domain/journal_domain.dart';
 import 'package:daymark/features/journal/presentation/source_navigation.dart';
 import 'package:daymark/l10n/app_localizations.dart';
+import 'package:daymark/presentation/daymark_empty_state.dart';
 import 'package:daymark/presentation/daymark_notice.dart';
+import 'package:daymark/presentation/daymark_page_frame.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -89,95 +91,88 @@ class _IndexScreenState extends ConsumerState<IndexScreen> {
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = AppLocalizations.of(context);
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    l10n.index,
-                    style: Theme.of(context).textTheme.headlineSmall,
-                  ),
+    return DaymarkPageFrame(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  l10n.index,
+                  style: Theme.of(context).textTheme.headlineSmall,
                 ),
-                IconButton(
-                  onPressed: _saving ? null : _showAddDialog,
-                  tooltip: l10n.addIndexItem,
-                  icon: const Icon(Icons.add),
-                ),
-                IconButton(
-                  onPressed: _saving ? null : _lock,
-                  tooltip: l10n.lockJournal,
-                  icon: const Icon(Icons.lock_outline),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            Expanded(
-              child: FutureBuilder<List<IndexItem>>(
-                future: _itemsFuture,
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState != ConnectionState.done) {
-                    return const Center(child: CircularProgressIndicator());
-                  }
-                  if (snapshot.hasError || !snapshot.hasData) {
-                    return Center(child: Text(l10n.indexLoadFailed));
-                  }
-                  final List<IndexItem> items = snapshot.requireData;
-                  if (items.isEmpty) {
-                    return Align(
-                      alignment: AlignmentDirectional.topStart,
-                      child: Text(l10n.emptyIndex),
-                    );
-                  }
-                  return ListView.separated(
-                    itemCount: items.length,
-                    separatorBuilder: (context, index) =>
-                        const Divider(height: 1),
-                    itemBuilder: (context, index) {
-                      final IndexItem item = items[index];
-                      return ListTile(
-                        contentPadding: EdgeInsets.zero,
-                        leading: Icon(_iconFor(item.targetKind, item.logKind)),
-                        title: Text(_labelForItem(item, l10n)),
-                        onTap: _saving
-                            ? null
-                            : () =>
-                                  context.go(sourceLocationForIndexItem(item)),
-                        trailing: PopupMenuButton<_IndexItemAction>(
-                          enabled: !_saving,
-                          tooltip: l10n.indexItemActions,
-                          onSelected: (action) =>
-                              unawaited(_applyItemAction(items, index, action)),
-                          itemBuilder: (context) => [
-                            if (index > 0)
-                              PopupMenuItem<_IndexItemAction>(
-                                value: _IndexItemAction.moveUp,
-                                child: Text(l10n.moveIndexItemUp),
-                              ),
-                            if (index < items.length - 1)
-                              PopupMenuItem<_IndexItemAction>(
-                                value: _IndexItemAction.moveDown,
-                                child: Text(l10n.moveIndexItemDown),
-                              ),
-                            PopupMenuItem<_IndexItemAction>(
-                              value: _IndexItemAction.remove,
-                              child: Text(l10n.removeIndexItem),
-                            ),
-                          ],
-                        ),
-                      );
-                    },
-                  );
-                },
               ),
+              IconButton(
+                onPressed: _saving ? null : _showAddDialog,
+                tooltip: l10n.addIndexItem,
+                icon: const Icon(Icons.add),
+              ),
+              IconButton(
+                onPressed: _saving ? null : _lock,
+                tooltip: l10n.lockJournal,
+                icon: const Icon(Icons.lock_outline),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Expanded(
+            child: FutureBuilder<List<IndexItem>>(
+              future: _itemsFuture,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState != ConnectionState.done) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                if (snapshot.hasError || !snapshot.hasData) {
+                  return Center(child: Text(l10n.indexLoadFailed));
+                }
+                final List<IndexItem> items = snapshot.requireData;
+                if (items.isEmpty) {
+                  return DaymarkEmptyState(message: l10n.emptyIndex);
+                }
+                return ListView.separated(
+                  itemCount: items.length,
+                  separatorBuilder: (context, index) =>
+                      const Divider(height: 1),
+                  itemBuilder: (context, index) {
+                    final IndexItem item = items[index];
+                    return ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: Icon(_iconFor(item.targetKind, item.logKind)),
+                      title: Text(_labelForItem(item, l10n)),
+                      onTap: _saving
+                          ? null
+                          : () => context.go(sourceLocationForIndexItem(item)),
+                      trailing: PopupMenuButton<_IndexItemAction>(
+                        enabled: !_saving,
+                        tooltip: l10n.indexItemActions,
+                        onSelected: (action) =>
+                            unawaited(_applyItemAction(items, index, action)),
+                        itemBuilder: (context) => [
+                          if (index > 0)
+                            PopupMenuItem<_IndexItemAction>(
+                              value: _IndexItemAction.moveUp,
+                              child: Text(l10n.moveIndexItemUp),
+                            ),
+                          if (index < items.length - 1)
+                            PopupMenuItem<_IndexItemAction>(
+                              value: _IndexItemAction.moveDown,
+                              child: Text(l10n.moveIndexItemDown),
+                            ),
+                          PopupMenuItem<_IndexItemAction>(
+                            value: _IndexItemAction.remove,
+                            child: Text(l10n.removeIndexItem),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                );
+              },
             ),
-            const DaymarkNoticeRegion(),
-          ],
-        ),
+          ),
+          const DaymarkNoticeRegion(),
+        ],
       ),
     );
   }

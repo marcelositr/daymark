@@ -2,15 +2,10 @@ import 'dart:math' as math;
 
 import 'package:daymark/features/journal/data/tracker_repository.dart';
 import 'package:daymark/l10n/app_localizations.dart';
+import 'package:daymark/presentation/daymark_empty_state.dart';
 import 'package:flutter/material.dart';
 
-const List<Color> trackerSlotColors = <Color>[
-  Color(0xFF1565C0),
-  Color(0xFF2E7D32),
-  Color(0xFFEF6C00),
-  Color(0xFF6A1B9A),
-  Color(0xFFC62828),
-];
+import 'tracker_visuals.dart';
 
 class TrackerMonthView extends StatefulWidget {
   const TrackerMonthView({
@@ -52,15 +47,9 @@ class _TrackerMonthViewState extends State<TrackerMonthView> {
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
         if (widget.snapshot.trackers.isEmpty) {
-          return Align(
-            alignment: AlignmentDirectional.topStart,
-            child: Padding(
-              padding: const EdgeInsets.only(top: 16),
-              child: Text(
-                AppLocalizations.of(context).trackerEmptyMonth,
-                style: Theme.of(context).textTheme.bodyLarge,
-              ),
-            ),
+          return DaymarkEmptyState(
+            message: AppLocalizations.of(context).trackerEmptyMonth,
+            topPadding: 16,
           );
         }
 
@@ -237,19 +226,16 @@ class _TrackerDataPanel extends StatelessWidget {
                       children: <Widget>[
                         InkWell(
                           onTap: () => onFocus(tracker.id),
+                          canRequestFocus: false,
+                          excludeFromSemantics: true,
                           borderRadius: BorderRadius.circular(8),
                           child: Padding(
                             padding: const EdgeInsets.symmetric(
                               horizontal: 4,
                               vertical: 8,
                             ),
-                            child: Container(
-                              width: 4,
-                              height: 28,
-                              decoration: BoxDecoration(
-                                color: trackerSlotColors[tracker.colorSlot],
-                                borderRadius: BorderRadius.circular(2),
-                              ),
+                            child: DaymarkTrackerStripe(
+                              color: trackerSlotColors[tracker.colorSlot],
                             ),
                           ),
                         ),
@@ -287,9 +273,10 @@ class _TrackerDataPanel extends StatelessWidget {
                             ),
                           )
                         else if (active && writable) ...<Widget>[
-                          IconButton(
+                          DaymarkTrackerMarkButton(
                             tooltip: l10n.trackerFulfilled,
-                            visualDensity: VisualDensity.compact,
+                            selected: value == 1,
+                            color: trackerSlotColors[tracker.colorSlot],
                             onPressed: () => onSetMark(
                               tracker,
                               value == 1 &&
@@ -297,20 +284,12 @@ class _TrackerDataPanel extends StatelessWidget {
                                   ? null
                                   : 1,
                             ),
-                            style: IconButton.styleFrom(
-                              backgroundColor: value == 1
-                                  ? trackerSlotColors[tracker.colorSlot]
-                                        .withValues(alpha: 0.14)
-                                  : null,
-                              foregroundColor: value == 1
-                                  ? trackerSlotColors[tracker.colorSlot]
-                                  : null,
-                            ),
-                            icon: const Icon(Icons.check),
+                            icon: Icons.check,
                           ),
-                          IconButton(
+                          DaymarkTrackerMarkButton(
                             tooltip: l10n.trackerNotFulfilled,
-                            visualDensity: VisualDensity.compact,
+                            selected: value == -1,
+                            color: trackerSlotColors[tracker.colorSlot],
                             onPressed: () => onSetMark(
                               tracker,
                               value == -1 &&
@@ -318,16 +297,7 @@ class _TrackerDataPanel extends StatelessWidget {
                                   ? null
                                   : -1,
                             ),
-                            style: IconButton.styleFrom(
-                              backgroundColor: value == -1
-                                  ? trackerSlotColors[tracker.colorSlot]
-                                        .withValues(alpha: 0.14)
-                                  : null,
-                              foregroundColor: value == -1
-                                  ? trackerSlotColors[tracker.colorSlot]
-                                  : null,
-                            ),
-                            icon: const Icon(Icons.close),
+                            icon: Icons.close,
                           ),
                           if (canEnd)
                             IconButton(

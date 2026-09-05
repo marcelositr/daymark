@@ -2,6 +2,7 @@ import 'package:daymark/features/journal/data/search_repository.dart';
 import 'package:daymark/features/journal/domain/journal_domain.dart';
 import 'package:daymark/features/journal/presentation/search_screen.dart';
 import 'package:daymark/l10n/app_localizations.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -101,6 +102,31 @@ void main() {
 
     expect(dataSource.lastQuery, 'missing');
     expect(find.text('No matching entries.'), findsOneWidget);
+  });
+
+  testWidgets('Linux search field regains focus after search completes', (
+    tester,
+  ) async {
+    addTearDown(() {
+      debugDefaultTargetPlatformOverride = null;
+    });
+    debugDefaultTargetPlatformOverride = TargetPlatform.linux;
+
+    final _MemorySearchJournal dataSource = _MemorySearchJournal();
+    await _pumpSearch(tester, dataSource);
+    await tester.pump();
+
+    TextField field = tester.widget<TextField>(find.byType(TextField));
+    expect(field.focusNode!.hasFocus, isTrue);
+
+    await tester.enterText(find.byType(TextField), 'focus');
+    await tester.testTextInput.receiveAction(TextInputAction.search);
+    await tester.pumpAndSettle();
+
+    field = tester.widget<TextField>(find.byType(TextField));
+    expect(field.focusNode!.hasFocus, isTrue);
+
+    debugDefaultTargetPlatformOverride = null;
   });
 }
 
