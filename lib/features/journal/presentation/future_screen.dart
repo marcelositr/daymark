@@ -6,6 +6,7 @@ import 'package:daymark/features/journal/data/future_log_repository.dart';
 import 'package:daymark/features/journal/domain/journal_domain.dart';
 import 'package:daymark/l10n/app_localizations.dart';
 import 'package:daymark/presentation/app_section_scope.dart';
+import 'package:daymark/presentation/daymark_controls.dart';
 import 'package:daymark/presentation/daymark_notice.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -338,58 +339,54 @@ class _FutureScreenState extends ConsumerState<FutureScreen>
         Row(
           children: [
             Expanded(
-              child: DropdownButtonHideUnderline(
-                child: DropdownButton<DateTime>(
-                  key: const ValueKey<String>('future-month-target'),
-                  value: _selectedMonth,
-                  isExpanded: true,
-                  onChanged: _saving
-                      ? null
-                      : (value) {
-                          if (value != null) {
-                            setState(() => _selectedMonth = value);
-                          }
-                        },
-                  items: [
-                    for (final DateTime month in _months)
-                      DropdownMenuItem<DateTime>(
-                        value: month,
-                        child: Text(
-                          MaterialLocalizations.of(context)
-                              .formatMonthYear(month),
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(width: 16),
-            DropdownButtonHideUnderline(
-              child: DropdownButton<JournalEntryType>(
-                key: const ValueKey<String>('future-entry-type'),
-                value: _entryType,
+              child: DaymarkDropdownButton<DateTime>(
+                dropdownKey: const ValueKey<String>('future-month-target'),
+                value: _selectedMonth,
+                isExpanded: true,
                 onChanged: _saving
                     ? null
                     : (value) {
                         if (value != null) {
-                          setState(() => _entryType = value);
+                          setState(() => _selectedMonth = value);
                         }
                       },
                 items: [
-                  DropdownMenuItem<JournalEntryType>(
-                    value: JournalEntryType.task,
-                    child: Text(l10n.entryTask),
-                  ),
-                  DropdownMenuItem<JournalEntryType>(
-                    value: JournalEntryType.event,
-                    child: Text(l10n.entryEvent),
-                  ),
-                  DropdownMenuItem<JournalEntryType>(
-                    value: JournalEntryType.note,
-                    child: Text(l10n.entryNote),
-                  ),
+                  for (final DateTime month in _months)
+                    DropdownMenuItem<DateTime>(
+                      value: month,
+                      child: Text(
+                        MaterialLocalizations.of(context)
+                            .formatMonthYear(month),
+                      ),
+                    ),
                 ],
               ),
+            ),
+            const SizedBox(width: 16),
+            DaymarkDropdownButton<JournalEntryType>(
+              dropdownKey: const ValueKey<String>('future-entry-type'),
+              value: _entryType,
+              onChanged: _saving
+                  ? null
+                  : (value) {
+                      if (value != null) {
+                        setState(() => _entryType = value);
+                      }
+                    },
+              items: [
+                DropdownMenuItem<JournalEntryType>(
+                  value: JournalEntryType.task,
+                  child: Text(l10n.entryTask),
+                ),
+                DropdownMenuItem<JournalEntryType>(
+                  value: JournalEntryType.event,
+                  child: Text(l10n.entryEvent),
+                ),
+                DropdownMenuItem<JournalEntryType>(
+                  value: JournalEntryType.note,
+                  child: Text(l10n.entryNote),
+                ),
+              ],
             ),
           ],
         ),

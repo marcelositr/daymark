@@ -7,6 +7,7 @@ import 'package:daymark/features/journal/data/tracker_repository.dart';
 import 'package:daymark/features/journal/domain/journal_domain.dart';
 import 'package:daymark/l10n/app_localizations.dart';
 import 'package:daymark/presentation/app_section_scope.dart';
+import 'package:daymark/presentation/daymark_controls.dart';
 import 'package:daymark/presentation/daymark_notice.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -20,7 +21,7 @@ import 'journal_activity_guard.dart';
 import 'task_collection_migration_dialog.dart';
 import 'task_schedule_dialog.dart';
 import 'tracker_data_source.dart';
-import 'tracker_month_view.dart';
+import 'tracker_visuals.dart';
 
 abstract interface class TodayJournalDataSource {
   Future<DailyLogSnapshot> load(String methodDate);
@@ -314,14 +315,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen>
       padding: const EdgeInsets.symmetric(vertical: 2),
       child: Row(
         children: <Widget>[
-          Container(
-            width: 4,
-            height: 26,
-            decoration: BoxDecoration(
-              color: color,
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
+          DaymarkTrackerStripe(color: color),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
@@ -339,9 +333,10 @@ class _TodayScreenState extends ConsumerState<TodayScreen>
               ),
             )
           else ...<Widget>[
-            IconButton(
+            DaymarkTrackerMarkButton(
               tooltip: l10n.trackerFulfilled,
-              visualDensity: VisualDensity.compact,
+              selected: value == 1,
+              color: color,
               onPressed: actionsBlocked
                   ? null
                   : () => _setTrackerMark(
@@ -350,17 +345,12 @@ class _TodayScreenState extends ConsumerState<TodayScreen>
                           ? null
                           : 1,
                     ),
-              style: IconButton.styleFrom(
-                backgroundColor: value == 1
-                    ? color.withValues(alpha: 0.14)
-                    : null,
-                foregroundColor: value == 1 ? color : null,
-              ),
-              icon: const Icon(Icons.check),
+              icon: Icons.check,
             ),
-            IconButton(
+            DaymarkTrackerMarkButton(
               tooltip: l10n.trackerNotFulfilled,
-              visualDensity: VisualDensity.compact,
+              selected: value == -1,
+              color: color,
               onPressed: actionsBlocked
                   ? null
                   : () => _setTrackerMark(
@@ -369,13 +359,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen>
                           ? null
                           : -1,
                     ),
-              style: IconButton.styleFrom(
-                backgroundColor: value == -1
-                    ? color.withValues(alpha: 0.14)
-                    : null,
-                foregroundColor: value == -1 ? color : null,
-              ),
-              icon: const Icon(Icons.close),
+              icon: Icons.close,
             ),
           ],
         ],
@@ -518,31 +502,29 @@ class _TodayScreenState extends ConsumerState<TodayScreen>
     return Row(
       crossAxisAlignment: CrossAxisAlignment.end,
       children: [
-        DropdownButtonHideUnderline(
-          child: DropdownButton<JournalEntryType>(
-            value: _entryType,
-            onChanged: _saving
-                ? null
-                : (value) {
-                    if (value != null) {
-                      setState(() => _entryType = value);
-                    }
-                  },
-            items: [
-              DropdownMenuItem(
-                value: JournalEntryType.task,
-                child: Text(l10n.entryTask),
-              ),
-              DropdownMenuItem(
-                value: JournalEntryType.event,
-                child: Text(l10n.entryEvent),
-              ),
-              DropdownMenuItem(
-                value: JournalEntryType.note,
-                child: Text(l10n.entryNote),
-              ),
-            ],
-          ),
+        DaymarkDropdownButton<JournalEntryType>(
+          value: _entryType,
+          onChanged: _saving
+              ? null
+              : (value) {
+                  if (value != null) {
+                    setState(() => _entryType = value);
+                  }
+                },
+          items: [
+            DropdownMenuItem(
+              value: JournalEntryType.task,
+              child: Text(l10n.entryTask),
+            ),
+            DropdownMenuItem(
+              value: JournalEntryType.event,
+              child: Text(l10n.entryEvent),
+            ),
+            DropdownMenuItem(
+              value: JournalEntryType.note,
+              child: Text(l10n.entryNote),
+            ),
+          ],
         ),
         const SizedBox(width: 12),
         Expanded(

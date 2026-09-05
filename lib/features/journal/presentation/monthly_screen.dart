@@ -8,6 +8,7 @@ import 'package:daymark/features/journal/data/tracker_repository.dart';
 import 'package:daymark/features/journal/domain/journal_domain.dart';
 import 'package:daymark/l10n/app_localizations.dart';
 import 'package:daymark/presentation/app_section_scope.dart';
+import 'package:daymark/presentation/daymark_controls.dart';
 import 'package:daymark/presentation/daymark_notice.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -590,21 +591,19 @@ class _MonthlyScreenState extends ConsumerState<MonthlyScreen>
       crossAxisAlignment: CrossAxisAlignment.end,
       children: [
         if (calendar) ...[
-          DropdownButtonHideUnderline(
-            child: DropdownButton<int>(
-              value: _selectedDay,
-              onChanged: _saving
-                  ? null
-                  : (value) {
-                      if (value != null) {
-                        setState(() => _selectedDay = value);
-                      }
-                    },
-              items: [
-                for (int day = 1; day <= _daysInMonth(_month); day++)
-                  DropdownMenuItem<int>(value: day, child: Text('$day')),
-              ],
-            ),
+          DaymarkDropdownButton<int>(
+            value: _selectedDay,
+            onChanged: _saving
+                ? null
+                : (value) {
+                    if (value != null) {
+                      setState(() => _selectedDay = value);
+                    }
+                  },
+            items: [
+              for (int day = 1; day <= _daysInMonth(_month); day++)
+                DropdownMenuItem<int>(value: day, child: Text('$day')),
+            ],
           ),
           const SizedBox(width: 12),
         ],
