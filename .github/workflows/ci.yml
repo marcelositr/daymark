@@ -49,6 +49,14 @@ jobs:
       - name: Verify Drift migration snapshot
         run: dart run drift_dev make-migrations
 
+      - name: Upload generated Drift artifacts
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: drift-generated
+          path: |
+            lib/core/database/daymark_database.g.dart
+            drift_schemas
+
       - name: Reject stale Drift generated artifacts
         run: git diff --exit-code -- lib/core/database/daymark_database.g.dart drift_schemas
 
