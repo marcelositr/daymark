@@ -22,7 +22,7 @@ final class OpenExportService {
   OpenExportService(this._database);
 
   static const String formatName = 'daymark-open-export';
-  static const int formatVersion = 1;
+  static const int formatVersion = 2;
 
   final DaymarkDatabase _database;
 
@@ -118,6 +118,32 @@ final class OpenExportService {
             'created_at',
           ],
         ),
+        'trackers': await _readTable(
+          'SELECT id, title, start_date, planned_end_date, ended_date, '
+          'color_slot, created_at, updated_at FROM trackers '
+          'ORDER BY start_date, color_slot, created_at, id',
+          const <String>[
+            'id',
+            'title',
+            'start_date',
+            'planned_end_date',
+            'ended_date',
+            'color_slot',
+            'created_at',
+            'updated_at',
+          ],
+        ),
+        'trackerMarks': await _readTable(
+          'SELECT tracker_id, method_date, value, created_at, updated_at '
+          'FROM tracker_marks ORDER BY tracker_id, method_date',
+          const <String>[
+            'tracker_id',
+            'method_date',
+            'value',
+            'created_at',
+            'updated_at',
+          ],
+        ),
       };
 
       final String contents = switch (format) {
@@ -186,6 +212,8 @@ String _renderMarkdown(Map<String, Object?> payload) {
     'signifiers',
     'entrySignifiers',
     'indexItems',
+    'trackers',
+    'trackerMarks',
   ]) {
     final List<Object?> records = payload[section]! as List<Object?>;
     buffer
@@ -201,7 +229,8 @@ String _renderMarkdown(Map<String, Object?> payload) {
     for (int index = 0; index < records.length; index += 1) {
       final Map<String, Object?> record =
           records[index]! as Map<String, Object?>;
-      final Object? id = record['id'] ?? record['entryId'];
+      final Object? id =
+          record['id'] ?? record['entryId'] ?? record['trackerId'];
       buffer.writeln(
         '### ${index + 1}'
         '${id == null ? '' : ' · ${_inlineCode(id.toString())}'}',
