@@ -34,6 +34,32 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.sha }}
 
+      - name: Normalize PRODUCT anchor for Tracker alignment
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path('docs/PRODUCT.md')
+          text = path.read_text()
+          anchor = (
+              'This history surface is retrieval, not a generic calendar workspace or '
+              'reflection engine. Search and Index source navigation use the real historical '
+              'Daily route for past dates while the current Daily Log continues to resolve '
+              'to Today.\n'
+          )
+          prefix = (
+              'Today remains the interactive current Daily Log. Navigating historical dates '
+              'is retrieval over existing chronology, not a change of Entry ownership or an '
+              'alternative calendar model.\n\n'
+          )
+          if text.count(anchor) != 1:
+              raise SystemExit('docs/PRODUCT.md: expected one Daily history anchor')
+          if prefix in text:
+              raise SystemExit('docs/PRODUCT.md: normalization prefix already present')
+          path.write_text(text.replace(anchor, prefix + anchor, 1))
+          PY
+
       - name: Align Tracker documentation and export coverage
         run: python3 tool/align_tracker_pr.py
 
