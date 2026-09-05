@@ -1,0 +1,21 @@
+icons_launcher:
+  image_path: "assets/branding/daymark-icon.png"
+
+  platforms:
+    android:
+      enable: true
+
+    ios:
+      enable: false
+
+    macos:
+      enable: false
+
+    windows:
+      enable: false
+
+    web:
+      enable: false
+
+    linux:
+      enable: false
