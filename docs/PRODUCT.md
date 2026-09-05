@@ -4,7 +4,49 @@
 
 Daymark exists to provide a faithful digital implementation of the Bullet Journal method without turning personal organization into a productivity platform.
 
-The application should help the user capture, reflect, migrate, discard, and retrieve information with as little interface friction and distraction as possible.
+The application helps the user capture, reflect, migrate, discard, and retrieve information with as little interface friction and distraction as possible.
+
+## Product scope status
+
+**Daymark's functional product scope is frozen.**
+
+The maintainer declared the current product shape feature-complete on 2026-09-05. The application is intended to remain this product rather than grow through a continuing feature roadmap.
+
+Normal development is maintenance only:
+
+- bug and regression fixes;
+- security fixes and necessary hardening;
+- compatibility and data-migration fixes;
+- Linux/Android platform, dependency, toolchain, build, packaging, signing, and CI maintenance required to preserve supported behavior;
+- accessibility, localization, documentation, and internal corrections that preserve existing product semantics.
+
+The freeze does not prevent prerelease/beta/RC/stable progression. Release stages measure validation and stability, not feature expansion.
+
+A change that introduces a new user capability, new workflow concept, new supported platform/language, or new convenience layer is outside the frozen scope unless the maintainer explicitly reverses this decision first.
+
+## No feature roadmap
+
+The following are intentionally **not planned** and must not be treated as merely deferred work:
+
+- device-assisted or biometric unlock;
+- recovery-secret UX, account recovery, or maintainer reset/backdoors;
+- cloud sync, accounts, remote services, collaboration, or social features;
+- AI-generated or AI-assisted journal content inside Daymark;
+- Windows, macOS, iOS, web, or other additional product targets;
+- additional product languages beyond English and Portuguese (Brazil);
+- explicit language-selection UI;
+- new migration destinations or automatic rollover/migration behavior;
+- editing historical Daily/Monthly logs;
+- Collection-owned-entry referencing, richer Collection models, arbitrary properties, Kanban, workspaces, or databases;
+- richer Search/filtering/full-text ranking/indexing as a product feature;
+- new Index automation or Search-to-Index actions;
+- additional reflection engines or planner/calendar abstractions;
+- automatic backup schedules/retention systems;
+- attachments;
+- dashboards, feeds, streaks, badges, XP, productivity scores, engagement loops, or gamification;
+- freeform page/canvas/drawing/layout editing.
+
+Historical documentation may mention some of these as "future", "later", or "deferred" because it records earlier design stages. Those phrases are historical context only and do not represent an active roadmap.
 
 ## Digital minimalism
 
@@ -19,19 +61,19 @@ The product must not introduce:
 - attention-seeking notifications;
 - unsolicited suggestions;
 - dashboards for the sake of dashboards;
-- social or collaborative features in the core product;
+- social or collaborative features;
 - AI-generated journal content;
 - automatic decisions that replace intentional reflection.
 
-Animations must be restrained and functional. Colors, typography, navigation, and persistent controls must remain minimal.
+Animations must be restrained and functional. Colors, typography, navigation, and persistent controls remain minimal.
 
 ## Method fidelity
 
 The core vocabulary is intentionally small:
 
-- task;
-- event;
-- note;
+- Task;
+- Event;
+- Note;
 - Daily Log;
 - Monthly Log;
 - Future Log;
@@ -40,13 +82,13 @@ The core vocabulary is intentionally small:
 - Migration;
 - Reflection.
 
-Migration is a deliberate decision. Unresolved entries must never be silently rolled forward merely because software can automate it.
+Migration is a deliberate decision. Unresolved entries are never silently rolled forward merely because software can automate it.
 
 The detailed domain semantics are defined in `docs/DOMAIN.md`.
 
-## Current chronological product shape
+## Frozen chronological product shape
 
-The initial digital implementation keeps the method-native chronological surfaces distinct instead of merging them into a general planner.
+The digital implementation keeps method-native chronological surfaces distinct instead of merging them into a general planner.
 
 ### Daily Log / Today
 
@@ -54,38 +96,42 @@ Today represents the current Daily Log and supports Rapid Logging of Task, Event
 
 The date changes automatically at the method-day boundary, but unresolved entries are not automatically migrated because the calendar advanced.
 
-Earlier Daily Logs may be opened through a dedicated **read-only historical route**. Historical Daily browsing must not create a missing Daily Log merely because the user views that date and must not expose capture, Task actions, migration, scheduling, references, completion, or discard.
+Earlier Daily Logs may be opened through a dedicated **read-only historical route**. Historical Daily browsing does not create a missing Daily Log merely because the user views that date and does not expose capture, Task actions, migration, scheduling, references, completion, or discard.
 
-A historical day that has never existed therefore appears empty without becoming persisted state or an Index candidate. Historical navigation may move between earlier dates but must not advance into Today as though the current Daily Log were historical. Returning to Today restores the normal interactive Rapid Logging surface.
+A historical day that never existed appears empty without becoming persisted state or an Index candidate. Historical navigation may move between earlier dates but does not advance into Today as though the current Daily Log were historical. Returning to Today restores the interactive Rapid Logging surface.
 
-Today remains the interactive current Daily Log. Navigating historical dates is retrieval over existing chronology, not a change of Entry ownership or an alternative calendar model.
+Active Daymark Trackers may appear in Today as a compact `+ / -` marking surface. A Tracker is not a Daily Entry and does not create a Task per day. It is the documented optional Daymark adaptation defined in `docs/TRACKERS.md`.
 
-Active Daymark Trackers may appear in Today as a compact `+ / -` marking surface. A Tracker is not a Daily Entry and does not create a Task per day; this is an optional Daymark adaptation whose provenance and limits are documented in `docs/TRACKERS.md`.
+This history surface is retrieval, not a generic calendar workspace.
 
-This history surface is retrieval, not a generic calendar workspace or reflection engine. Search and Index source navigation use the real historical Daily route for past dates while the current Daily Log continues to resolve to Today.
+### Daily Reflection
+
+Daily Reflection is contextual inside Today rather than a separate permanent workspace.
+
+It isolates unresolved Tasks and requires a deliberate decision among the actions already supported by Daymark: Complete, Migrate, Schedule, or Discard.
+
+Reflection never performs automatic rollover, scoring, prioritization, recommendation, or engagement prompting.
 
 ### Monthly Log
 
-Monthly preserves the method's two method-native areas:
+Monthly preserves the method's two canonical areas:
 
 - **Calendar**: one row per date, with dated Event entries;
 - **Tasks**: a monthly Task list.
 
-Daymark additionally hosts an optional **Tracker** section on the Monthly surface. Tracker is a Daymark-specific digital adaptation for finite daily commitments and reflection; it is not a third canonical Monthly Log entry-placement type and must not be presented as an official Ryder Carroll rule. Its exact semantics, maintainer origin, five-color graph, and exclusions are documented in `docs/TRACKERS.md`.
+Daymark additionally hosts the optional **Tracker** section. Tracker is a Daymark-specific adaptation for finite daily commitments and reflection; it is not a third canonical Monthly Log entry-placement type and is not presented as an official Ryder Carroll rule.
 
-The **current month** remains the active Monthly Log and supports capture plus deliberate Task actions. The current Tracker view may create, mark, and deliberately end Trackers; historical Monthly views may display intersecting Tracker history but remain read-only.
+The **current month** remains interactive and supports capture plus deliberate Task actions. The Tracker view may create, mark, and deliberately end Trackers.
 
-Earlier Monthly Logs may be browsed month by month in **read-only historical mode**. Historical browsing must not create a missing Monthly Log merely because the user navigates to that month, must not expose capture or Task actions, and must not allow navigation forward past the current month into a future Monthly Log.
+Earlier Monthly Logs are **read-only historical retrieval**. Historical browsing does not create a missing Monthly Log, expose capture/Task actions, or move forward past the current month.
 
-A historical month that has never existed therefore appears empty without becoming persisted state or an Index candidate. Returning to the current month restores the normal interactive Monthly behavior.
-
-This history surface is retrieval, not a reflection engine or generic agenda. Search and Index source navigation may open the requested existing Monthly Log through the real Monthly route. Future editing of historical Monthly Logs and richer Monthly reflection remain separate product decisions.
+Historical Monthly editing and richer Monthly reflection are not part of the frozen product scope.
 
 ### Future Log
 
-The initial Future Log is a rolling overview of **six future months**, beginning with the month immediately after the current month.
+Future Log is a rolling overview of **six future months**, beginning with the month immediately after the current month.
 
-Each month is a month-addressed bucket. Future does not assign entries to a day inside that month and must not become a second day-level calendar.
+Each month is a month-addressed bucket. Future does not assign entries to a day inside that month and does not become a second day-level calendar.
 
 Rapid Logging may place Task, Event, and Note entries into the selected future month. Scheduling an existing open Task into Future is a separate deliberate movement action, not the same as capturing a new Future entry.
 
@@ -102,137 +148,134 @@ The Collection surface supports:
 - Rapid Logging Task, Event, and Note entries owned by that Collection;
 - completing or discarding open Tasks inside that Collection;
 - receiving deliberately migrated open Tasks from Today or Monthly Tasks;
-- displaying deliberate references to Today, Monthly, and Future entries in a separate read-only section.
+- displaying deliberate references to Today, Monthly, and Future entries in a separate read-only section;
+- removing a Collection reference without deleting or mutating its source Entry.
 
-Collections deliberately do not gain Kanban fields, arbitrary properties, dashboards, or planner abstractions. Collection references and migration remain distinct domain operations.
+A **Collection reference** does not move or copy the source entry. The source remains owned by its original Daily, Monthly, or Future Log with the same stable Entry identity and Task state. The Collection displays that entry as a reference only, and Task actions are not exposed through the reference.
 
-A **Collection reference** does not move or copy the source entry. The source remains owned by its original Daily, Monthly, or Future Log with the same stable Entry identity and Task state. The Collection displays that entry as a reference only, and Task actions are not exposed through the reference. The user must deliberately choose an existing Collection; Daymark does not auto-select or create a Collection as a side effect.
+Daymark does not auto-select or create a Collection as a side effect.
 
-Removing a Collection reference is supported and never deletes or mutates its source Entry. Navigating from a Collection reference back to its source and referencing Collection-owned entries from inside Collections remain separate product decisions.
+Additional Collection abstractions are outside the frozen scope.
 
 ### Index
 
 The Index is a deliberate Bullet Journal catalog of existing journal structures. It is persisted independently from Search and never duplicates Entry content.
 
-The current Index surface supports:
+The Index supports:
 
-- listing indexed Logs and Collections in deliberate Index order;
-- adding an existing Daily, Monthly, or Future Log to the Index;
-- adding an existing Collection to the Index;
-- excluding a structure once it has already been indexed;
+- listing indexed Logs and Collections in deliberate order;
+- adding an existing Daily, Monthly, or Future Log;
+- adding an existing Collection;
+- excluding a structure once already indexed;
 - deliberately reordering or removing Index items;
 - opening an indexed structure through its real product route.
 
-Adding something to the Index does not move it, copy it, change Entry ownership, alter Task state, or create a new Log or Collection. Daymark never auto-indexes every structure merely because the software can discover it.
+Adding something to the Index does not move it, copy it, change Entry ownership, alter Task state, or create a new Log/Collection. Daymark never auto-indexes every structure.
 
-New Index items append in the order the user chooses them and may later be deliberately reordered or removed. Opening an Index row always uses a real product route; historical Daily and Future targets use their read-only historical routes, and Monthly resolves the requested month without pretending the current Today/Monthly/Future surfaces represent a different owner.
-
-Search remains a separate retrieval mechanism. A Search result does not become a persistent Index item unless the user makes an explicit future product action that says so.
+Search remains a separate retrieval mechanism. Search-to-Index automation is outside the frozen scope.
 
 ### Search
 
-Search is an explicit local retrieval surface over existing Entry content. It is not another owner, Collection, or persistent catalog.
+Search is explicit local retrieval over existing Entry content. It is not another owner, Collection, or persistent catalog.
 
-The first Search surface:
+Search:
 
 - runs only after the user deliberately submits text;
 - performs case-insensitive literal substring matching over existing Entry content;
 - shows the result's real Entry type/Task state and owning Daily, Monthly, Future, or Collection context;
 - remains read-only and exposes no Task, migration, scheduling, reference, or ownership actions;
-- presents a quiet prompt before a query and a quiet empty state when nothing matches;
-- refreshes the last submitted query when the retained Search section becomes active again so Task state does not remain stale after work elsewhere;
-- opens a result through the real route of its owning Daily, Monthly, Future, or Collection context.
+- presents quiet prompt/empty states;
+- refreshes the last submitted query when the retained Search section becomes active again;
+- opens a result through the real route of its owner.
 
-Search does not create Entries, Collection references, or Index items. It does not persist query history, maintain a Search cache, or introduce a relevance/ranking engine in this slice. Collection-title search, richer filtering, and any future full-text indexing remain separate product decisions.
+Search does not create Entries, Collection references, Index items, query history, an external plaintext index, ranking, or filtering systems.
 
 ### Migration and scheduling
 
-Migration and scheduling must use real method-native destinations.
+Migration and scheduling use real method-native destinations.
 
-Do not invent temporary planner buckets, fake destinations, or automatic rollover rules merely to make a migration UI easier to implement.
+**Scheduling (`<`)** is available for open Tasks in Today and Monthly. The user deliberately chooses one of the visible Future months. The historical source stays in place with scheduled state, and the selected Future month receives a fresh open Task with lineage back to the source.
 
-The current product exposes **scheduling (`<`) for open Tasks in Today and Monthly**. The user deliberately chooses one of the six visible Future months. The historical source stays in place with scheduled state, and the selected Future month receives a fresh open Task with lineage back to the source.
+**Forward migration (`>`)** is available for open Tasks in Today and Monthly Tasks into an existing Collection. The user deliberately chooses the destination Collection. The historical source stays in place with migrated state, and the chosen Collection receives a fresh open Task with lineage.
 
-The current product also exposes **forward migration (`>`) for open Tasks in Today and Monthly Tasks into an existing Collection**. The user deliberately chooses the destination Collection. The historical source stays in place with migrated state, and the chosen Collection receives a fresh open Task with lineage back to the source. Daymark does not choose a Collection automatically and does not create one as a side effect of migration.
+A Future destination always uses scheduling semantics. Forward migration uses the existing Collection destination defined by the product.
 
-Cross-surface movement or referencing must be immediately visible when the user navigates to its destination. Retained navigation state is not permission to show stale Future or Collection snapshots after a write from another section.
+Daymark does not treat the current Monthly Log as a shortcut destination for a Today Task. Migration from Future, migration from Collection-owned entries, or additional destination models are outside the frozen scope.
 
-A Future destination always uses scheduling semantics. A normal forward migration (`>`) uses a valid non-Future destination according to the method.
-
-Daymark does **not** treat the current Monthly Log as a shortcut destination for a Today Task merely because that container already exists. Existing Collections are the first deliberately exposed forward-migration destination. Migration from Future or from Collection-owned entries, and migration to a future Monthly Log, remain separate product decisions rather than implicit extensions of this flow.
+Cross-surface movement/reference must be immediately visible when the destination section is reactivated. Retained navigation state is not permission to show stale data.
 
 ## Immediate capture correction
 
-A successful capture in Today, Monthly, Future, or a Collection may expose a
-short-lived **Undo** action as mechanical error correction.
+A successful capture in Today, Monthly, Future, or a Collection may expose a short-lived **Undo** action as mechanical error correction.
 
-Undo is deliberately not a general Edit/Delete feature and is not a new Bullet
-Journal task state. It may reverse only the freshly captured Entry while that
-Entry is still untouched and has no migration, Collection reference, signifier,
-or other journal relationship. Once the Entry participates in journal history,
-normal method actions such as completion, migration, scheduling, reference, and
-discard remain authoritative.
+Undo is not a general Edit/Delete feature and is not a Bullet Journal task state. It may reverse only the freshly captured Entry while that Entry is untouched and has no migration, Collection reference, signifier, or other journal relationship.
 
-The visible Undo window is presentation behavior rather than a persistence rule.
+Once the Entry participates in journal history, normal method actions are authoritative.
 
 ## Transient feedback
 
-Daymark uses one quiet in-layout notice channel for transient operational
-feedback. Notices must never cover a Rapid Logging field, navigation controls,
-or journal content that the user is actively manipulating.
-
-On capture surfaces the notice region sits immediately above the capture
-controls. On read-only/retrieval surfaces it sits at the bottom of the content
-column. The same notice controller is shared by Today, Monthly, Future,
-Collections, Search, Index, historical routes, Backup, and Open Export.
+Daymark uses one quiet in-layout notice channel for transient operational feedback. Notices never cover Rapid Logging fields, navigation controls, or journal content the user is actively manipulating.
 
 The channel has three restrained behaviors:
 
-- **Undo**: five seconds, with one explicit action; a newer capture replaces the
-  previous Undo notice and a deliberate journal action dismisses it immediately;
-- **Info**: approximately three seconds, with no required acknowledgement;
-- **Error**: approximately six seconds, visually distinct but non-modal unless a
-  separate user decision is actually required.
+- **Undo**: five seconds, with one explicit action;
+- **Info**: approximately three seconds;
+- **Error**: approximately six seconds, non-modal unless a separate user decision is required.
 
-Notices do not steal keyboard focus, queue into an attention feed, persist as
-engagement prompts, or create a notification history. A new notice replaces the
-previous transient notice.
+Notices do not steal keyboard focus, queue into an attention feed, persist as engagement prompts, or create notification history.
+
+## Trackers
+
+Trackers are an optional finite Daymark adaptation already included in the frozen product.
+
+They:
+
+- store explicit daily `+1` or `-1` marks;
+- interpret absence as `0` only inside the effective Tracker period;
+- are separate from Task/Event/Note Entry ownership;
+- have a finite planned period and may be deliberately ended early;
+- are limited to the existing five visual slots/colors;
+- appear read-only in historical Monthly views;
+- may expose compact current-day controls in Today;
+- use the existing restrained reflection graph and no scores/streaks/gamification.
+
+Exact provenance and constraints are documented in `docs/TRACKERS.md`.
 
 ## Local-first
 
 The journal belongs to the user.
 
-Daymark must work without an account or network connection. Core functionality must never depend on a remote service.
+Daymark works without an account or network connection. Core functionality does not depend on a remote service.
 
-User data must be exportable in documented, non-proprietary formats. A user must remain capable of recovering meaningful data even if Daymark itself is no longer available.
+User data is exportable through the documented encrypted Backup/Restore and explicit plaintext Open Export boundaries.
 
-## Initial platforms
+No network product feature is planned under the frozen scope.
 
-The supported targets for the first development phase are:
+## Supported platforms
+
+The supported product targets are:
 
 - Linux;
 - Android.
 
-The domain and application layers must not depend on platform-specific APIs. Windows, macOS, and iOS are future targets, not current scope.
+The architecture keeps domain/application logic reasonably platform-independent for maintainability, but additional product platforms are not planned while the scope freeze is active.
 
 ## Languages and localization
 
-Daymark is multilingual by design, not as a later retrofit.
-
-The initial product languages are:
+The supported product languages are:
 
 - English;
 - Portuguese (Brazil).
 
-English is the canonical source locale and the product fallback locale.
+English is the canonical source/fallback locale.
 
-On first run, Daymark follows the operating-system locale only when it matches a supported product locale. An exact Brazilian Portuguese locale selects `pt_BR`; English locales select English; unsupported locales fall back to English. A future explicit user language override takes precedence over system detection.
+On first run, Daymark follows the operating-system locale only when it matches a supported product locale. Exact Brazilian Portuguese selects `pt_BR`; English selects English; unsupported locales fall back to English.
 
-The Flutter localization generator requires a parent `pt` resource when `pt_BR` exists. That parent resource is a technical generation fallback and does not expand the initial product-language promise beyond English and Portuguese (Brazil).
+The Flutter localization generator requires a parent `pt` resource when `pt_BR` exists. That parent is a technical fallback and does not expand the supported-language promise.
 
-Product behavior, domain rules, persistence values, and identifiers must never depend on translated display strings.
+Product behavior, domain rules, persistence values, and identifiers never depend on translated display strings.
 
-The interface must avoid layout assumptions that make future right-to-left languages unnecessarily difficult to support. Hebrew, Arabic, and other RTL languages are future possibilities, not part of the initial release scope.
+Additional language support and explicit language-selection UI are not planned under the frozen scope.
 
 ## Navigation
 
@@ -245,40 +288,38 @@ The journal navigation model contains:
 - Search;
 - Index.
 
-The exact control used to reach them differs by screen size. Wider desktop layouts expose all six directly in the navigation rail. Compact/mobile layouts keep Today, Monthly, Future, and Collections as direct bottom destinations and use a minimal **More** destination for Search and Index rather than crowding six items into the bottom bar.
+Wider desktop layouts expose all six directly in the navigation rail. Compact/mobile layouts keep Today, Monthly, Future, and Collections as direct bottom destinations and use a minimal **More** destination for Search and Index.
 
-Grouping Search and Index under the same compact navigation entry does not merge their product meaning. The Index remains a deliberate persisted Bullet Journal structure; Search remains query-driven retrieval.
+Historical Daily navigation is contextual under Today rather than a seventh top-level destination.
 
-Historical Daily navigation is contextual under Today rather than a seventh top-level destination. The current Daily Log stays the primary Today surface while `/daily/:date` represents explicit read-only retrieval of a past method date.
+Reflection remains contextual rather than a permanent top-level workspace.
 
-Reflection is contextual rather than a permanent top-level workspace. Reflection actions should appear where they belong, such as Daily or Monthly review flows.
-
-Settings are secondary application controls and must not compete with journal navigation.
+Settings/support controls such as Backup, Open Export, Appearance, and About remain secondary and do not compete with journal navigation.
 
 ## Visual direction
 
-Daymark supports light and dark appearance, with a system-following option where the platform provides one.
+Daymark supports Light, Dark, and System-following appearance.
 
-The shared visual metaphor is a minimal dotted notebook or sketchbook page:
+The shared visual metaphor is a minimal notebook/sketchbook page:
 
-- restrained dotted background;
 - comfortable page-like spacing;
 - strong emphasis on journal content;
 - minimal chrome;
-- light and dark palettes designed as equivalent reading surfaces rather than unrelated themes.
+- restrained controls and feedback;
+- light/dark palettes as equivalent reading surfaces.
 
-The notebook metaphor is visual, not structural. Daymark is not a freeform canvas, drawing application, ruler tool, page designer, or drag-and-drop layout system.
+The notebook metaphor is visual, not structural. Daymark is not a freeform canvas, drawing application, page designer, or drag-and-drop layout system.
 
-Linux and Android should feel like the same journal while using layouts appropriate to each form factor. The interface should preserve usable screen space on phones rather than drawing decorative notebook hardware, bindings, page shadows, or other literal simulations.
+Linux and Android feel like the same journal while using layouts appropriate to each form factor.
 
-## Feature test
+## Maintenance test
 
-Before adding a feature, ask:
+Before accepting any post-freeze change, ask:
 
-1. Does it support capture, reflection, migration, retrieval, or another core part of the method?
-2. Does it reduce mechanical friction without removing a conscious decision?
-3. Does it keep the user's attention on their journal rather than on Daymark itself?
-4. Can it remain understandable without configuration overhead?
-5. Does it use an existing method-native concept instead of inventing a parallel productivity abstraction?
+1. Is it fixing a reproducible defect, vulnerability, compatibility failure, platform/toolchain breakage, packaging/release problem, accessibility regression, localization defect, or documentation error?
+2. Does it preserve the existing method/product semantics instead of adding a new user capability?
+3. Does it avoid creating a new product concept, workflow, setting, supported platform/language, or convenience layer?
+4. Is the smallest safe correction sufficient?
+5. Are existing data/security compatibility boundaries preserved and tested where relevant?
 
-If the answer is no, the feature probably does not belong in Daymark.
+If the answer to the first question is no, or the change expands what Daymark does, it does not belong under the current product freeze without an explicit maintainer decision to reopen scope.
