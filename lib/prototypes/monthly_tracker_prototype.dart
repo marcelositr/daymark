@@ -4,9 +4,13 @@ import 'package:flutter/material.dart';
 
 /// Disposable UI experiment for the proposed Monthly Tracker.
 ///
-/// This revision tests two questions only:
-/// 1. Does the graph read better as a horizontal canvas on every screen shape?
-/// 2. Is 3, 4, or 5 simultaneous trackers the practical limit?
+/// This revision follows the hand-drawn responsive hierarchy:
+/// - portrait: data takes about 2/3 of the width and the graph 1/3;
+/// - landscape/desktop: data takes about 2/3 of the height and the graph 1/3;
+/// - the graph transposes its axes in portrait so the full month uses the long
+///   dimension of the screen instead of being squeezed into a narrow strip.
+///
+/// Nothing here changes Daymark routing, persistence, schema, or product domain.
 void main() {
   runApp(const _TrackerPrototypeApp());
 }
@@ -47,7 +51,7 @@ class _TrackerPrototypeScreenState extends State<_TrackerPrototypeScreen> {
   ];
 
   late final List<_TrackerDemo> _trackers;
-  int _visibleCount = 3;
+  int _visibleCount = 4;
   int _simulatedToday = 30;
   int? _focusedTracker;
 
@@ -60,35 +64,50 @@ class _TrackerPrototypeScreenState extends State<_TrackerPrototypeScreen> {
         color: _slotColors[0],
         startDay: 1,
         endDay: 30,
-        marks: _marks(<int>[1, 2, 4, 5, 6, 8, 10, 12, 13, 15, 16, 19, 20, 22, 24, 27, 28, 30], <int>[9, 18, 25]),
+        marks: _marks(
+          <int>[1, 2, 4, 5, 6, 8, 10, 12, 13, 15, 16, 19, 20, 22, 24, 27, 28, 30],
+          <int>[9, 18, 25],
+        ),
       ),
       _TrackerDemo(
         name: 'Não fumar',
         color: _slotColors[1],
         startDay: 1,
         endDay: 30,
-        marks: _marks(<int>[1, 2, 3, 4, 5, 7, 8, 9, 10, 11, 12, 14, 15, 16, 17, 18, 20, 22, 23, 24, 25, 26, 27, 30], <int>[6, 13, 21, 29]),
+        marks: _marks(
+          <int>[1, 2, 3, 4, 5, 7, 8, 9, 10, 11, 12, 14, 15, 16, 17, 18, 20, 22, 23, 24, 25, 26, 27, 30],
+          <int>[6, 13, 21, 29],
+        ),
       ),
       _TrackerDemo(
         name: 'Passear com o cachorro',
         color: _slotColors[2],
         startDay: 1,
         endDay: 30,
-        marks: _marks(<int>[2, 3, 4, 6, 8, 9, 10, 11, 13, 15, 16, 18, 20, 21, 22, 24, 25, 27, 28, 30], <int>[1, 7, 14, 19, 26]),
+        marks: _marks(
+          <int>[2, 3, 4, 6, 8, 9, 10, 11, 13, 15, 16, 18, 20, 21, 22, 24, 25, 27, 28, 30],
+          <int>[1, 7, 14, 19, 26],
+        ),
       ),
       _TrackerDemo(
         name: 'Ler 3 páginas',
         color: _slotColors[3],
         startDay: 4,
         endDay: 22,
-        marks: _marks(<int>[4, 5, 6, 8, 10, 11, 13, 14, 15, 17, 19, 21, 22], <int>[7, 12, 18]),
+        marks: _marks(
+          <int>[4, 5, 6, 8, 10, 11, 13, 14, 15, 17, 19, 21, 22],
+          <int>[7, 12, 18],
+        ),
       ),
       _TrackerDemo(
         name: 'Novena',
         color: _slotColors[4],
         startDay: 7,
         endDay: 15,
-        marks: _marks(<int>[7, 8, 9, 11, 12, 14, 15], <int>[10]),
+        marks: _marks(
+          <int>[7, 8, 9, 11, 12, 14, 15],
+          <int>[10],
+        ),
       ),
     ];
   }
@@ -109,74 +128,56 @@ class _TrackerPrototypeScreenState extends State<_TrackerPrototypeScreen> {
         child: LayoutBuilder(
           builder: (BuildContext context, BoxConstraints viewport) {
             final bool portrait = viewport.maxHeight > viewport.maxWidth;
-            final double horizontalPadding = viewport.maxWidth < 520 ? 12 : 20;
+            final double outerPadding = viewport.maxWidth < 520 ? 10 : 16;
 
-            return ListView(
-              padding: EdgeInsets.fromLTRB(
-                horizontalPadding,
-                18,
-                horizontalPadding,
-                28,
+            return Padding(
+              padding: EdgeInsets.all(outerPadding),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: <Widget>[
+                  _Header(
+                    portrait: portrait,
+                    visibleCount: _visibleCount,
+                    onVisibleCountChanged: _setVisibleCount,
+                  ),
+                  const SizedBox(height: 10),
+                  Expanded(
+                    child: portrait
+                        ? Row(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: <Widget>[
+                              Expanded(
+                                flex: 2,
+                                child: _buildDataPanel(theme, compact: true),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: _buildGraphPanel(
+                                  theme,
+                                  verticalTimeline: true,
+                                ),
+                              ),
+                            ],
+                          )
+                        : Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: <Widget>[
+                              Expanded(
+                                flex: 2,
+                                child: _buildDataPanel(theme, compact: false),
+                              ),
+                              const SizedBox(height: 8),
+                              Expanded(
+                                child: _buildGraphPanel(
+                                  theme,
+                                  verticalTimeline: false,
+                                ),
+                              ),
+                            ],
+                          ),
+                  ),
+                ],
               ),
-              children: <Widget>[
-                Text(
-                  'Monthly Tracker — teste de densidade',
-                  style: theme.textTheme.headlineSmall,
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  portrait
-                      ? 'Tela vertical: o gráfico continua sendo uma peça horizontal, usando toda a largura.'
-                      : 'Tela horizontal: o gráfico usa toda a largura disponível, sem dividir espaço com o registro diário.',
-                  style: theme.textTheme.bodyMedium,
-                ),
-                const SizedBox(height: 18),
-                _SectionCard(
-                  title: 'Quantas linhas continuam legíveis?',
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: <Widget>[
-                      SegmentedButton<int>(
-                        showSelectedIcon: false,
-                        segments: const <ButtonSegment<int>>[
-                          ButtonSegment<int>(value: 3, label: Text('3')),
-                          ButtonSegment<int>(value: 4, label: Text('4')),
-                          ButtonSegment<int>(value: 5, label: Text('5')),
-                        ],
-                        selected: <int>{_visibleCount},
-                        onSelectionChanged: (Set<int> value) {
-                          setState(() {
-                            _visibleCount = value.single;
-                            if (_focusedTracker != null &&
-                                _focusedTracker! >= _visibleCount) {
-                              _focusedTracker = null;
-                            }
-                          });
-                        },
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Troque entre 3, 4 e 5 sem mudar os dados. A ideia é descobrir o limite visual, não defender o número 5.',
-                        style: theme.textTheme.bodySmall,
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 14),
-                _buildGraphCard(theme, viewport, portrait),
-                const SizedBox(height: 14),
-                _buildDailyCard(theme),
-                const SizedBox(height: 14),
-                _SectionCard(
-                  title: 'O que observar',
-                  child: Text(
-                    '1) compare 3, 4 e 5 linhas; 2) redimensione para vertical, quadrado e horizontal; '
-                    '3) toque numa legenda quando houver cruzamentos; 4) veja se o mês inteiro ainda pode ser lido de uma vez. '
-                    'Nada aqui decide banco, schema ou produto final.',
-                    style: theme.textTheme.bodyMedium,
-                  ),
-                ),
-              ],
             );
           },
         ),
@@ -184,99 +185,98 @@ class _TrackerPrototypeScreenState extends State<_TrackerPrototypeScreen> {
     );
   }
 
-  Widget _buildGraphCard(
-    ThemeData theme,
-    BoxConstraints viewport,
-    bool portrait,
-  ) {
-    final List<_TrackerDemo> visible = _trackers.take(_visibleCount).toList();
-
-    return _SectionCard(
-      title: 'Gráfico conjunto — $_visibleCount Trackers',
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: <Widget>[
-              for (int index = 0; index < visible.length; index++)
-                _LegendChip(
-                  tracker: visible[index],
-                  selected: _focusedTracker == index,
-                  dimmed: _focusedTracker != null && _focusedTracker != index,
-                  onTap: () {
-                    setState(() {
-                      _focusedTracker = _focusedTracker == index ? null : index;
-                    });
-                  },
-                ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          LayoutBuilder(
-            builder: (BuildContext context, BoxConstraints box) {
-              final double width = box.maxWidth;
-              final double desiredHeight = portrait
-                  ? math.min(260, math.max(190, width / 1.65))
-                  : math.min(340, math.max(220, viewport.maxHeight * 0.48));
-              return SizedBox(
-                width: width,
-                height: desiredHeight,
-                child: CustomPaint(
-                  painter: _TrackerGraphPainter(
-                    trackers: visible,
-                    throughDay: _simulatedToday,
-                    focusedTracker: _focusedTracker,
-                    daysInMonth: _daysInMonth,
-                    textColor: theme.colorScheme.onSurface,
-                    gridColor: theme.colorScheme.outlineVariant,
-                    compact: width < 520,
-                  ),
-                ),
-              );
-            },
-          ),
-        ],
-      ),
-    );
+  void _setVisibleCount(int count) {
+    setState(() {
+      _visibleCount = count;
+      if (_focusedTracker != null && _focusedTracker! >= _visibleCount) {
+        _focusedTracker = null;
+      }
+    });
   }
 
-  Widget _buildDailyCard(ThemeData theme) {
+  Widget _buildDataPanel(ThemeData theme, {required bool compact}) {
     final List<_TrackerDemo> visible = _trackers.take(_visibleCount).toList();
     final List<int> activeIndexes = <int>[
       for (int index = 0; index < visible.length; index++)
         if (visible[index].isActiveOn(_simulatedToday)) index,
     ];
 
-    return _SectionCard(
-      title: 'Registro do dia — $_simulatedToday/09',
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          Slider(
-            min: 1,
-            max: _daysInMonth.toDouble(),
-            divisions: _daysInMonth - 1,
-            value: _simulatedToday.toDouble(),
-            label: '$_simulatedToday',
-            onChanged: (double value) {
-              setState(() => _simulatedToday = value.round());
-            },
-          ),
-          for (final int index in activeIndexes)
-            _DailyTrackerRow(
-              tracker: visible[index],
-              value: visible[index].valueOn(_simulatedToday),
-              onPositive: () => _toggleMark(index, 1),
-              onNegative: () => _toggleMark(index, -1),
+    return _Panel(
+      title: 'Dados · $_simulatedToday/09',
+      child: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            Slider(
+              min: 1,
+              max: _daysInMonth.toDouble(),
+              divisions: _daysInMonth - 1,
+              value: _simulatedToday.toDouble(),
+              label: '$_simulatedToday',
+              onChanged: (double value) {
+                setState(() => _simulatedToday = value.round());
+              },
             ),
-          const SizedBox(height: 6),
-          Text(
-            'Check positivo = +1. Check negativo = -1. Sem check = 0.',
-            style: theme.textTheme.bodySmall,
-          ),
-        ],
+            for (final int index in activeIndexes)
+              _DailyTrackerRow(
+                tracker: visible[index],
+                value: visible[index].valueOn(_simulatedToday),
+                focused: _focusedTracker == index,
+                compact: compact,
+                onFocus: () {
+                  setState(() {
+                    _focusedTracker = _focusedTracker == index ? null : index;
+                  });
+                },
+                onPositive: () => _toggleMark(index, 1),
+                onNegative: () => _toggleMark(index, -1),
+              ),
+            if (activeIndexes.isEmpty)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 12),
+                child: Text('Nenhum Tracker ativo neste dia.'),
+              ),
+            const SizedBox(height: 8),
+            Text(
+              '+ = cumpri · − = não cumpri · sem check = 0',
+              style: theme.textTheme.bodySmall,
+            ),
+            const SizedBox(height: 10),
+            Text(
+              'Toque no nome ou na cor para destacar a linha correspondente.',
+              style: theme.textTheme.bodySmall,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildGraphPanel(
+    ThemeData theme, {
+    required bool verticalTimeline,
+  }) {
+    final List<_TrackerDemo> visible = _trackers.take(_visibleCount).toList();
+
+    return _Panel(
+      title: 'Gráfico',
+      denseTitle: verticalTimeline,
+      child: LayoutBuilder(
+        builder: (BuildContext context, BoxConstraints box) {
+          return SizedBox.expand(
+            child: CustomPaint(
+              painter: _TrackerGraphPainter(
+                trackers: visible,
+                throughDay: _simulatedToday,
+                focusedTracker: _focusedTracker,
+                daysInMonth: _daysInMonth,
+                textColor: theme.colorScheme.onSurface,
+                gridColor: theme.colorScheme.outlineVariant,
+                verticalTimeline: verticalTimeline,
+              ),
+            ),
+          );
+        },
       ),
     );
   }
@@ -294,11 +294,65 @@ class _TrackerPrototypeScreenState extends State<_TrackerPrototypeScreen> {
   }
 }
 
-class _SectionCard extends StatelessWidget {
-  const _SectionCard({required this.title, required this.child});
+class _Header extends StatelessWidget {
+  const _Header({
+    required this.portrait,
+    required this.visibleCount,
+    required this.onVisibleCountChanged,
+  });
+
+  final bool portrait;
+  final int visibleCount;
+  final ValueChanged<int> onVisibleCountChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+
+    return Row(
+      children: <Widget>[
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Text('Monthly Tracker', style: theme.textTheme.titleLarge),
+              Text(
+                portrait
+                    ? 'Retrato: dados 2/3 · gráfico 1/3'
+                    : 'Horizontal: dados 2/3 · gráfico 1/3',
+                style: theme.textTheme.bodySmall,
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(width: 8),
+        SegmentedButton<int>(
+          showSelectedIcon: false,
+          segments: const <ButtonSegment<int>>[
+            ButtonSegment<int>(value: 3, label: Text('3')),
+            ButtonSegment<int>(value: 4, label: Text('4')),
+            ButtonSegment<int>(value: 5, label: Text('5')),
+          ],
+          selected: <int>{visibleCount},
+          onSelectionChanged: (Set<int> selection) {
+            onVisibleCountChanged(selection.single);
+          },
+        ),
+      ],
+    );
+  }
+}
+
+class _Panel extends StatelessWidget {
+  const _Panel({
+    required this.title,
+    required this.child,
+    this.denseTitle = false,
+  });
 
   final String title;
   final Widget child;
+  final bool denseTitle;
 
   @override
   Widget build(BuildContext context) {
@@ -308,13 +362,18 @@ class _SectionCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.all(denseTitle ? 8 : 12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
-            Text(title, style: Theme.of(context).textTheme.titleMedium),
-            const SizedBox(height: 12),
-            child,
+            Text(
+              title,
+              style: denseTitle
+                  ? Theme.of(context).textTheme.labelLarge
+                  : Theme.of(context).textTheme.titleMedium,
+            ),
+            SizedBox(height: denseTitle ? 6 : 10),
+            Expanded(child: child),
           ],
         ),
       ),
@@ -326,90 +385,81 @@ class _DailyTrackerRow extends StatelessWidget {
   const _DailyTrackerRow({
     required this.tracker,
     required this.value,
+    required this.focused,
+    required this.compact,
+    required this.onFocus,
     required this.onPositive,
     required this.onNegative,
   });
 
   final _TrackerDemo tracker;
   final int value;
+  final bool focused;
+  final bool compact;
+  final VoidCallback onFocus;
   final VoidCallback onPositive;
   final VoidCallback onNegative;
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        children: <Widget>[
-          Container(width: 4, height: 30, color: tracker.color),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              tracker.name,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
+      padding: const EdgeInsets.symmetric(vertical: 3),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: focused ? tracker.color.withValues(alpha: 0.08) : null,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Row(
+          children: <Widget>[
+            InkWell(
+              onTap: onFocus,
+              borderRadius: BorderRadius.circular(8),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 6),
+                child: Container(width: 4, height: 28, color: tracker.color),
+              ),
             ),
-          ),
-          IconButton(
-            tooltip: 'Cumpri (+1)',
-            onPressed: onPositive,
-            style: IconButton.styleFrom(
-              backgroundColor: value == 1
-                  ? tracker.color.withValues(alpha: 0.16)
-                  : null,
-              foregroundColor: value == 1 ? tracker.color : null,
+            Expanded(
+              child: InkWell(
+                onTap: onFocus,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 2),
+                  child: Text(
+                    tracker.name,
+                    maxLines: compact ? 2 : 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: compact
+                        ? Theme.of(context).textTheme.bodyMedium
+                        : Theme.of(context).textTheme.bodyLarge,
+                  ),
+                ),
+              ),
             ),
-            icon: const Icon(Icons.check),
-          ),
-          const SizedBox(width: 4),
-          IconButton(
-            tooltip: 'Não cumpri (-1)',
-            onPressed: onNegative,
-            style: IconButton.styleFrom(
-              backgroundColor: value == -1
-                  ? tracker.color.withValues(alpha: 0.16)
-                  : null,
-              foregroundColor: value == -1 ? tracker.color : null,
+            IconButton(
+              visualDensity: compact ? VisualDensity.compact : null,
+              tooltip: 'Cumpri (+1)',
+              onPressed: onPositive,
+              style: IconButton.styleFrom(
+                backgroundColor: value == 1
+                    ? tracker.color.withValues(alpha: 0.16)
+                    : null,
+                foregroundColor: value == 1 ? tracker.color : null,
+              ),
+              icon: const Icon(Icons.check),
             ),
-            icon: const Icon(Icons.close),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _LegendChip extends StatelessWidget {
-  const _LegendChip({
-    required this.tracker,
-    required this.selected,
-    required this.dimmed,
-    required this.onTap,
-  });
-
-  final _TrackerDemo tracker;
-  final bool selected;
-  final bool dimmed;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return ActionChip(
-      onPressed: onTap,
-      side: BorderSide(
-        color: selected ? tracker.color : tracker.color.withValues(alpha: 0.5),
-      ),
-      avatar: Container(
-        width: 14,
-        height: 3,
-        color: tracker.color.withValues(alpha: dimmed ? 0.25 : 1),
-      ),
-      label: Text(
-        tracker.name,
-        style: TextStyle(
-          color: dimmed
-              ? Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.38)
-              : null,
+            IconButton(
+              visualDensity: compact ? VisualDensity.compact : null,
+              tooltip: 'Não cumpri (-1)',
+              onPressed: onNegative,
+              style: IconButton.styleFrom(
+                backgroundColor: value == -1
+                    ? tracker.color.withValues(alpha: 0.16)
+                    : null,
+                foregroundColor: value == -1 ? tracker.color : null,
+              ),
+              icon: const Icon(Icons.close),
+            ),
+          ],
         ),
       ),
     );
@@ -449,7 +499,7 @@ class _TrackerGraphPainter extends CustomPainter {
     required this.daysInMonth,
     required this.textColor,
     required this.gridColor,
-    required this.compact,
+    required this.verticalTimeline,
   });
 
   final List<_TrackerDemo> trackers;
@@ -458,48 +508,124 @@ class _TrackerGraphPainter extends CustomPainter {
   final int daysInMonth;
   final Color textColor;
   final Color gridColor;
-  final bool compact;
-
-  static const double _left = 42;
-  static const double _right = 12;
-  static const double _top = 20;
-  static const double _bottom = 34;
+  final bool verticalTimeline;
 
   @override
   void paint(Canvas canvas, Size size) {
-    final double graphWidth = math.max(1, size.width - _left - _right);
-    final double graphHeight = math.max(1, size.height - _top - _bottom);
-    final double yPositive = _top;
-    final double yZero = _top + graphHeight / 2;
-    final double yNegative = _top + graphHeight;
+    if (size.width <= 1 || size.height <= 1) return;
+
+    if (verticalTimeline) {
+      _paintVerticalTimeline(canvas, size);
+    } else {
+      _paintHorizontalTimeline(canvas, size);
+    }
+  }
+
+  void _paintHorizontalTimeline(Canvas canvas, Size size) {
+    const double left = 36;
+    const double right = 8;
+    const double top = 8;
+    const double bottom = 24;
+    final double graphWidth = math.max(1, size.width - left - right);
+    final double graphHeight = math.max(1, size.height - top - bottom);
+    final double yPositive = top;
+    final double yZero = top + graphHeight / 2;
+    final double yNegative = top + graphHeight;
 
     final Paint gridPaint = Paint()
       ..color = gridColor
       ..strokeWidth = 1;
 
     for (final double y in <double>[yPositive, yZero, yNegative]) {
-      canvas.drawLine(Offset(_left, y), Offset(size.width - _right, y), gridPaint);
+      canvas.drawLine(Offset(left, y), Offset(size.width - right, y), gridPaint);
     }
 
-    _drawText(canvas, '+1', Offset(7, yPositive - 7), textColor, 12);
-    _drawText(canvas, '0', Offset(18, yZero - 7), textColor, 12);
-    _drawText(canvas, '-1', Offset(7, yNegative - 7), textColor, 12);
+    _drawText(canvas, '+1', const Offset(4, 1), textColor, 10);
+    _drawText(canvas, '0', Offset(14, yZero - 6), textColor, 10);
+    _drawText(canvas, '-1', Offset(4, yNegative - 6), textColor, 10);
 
-    for (int day = 1; day <= daysInMonth; day++) {
-      final bool showLabel = compact
-          ? day == 1 || day == daysInMonth || day % 5 == 0
-          : day == 1 || day == daysInMonth || day % 2 == 0;
-      if (!showLabel) continue;
-      final double x = _xForDay(day, graphWidth);
+    for (final int day in <int>[1, 5, 10, 15, 20, 25, 30]) {
+      if (day > daysInMonth) continue;
+      final double x = left + ((day - 1) / (daysInMonth - 1)) * graphWidth;
       _drawText(
         canvas,
         '$day',
-        Offset(x - 6, size.height - 22),
+        Offset(x - 5, size.height - 17),
         textColor.withValues(alpha: 0.7),
-        compact ? 9 : 10,
+        9,
       );
     }
 
+    _paintTrackerLines(
+      canvas,
+      dayPoint: (int day, int value) {
+        final double x = left + ((day - 1) / (daysInMonth - 1)) * graphWidth;
+        final double y = switch (value) {
+          1 => yPositive,
+          -1 => yNegative,
+          _ => yZero,
+        };
+        return Offset(x, y);
+      },
+      pointRadius: size.height < 180 ? 2 : 2.6,
+    );
+  }
+
+  void _paintVerticalTimeline(Canvas canvas, Size size) {
+    const double left = 26;
+    const double right = 6;
+    const double top = 24;
+    const double bottom = 8;
+    final double graphWidth = math.max(1, size.width - left - right);
+    final double graphHeight = math.max(1, size.height - top - bottom);
+    final double xNegative = left;
+    final double xZero = left + graphWidth / 2;
+    final double xPositive = left + graphWidth;
+
+    final Paint gridPaint = Paint()
+      ..color = gridColor
+      ..strokeWidth = 1;
+
+    for (final double x in <double>[xNegative, xZero, xPositive]) {
+      canvas.drawLine(Offset(x, top), Offset(x, size.height - bottom), gridPaint);
+    }
+
+    _drawText(canvas, '-1', Offset(xNegative - 7, 2), textColor, 9);
+    _drawText(canvas, '0', Offset(xZero - 3, 2), textColor, 9);
+    _drawText(canvas, '+1', Offset(xPositive - 8, 2), textColor, 9);
+
+    for (final int day in <int>[1, 5, 10, 15, 20, 25, 30]) {
+      if (day > daysInMonth) continue;
+      final double y = top + ((day - 1) / (daysInMonth - 1)) * graphHeight;
+      _drawText(
+        canvas,
+        '$day',
+        Offset(1, y - 5),
+        textColor.withValues(alpha: 0.7),
+        8,
+      );
+    }
+
+    _paintTrackerLines(
+      canvas,
+      dayPoint: (int day, int value) {
+        final double y = top + ((day - 1) / (daysInMonth - 1)) * graphHeight;
+        final double x = switch (value) {
+          1 => xPositive,
+          -1 => xNegative,
+          _ => xZero,
+        };
+        return Offset(x, y);
+      },
+      pointRadius: size.width < 150 ? 1.8 : 2.3,
+    );
+  }
+
+  void _paintTrackerLines(
+    Canvas canvas, {
+    required Offset Function(int day, int value) dayPoint,
+    required double pointRadius,
+  }) {
     for (int index = 0; index < trackers.length; index++) {
       final _TrackerDemo tracker = trackers[index];
       final int lastDay = math.min(tracker.endDay, throughDay);
@@ -507,50 +633,35 @@ class _TrackerGraphPainter extends CustomPainter {
 
       final bool dimmed = focusedTracker != null && focusedTracker != index;
       final Paint linePaint = Paint()
-        ..color = tracker.color.withValues(alpha: dimmed ? 0.12 : 0.9)
-        ..strokeWidth = focusedTracker == index ? 3.4 : 2.2
+        ..color = tracker.color.withValues(alpha: dimmed ? 0.1 : 0.9)
+        ..strokeWidth = focusedTracker == index ? 3.2 : 2
         ..style = PaintingStyle.stroke
         ..strokeCap = StrokeCap.round
         ..strokeJoin = StrokeJoin.round;
       final Paint pointPaint = Paint()
-        ..color = tracker.color.withValues(alpha: dimmed ? 0.12 : 1)
+        ..color = tracker.color.withValues(alpha: dimmed ? 0.1 : 1)
         ..style = PaintingStyle.fill;
 
       final Path path = Path();
       bool started = false;
       for (int day = tracker.startDay; day <= lastDay; day++) {
-        final double x = _xForDay(day, graphWidth);
-        final double y = switch (tracker.valueOn(day)) {
-          1 => yPositive,
-          -1 => yNegative,
-          _ => yZero,
-        };
+        final Offset point = dayPoint(day, tracker.valueOn(day));
         if (!started) {
-          path.moveTo(x, y);
+          path.moveTo(point.dx, point.dy);
           started = true;
         } else {
-          path.lineTo(x, y);
+          path.lineTo(point.dx, point.dy);
         }
       }
       canvas.drawPath(path, linePaint);
 
       if (!dimmed) {
         for (int day = tracker.startDay; day <= lastDay; day++) {
-          final double x = _xForDay(day, graphWidth);
-          final double y = switch (tracker.valueOn(day)) {
-            1 => yPositive,
-            -1 => yNegative,
-            _ => yZero,
-          };
-          canvas.drawCircle(Offset(x, y), compact ? 2.4 : 3.0, pointPaint);
+          final Offset point = dayPoint(day, tracker.valueOn(day));
+          canvas.drawCircle(point, pointRadius, pointPaint);
         }
       }
     }
-  }
-
-  double _xForDay(int day, double graphWidth) {
-    if (daysInMonth <= 1) return _left;
-    return _left + ((day - 1) / (daysInMonth - 1)) * graphWidth;
   }
 
   void _drawText(
