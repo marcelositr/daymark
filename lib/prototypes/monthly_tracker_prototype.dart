@@ -608,11 +608,5 @@ class _TrackerGraphPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant _TrackerGraphPainter oldDelegate) {
-    return oldDelegate.throughDay != throughDay ||
-        oldDelegate.focusedTracker != focusedTracker ||
-        oldDelegate.trackers != trackers ||
-        oldDelegate.textColor != textColor ||
-        oldDelegate.gridColor != gridColor;
-  }
+  bool shouldRepaint(covariant _TrackerGraphPainter oldDelegate) => true;
 }
