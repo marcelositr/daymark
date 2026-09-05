@@ -35,6 +35,8 @@ dev_dependencies:
 flutter:
   generate: true
   uses-material-design: true
+  assets:
+    - assets/branding/daymark-icon.png
 
 hooks:
   user_defines:
