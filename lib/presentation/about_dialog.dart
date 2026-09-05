@@ -43,10 +43,7 @@ final class _DaymarkAboutDialogState extends State<DaymarkAboutDialog> {
         const SizedBox(height: 8),
         Text(l10n.aboutDescription),
         const SizedBox(height: 8),
-        Text(
-          l10n.aboutPrinciples,
-          style: text.labelLarge,
-        ),
+        Text(l10n.aboutPrinciples, style: text.labelLarge),
         const SizedBox(height: 16),
         _AboutValue(
           icon: Icons.language_outlined,
@@ -71,24 +68,15 @@ final class _DaymarkAboutDialogState extends State<DaymarkAboutDialog> {
         ),
         if (_copied) ...[
           const SizedBox(height: 4),
-          Text(
-            l10n.aboutCopied,
-            style: text.bodySmall,
-          ),
+          Text(l10n.aboutCopied, style: text.bodySmall),
         ],
         const Divider(height: 28),
-        Text(
-          l10n.aboutCreatedBy,
-          style: text.titleSmall,
-        ),
+        Text(l10n.aboutCreatedBy, style: text.titleSmall),
         const SizedBox(height: 4),
         const SelectableText(DaymarkAppInfo.author),
         const SelectableText(DaymarkAppInfo.authorWebsite),
         const SizedBox(height: 16),
-        Text(
-          l10n.aboutIndependent,
-          style: text.bodySmall,
-        ),
+        Text(l10n.aboutIndependent, style: text.bodySmall),
       ],
     );
   }
