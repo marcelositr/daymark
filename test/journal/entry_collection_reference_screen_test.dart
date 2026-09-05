@@ -7,10 +7,13 @@ import 'package:daymark/features/journal/presentation/entry_collection_reference
 import 'package:daymark/features/journal/presentation/future_screen.dart';
 import 'package:daymark/features/journal/presentation/monthly_screen.dart';
 import 'package:daymark/features/journal/presentation/today_screen.dart';
+import 'package:daymark/features/journal/presentation/tracker_data_source.dart';
 import 'package:daymark/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+
+import 'tracker_test_data_source.dart';
 
 void main() {
   testWidgets('Today Note can be referenced without changing its source', (
@@ -23,6 +26,9 @@ void main() {
       ProviderScope(
         overrides: [
           todayJournalDataSourceProvider.overrideWithValue(today),
+          trackerDataSourceProvider.overrideWithValue(
+            const EmptyTrackerDataSource(),
+          ),
           entryCollectionReferenceDataSourceProvider.overrideWithValue(
             references,
           ),
@@ -57,6 +63,9 @@ void main() {
       ProviderScope(
         overrides: [
           monthlyJournalDataSourceProvider.overrideWithValue(monthly),
+          trackerDataSourceProvider.overrideWithValue(
+            const EmptyTrackerDataSource(),
+          ),
           entryCollectionReferenceDataSourceProvider.overrideWithValue(
             references,
           ),

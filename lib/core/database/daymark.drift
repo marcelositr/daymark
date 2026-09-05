@@ -137,3 +137,35 @@ CREATE UNIQUE INDEX index_items_log_target
 CREATE UNIQUE INDEX index_items_collection_target
   ON index_items (collection_id)
   WHERE collection_id IS NOT NULL;
+
+CREATE TABLE trackers (
+  id TEXT NOT NULL PRIMARY KEY,
+  title TEXT NOT NULL CHECK (length(trim(title)) > 0),
+  start_date TEXT NOT NULL CHECK (length(start_date) = 10),
+  planned_end_date TEXT NOT NULL CHECK (length(planned_end_date) = 10),
+  ended_date TEXT CHECK (ended_date IS NULL OR length(ended_date) = 10),
+  color_slot INTEGER NOT NULL CHECK (color_slot BETWEEN 0 AND 4),
+  created_at INTEGER NOT NULL CHECK (created_at >= 0),
+  updated_at INTEGER NOT NULL CHECK (updated_at >= created_at),
+  CHECK (planned_end_date >= start_date),
+  CHECK (
+    ended_date IS NULL OR
+    (ended_date >= start_date AND ended_date <= planned_end_date)
+  )
+);
+
+CREATE INDEX trackers_period
+  ON trackers (start_date, planned_end_date, ended_date);
+
+CREATE TABLE tracker_marks (
+  tracker_id TEXT NOT NULL
+    REFERENCES trackers(id) ON DELETE CASCADE,
+  method_date TEXT NOT NULL CHECK (length(method_date) = 10),
+  value INTEGER NOT NULL CHECK (value IN (-1, 1)),
+  created_at INTEGER NOT NULL CHECK (created_at >= 0),
+  updated_at INTEGER NOT NULL CHECK (updated_at >= created_at),
+  PRIMARY KEY (tracker_id, method_date)
+) WITHOUT ROWID;
+
+CREATE INDEX tracker_marks_method_date
+  ON tracker_marks (method_date);

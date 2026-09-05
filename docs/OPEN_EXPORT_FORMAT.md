@@ -20,12 +20,12 @@ Before Daymark creates any plaintext representation, the user must re-enter the 
 
 Users who need protected recovery or migration should use encrypted Backup instead.
 
-## JSON format v1
+## JSON format v2
 
 The machine-readable export has these top-level fields, in this order:
 
 - `format`: `daymark-open-export`;
-- `formatVersion`: `1`;
+- `formatVersion`: `2`;
 - `databaseSchemaVersion`: the Daymark database schema version used to interpret the exported records;
 - `journalMetadata`;
 - `logs`;
@@ -36,9 +36,11 @@ The machine-readable export has these top-level fields, in this order:
 - `collectionReferences`;
 - `signifiers`;
 - `entrySignifiers`;
-- `indexItems`.
+- `indexItems`;
+- `trackers`;
+- `trackerMarks`.
 
-Field names are language-neutral camelCase keys. Stable IDs, Task states, owners, ordering fields, migration lineage, Collection references, signifier relationships, and Index targets are preserved rather than flattened into display text.
+Field names are language-neutral camelCase keys. Stable IDs, Task states, owners, ordering fields, migration lineage, Collection references, signifier relationships, Index targets, Tracker periods/visual slots, and explicit Tracker marks are preserved rather than flattened into display text. `0` Tracker values are not exported as synthetic rows because the Tracker model persists only explicit `+1` and `-1` marks.
 
 Records are emitted in explicit deterministic orders. The export does not include an export timestamp, random nonce, localized labels, or other volatile metadata, so exporting an unchanged journal twice produces identical JSON bytes.
 
@@ -46,7 +48,7 @@ JSON strings use standard JSON escaping and UTF-8 when written by the UI.
 
 A normal unlocked journal has exactly one `journalMetadata` row. Alpha.2 initializes this singleton for new journals and repairs older development journals with zero rows on unlock before journal work proceeds; more than one row remains corruption and fails closed rather than being silently exported as an arbitrary identity.
 
-## Markdown format v1
+## Markdown format v2
 
 Markdown is a human-readable rendering of the same snapshot used for JSON. It begins with the Open Export identifier, format version, database schema version, and an explicit plaintext warning.
 
@@ -64,8 +66,10 @@ Open Export does not mutate journal data, create Logs, alter Task state, create 
 
 `formatVersion` governs the Open Export structure. `databaseSchemaVersion` records the source journal schema separately.
 
-Version 1 is published in `v1.0.0-alpha.2` with database schema version 1.
+Version 1 is published in `v1.0.0-alpha.2` with database schema version 1. Its keys retain their published meaning.
 
-A future Daymark release may add a new Open Export format version, but it must not silently reinterpret the meaning of version-1 keys. If backward machine readability is claimed, compatibility must be explicit and tested.
+Version 2 accompanies database schema version 2 and adds `trackers` and `trackerMarks` after the version-1 sections. This is an explicit format-version change rather than silently changing the version-1 machine-readable contract.
+
+A future Daymark release may add another Open Export format version, but it must not silently reinterpret the meaning of published keys. If backward machine readability is claimed, compatibility must be explicit and tested.
 
 Open Export compatibility does not imply that a version-1 JSON file can be restored into Daymark. Restore compatibility belongs exclusively to the encrypted backup format and database migration contracts.

@@ -88,6 +88,24 @@ The product may show a rolling subset of future months, but visibility does not 
 
 Capturing a new entry directly in Future is different from scheduling an existing entry into Future. Scheduling must create deliberate migration lineage.
 
+## Trackers (optional Daymark adaptation)
+
+A Tracker is a separate finite observation/commitment entity. It is **not** an `EntryType`, Task state, Log, Collection, placement, migration destination, or Index target. The core Bullet Journal ownership model therefore remains unchanged.
+
+A Tracker has a deliberate start date, planned end date, one stable visual slot, and an optional deliberate early-end date. Its effective data interval is inclusive from start through the planned or early end. Outside that interval there is no Tracker datum.
+
+Only explicit daily outcomes are persisted:
+
+- `+1` means the user explicitly marked the commitment fulfilled;
+- `-1` means the user explicitly marked it not fulfilled;
+- absence of an explicit mark is rendered as `0` inside the active interval.
+
+`0` is not a persisted outcome and must not be reinterpreted as failure. Removing a `+1` or `-1` mark returns the date to absence.
+
+Ending a Tracker early preserves history through the chosen end date and removes any marks that would lie after the new effective end. Continuing a finished Tracker requires another deliberate action; Daymark does not automatically renew it.
+
+The combined graph and five fixed visual slots are presentation/product constraints of the Daymark adaptation, not canonical Bullet Journal semantics. See `docs/TRACKERS.md` for provenance, responsive behavior, and exclusions.
+
 ## Index
 
 The Index is a deliberate ordered set of references to journal structures such as Logs and Collections.

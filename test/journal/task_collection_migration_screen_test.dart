@@ -5,10 +5,13 @@ import 'package:daymark/features/journal/domain/journal_domain.dart';
 import 'package:daymark/features/journal/presentation/monthly_screen.dart';
 import 'package:daymark/features/journal/presentation/task_collection_migration_dialog.dart';
 import 'package:daymark/features/journal/presentation/today_screen.dart';
+import 'package:daymark/features/journal/presentation/tracker_data_source.dart';
 import 'package:daymark/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+
+import 'tracker_test_data_source.dart';
 
 void main() {
   testWidgets('Today migrates an open Task into a selected Collection', (
@@ -23,6 +26,9 @@ void main() {
       ProviderScope(
         overrides: [
           todayJournalDataSourceProvider.overrideWithValue(today),
+          trackerDataSourceProvider.overrideWithValue(
+            const EmptyTrackerDataSource(),
+          ),
           taskCollectionMigrationDataSourceProvider.overrideWithValue(
             migration,
           ),
@@ -58,6 +64,9 @@ void main() {
       ProviderScope(
         overrides: [
           monthlyJournalDataSourceProvider.overrideWithValue(monthly),
+          trackerDataSourceProvider.overrideWithValue(
+            const EmptyTrackerDataSource(),
+          ),
           taskCollectionMigrationDataSourceProvider.overrideWithValue(
             migration,
           ),

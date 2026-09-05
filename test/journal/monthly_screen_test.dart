@@ -1,10 +1,13 @@
 import 'package:daymark/features/journal/data/monthly_log_repository.dart';
 import 'package:daymark/features/journal/domain/journal_domain.dart';
 import 'package:daymark/features/journal/presentation/monthly_screen.dart';
+import 'package:daymark/features/journal/presentation/tracker_data_source.dart';
 import 'package:daymark/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+
+import 'tracker_test_data_source.dart';
 
 void main() {
   testWidgets('Monthly Calendar captures an Event on the selected day', (
@@ -269,6 +272,9 @@ Future<void> _pumpMonthly(
     ProviderScope(
       overrides: [
         monthlyJournalDataSourceProvider.overrideWithValue(dataSource),
+        trackerDataSourceProvider.overrideWithValue(
+          const EmptyTrackerDataSource(),
+        ),
       ],
       child: MaterialApp(
         localizationsDelegates: AppLocalizations.localizationsDelegates,

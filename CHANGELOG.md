@@ -14,6 +14,8 @@ This file is for user-visible behavior, data compatibility, security, packaging,
 - Today includes contextual Daily Reflection for open Tasks with deliberate Complete, Migrate, Schedule, and Discard decisions.
 - Fresh captures expose a narrow immediate Undo action without introducing generic Edit/Delete behavior.
 - Open Export can copy the selected Markdown or JSON representation directly to the system clipboard.
+- Optional finite Monthly Trackers add deliberate daily `+ / -` marking, a combined five-color `+1 / 0 / -1` reflection graph, early ending, historical read-only viewing, and compact active-Tracker controls in Today.
+- Database schema v2 adds persisted Tracker periods and explicit `+1 / -1` marks with a tested additive migration from the published alpha.2 schema v1.
 
 ### Changed
 
@@ -21,6 +23,7 @@ This file is for user-visible behavior, data compatibility, security, packaging,
 - Journal entry rows are the primary action target instead of requiring precise clicks on the Bullet Journal marker.
 - Transient application feedback uses one in-layout Daymark notice channel that does not cover Rapid Logging controls.
 - Open Export now uses one format selector with Copy and Save actions rather than separate format-specific save buttons.
+- Open Export advances to format version 2 and includes Tracker periods plus explicit Tracker marks while preserving the published meaning of version-1 fields.
 
 ### Security
 

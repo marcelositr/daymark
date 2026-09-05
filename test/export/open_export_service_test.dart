@@ -92,6 +92,19 @@ void main() {
       final Map<String, Object?> indexItem = _maps(payload['indexItems'])
           .single;
       expect(indexItem['collectionId'], 'collection-1');
+
+      final Map<String, Object?> tracker = _maps(payload['trackers']).single;
+      expect(tracker['id'], 'tracker-1');
+      expect(tracker['title'], 'Leitura diária');
+      expect(tracker['startDate'], '2026-09-01');
+      expect(tracker['plannedEndDate'], '2026-09-30');
+      expect(tracker['colorSlot'], 2);
+
+      final Map<String, Object?> trackerMark = _maps(payload['trackerMarks'])
+          .single;
+      expect(trackerMark['trackerId'], 'tracker-1');
+      expect(trackerMark['methodDate'], '2026-09-04');
+      expect(trackerMark['value'], 1);
     },
   );
 
@@ -192,5 +205,19 @@ Future<void> _seedExportFixture(DaymarkDatabase database) async {
     INSERT INTO index_items (
       id, ordinal, log_id, collection_id, created_at
     ) VALUES ('index-1', 0, NULL, 'collection-1', 70)
+    ''');
+  await database.customStatement('''
+    INSERT INTO trackers (
+      id, title, start_date, planned_end_date, ended_date, color_slot,
+      created_at, updated_at
+    ) VALUES (
+      'tracker-1', 'Leitura diária', '2026-09-01', '2026-09-30', NULL, 2,
+      80, 80
+    )
+    ''');
+  await database.customStatement('''
+    INSERT INTO tracker_marks (
+      tracker_id, method_date, value, created_at, updated_at
+    ) VALUES ('tracker-1', '2026-09-04', 1, 81, 81)
     ''');
 }

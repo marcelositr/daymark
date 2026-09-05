@@ -58,16 +58,22 @@ Earlier Daily Logs may be opened through a dedicated **read-only historical rout
 
 A historical day that has never existed therefore appears empty without becoming persisted state or an Index candidate. Historical navigation may move between earlier dates but must not advance into Today as though the current Daily Log were historical. Returning to Today restores the normal interactive Rapid Logging surface.
 
+Today remains the interactive current Daily Log. Navigating historical dates is retrieval over existing chronology, not a change of Entry ownership or an alternative calendar model.
+
+Active Daymark Trackers may appear in Today as a compact `+ / -` marking surface. A Tracker is not a Daily Entry and does not create a Task per day; this is an optional Daymark adaptation whose provenance and limits are documented in `docs/TRACKERS.md`.
+
 This history surface is retrieval, not a generic calendar workspace or reflection engine. Search and Index source navigation use the real historical Daily route for past dates while the current Daily Log continues to resolve to Today.
 
 ### Monthly Log
 
-Monthly preserves the method's two different areas:
+Monthly preserves the method's two method-native areas:
 
 - **Calendar**: one row per date, with dated Event entries;
 - **Tasks**: a monthly Task list.
 
-The **current month** remains the active Monthly Log and supports capture plus deliberate Task actions.
+Daymark additionally hosts an optional **Tracker** section on the Monthly surface. Tracker is a Daymark-specific digital adaptation for finite daily commitments and reflection; it is not a third canonical Monthly Log entry-placement type and must not be presented as an official Ryder Carroll rule. Its exact semantics, maintainer origin, five-color graph, and exclusions are documented in `docs/TRACKERS.md`.
+
+The **current month** remains the active Monthly Log and supports capture plus deliberate Task actions. The current Tracker view may create, mark, and deliberately end Trackers; historical Monthly views may display intersecting Tracker history but remain read-only.
 
 Earlier Monthly Logs may be browsed month by month in **read-only historical mode**. Historical browsing must not create a missing Monthly Log merely because the user navigates to that month, must not expose capture or Task actions, and must not allow navigation forward past the current month into a future Monthly Log.
 

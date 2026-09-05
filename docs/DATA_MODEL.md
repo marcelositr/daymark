@@ -251,6 +251,46 @@ Exactly one target is non-null.
 
 The Index stores references to journal structures, not duplicated entry content.
 
+## Schema version 2
+
+Schema version 2 is the first post-`v1.0.0-alpha.2` migration and extends published schema v1 additively for the optional Daymark Tracker adaptation. Existing v1 tables and semantic values are not reinterpreted.
+
+### `trackers`
+
+Stores one finite Tracker independently from Bullet Journal Entries and placements.
+
+Fields:
+
+- `id` — UUID v7 primary key;
+- `title` — non-empty user content;
+- `start_date` — inclusive ISO method date;
+- `planned_end_date` — inclusive ISO method date, not earlier than `start_date`;
+- `ended_date` — nullable inclusive early-end method date between start and planned end;
+- `color_slot` — stable integer visual slot `0..4`;
+- `created_at` — UTC microseconds;
+- `updated_at` — UTC microseconds.
+
+A Tracker's effective end is `ended_date` when present, otherwise `planned_end_date`. The persisted slot keeps one visual identity for the Tracker across the months it intersects. Version 1 of the feature requires one slot to be available across the entire proposed period; this deliberately favors stable color identity over recoloring existing Tracker history.
+
+### `tracker_marks`
+
+Stores only explicit daily Tracker outcomes.
+
+Fields / primary key:
+
+- `tracker_id` — foreign key to `trackers`, cascading when that Tracker is explicitly destroyed;
+- `method_date` — ISO method date;
+- `value` — exactly `-1` or `1`;
+- `created_at` — UTC microseconds;
+- `updated_at` — UTC microseconds;
+- primary key `(tracker_id, method_date)`.
+
+There is deliberately no persisted zero row. Inside the Tracker's effective interval, absence of a row means `0` / no explicit mark. Outside the interval there is no datum at all. Repository validation rejects marks outside the Tracker interval.
+
+### Migration from v1
+
+The v1-to-v2 migration uses Drift's generated versioned-schema helper and creates `trackers`, `tracker_marks`, and their declared indexes without rewriting v1 journal rows. CI retains the v1 and v2 schema snapshots and migration verification. A representative v1 journal is migrated in tests to prove existing data survives while the new Tracker tables begin empty.
+
 ## Deliberately absent from schema v1
 
 ### Search index
@@ -322,6 +362,8 @@ The implementation must:
 6. keep schema/migration checks in CI.
 
 Schema version 1 is published in `v1.0.0-alpha.2`. The earlier pre-publication freedom to regenerate an unreleased schema no longer applies to the supported release line.
+
+Schema version 2 is the current additive Tracker migration. Its supported predecessor is published schema v1, and that exact upgrade path is retained in Drift schema snapshots and migration tests.
 
 Any later build that claims to support alpha.2 data must have an explicit tested path from published schema v1. A future schema version may migrate forward, but it must not silently reinterpret semantic values, delete journal content, or solve incompatibility by deleting/recreating the database.
 

@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:daymark/core/session/journal_session.dart';
 import 'package:daymark/core/session/journal_session_controller.dart';
 import 'package:daymark/features/journal/data/daily_log_repository.dart';
+import 'package:daymark/features/journal/data/tracker_repository.dart';
 import 'package:daymark/features/journal/domain/journal_domain.dart';
 import 'package:daymark/l10n/app_localizations.dart';
 import 'package:daymark/presentation/app_section_scope.dart';
@@ -18,6 +19,8 @@ import 'entry_collection_reference_dialog.dart';
 import 'journal_activity_guard.dart';
 import 'task_collection_migration_dialog.dart';
 import 'task_schedule_dialog.dart';
+import 'tracker_data_source.dart';
+import 'tracker_month_view.dart';
 
 abstract interface class TodayJournalDataSource {
   Future<DailyLogSnapshot> load(String methodDate);
@@ -108,6 +111,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen>
 
   late DateTime _today;
   late Future<DailyLogSnapshot> _snapshotFuture;
+  late Future<List<TrackerRecord>> _trackerFuture;
   Timer? _dayRolloverTimer;
   JournalEntryType _entryType = JournalEntryType.task;
   bool _saving = false;
@@ -115,6 +119,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen>
   bool _sectionScopeInitialized = false;
   bool _wasTodaySectionActive = false;
   String? _entryActionId;
+  String? _trackerActionId;
 
   @override
   void initState() {
@@ -122,6 +127,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen>
     WidgetsBinding.instance.addObserver(this);
     _today = _dateOnly(DateTime.now());
     _snapshotFuture = _loadSnapshot();
+    _trackerFuture = _loadTrackers();
     _scheduleDayRollover();
   }
 
@@ -140,11 +146,16 @@ class _TodayScreenState extends ConsumerState<TodayScreen>
         currentSectionIndex == AppSectionScope.todaySectionIndex;
     if (_sectionScopeInitialized &&
         isTodaySectionActive &&
-        !_wasTodaySectionActive &&
-        !_reflecting &&
-        !_saving &&
-        _entryActionId == null) {
-      _restoreComposerFocus();
+        !_wasTodaySectionActive) {
+      setState(() {
+        _trackerFuture = _loadTrackers();
+      });
+      if (!_reflecting &&
+          !_saving &&
+          _entryActionId == null &&
+          _trackerActionId == null) {
+        _restoreComposerFocus();
+      }
     }
 
     _sectionScopeInitialized = true;
@@ -170,7 +181,8 @@ class _TodayScreenState extends ConsumerState<TodayScreen>
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = AppLocalizations.of(context);
-    final bool busy = _saving || _entryActionId != null;
+    final bool busy =
+        _saving || _entryActionId != null || _trackerActionId != null;
 
     return SafeArea(
       child: Padding(
@@ -213,7 +225,8 @@ class _TodayScreenState extends ConsumerState<TodayScreen>
                 l10n.dailyReflectionPrompt,
                 style: Theme.of(context).textTheme.bodySmall,
               ),
-            ],
+            ] else
+              _buildTodayTrackers(l10n),
             const SizedBox(height: 16),
             Expanded(
               child: FutureBuilder<DailyLogSnapshot>(
@@ -236,6 +249,136 @@ class _TodayScreenState extends ConsumerState<TodayScreen>
             ],
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildTodayTrackers(AppLocalizations l10n) {
+    return FutureBuilder<List<TrackerRecord>>(
+      future: _trackerFuture,
+      builder:
+          (BuildContext context, AsyncSnapshot<List<TrackerRecord>> snapshot) {
+            if (snapshot.connectionState != ConnectionState.done ||
+                snapshot.hasError ||
+                !snapshot.hasData ||
+                snapshot.requireData.isEmpty) {
+              return const SizedBox.shrink();
+            }
+
+            final String methodDate = formatJournalMethodDate(_today);
+            return Padding(
+              padding: const EdgeInsets.only(top: 12),
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  border: Border.all(
+                    color: Theme.of(context).colorScheme.outlineVariant,
+                  ),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 8,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: <Widget>[
+                      Text(
+                        l10n.todayTrackers,
+                        style: Theme.of(context).textTheme.labelLarge,
+                      ),
+                      const SizedBox(height: 4),
+                      for (final TrackerRecord tracker in snapshot.requireData)
+                        _buildTodayTrackerRow(l10n, tracker, methodDate),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+    );
+  }
+
+  Widget _buildTodayTrackerRow(
+    AppLocalizations l10n,
+    TrackerRecord tracker,
+    String methodDate,
+  ) {
+    final int value = tracker.valueOn(methodDate);
+    final bool busy = _trackerActionId == tracker.id;
+    final bool actionsBlocked =
+        _saving || _entryActionId != null || _trackerActionId != null;
+    final Color color = trackerSlotColors[tracker.colorSlot];
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: Row(
+        children: <Widget>[
+          Container(
+            width: 4,
+            height: 26,
+            decoration: BoxDecoration(
+              color: color,
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              tracker.title,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          if (busy)
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16),
+              child: SizedBox.square(
+                dimension: 16,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+            )
+          else ...<Widget>[
+            IconButton(
+              tooltip: l10n.trackerFulfilled,
+              visualDensity: VisualDensity.compact,
+              onPressed: actionsBlocked
+                  ? null
+                  : () => _setTrackerMark(
+                      tracker,
+                      value == 1 && tracker.hasExplicitMark(methodDate)
+                          ? null
+                          : 1,
+                    ),
+              style: IconButton.styleFrom(
+                backgroundColor: value == 1
+                    ? color.withValues(alpha: 0.14)
+                    : null,
+                foregroundColor: value == 1 ? color : null,
+              ),
+              icon: const Icon(Icons.check),
+            ),
+            IconButton(
+              tooltip: l10n.trackerNotFulfilled,
+              visualDensity: VisualDensity.compact,
+              onPressed: actionsBlocked
+                  ? null
+                  : () => _setTrackerMark(
+                      tracker,
+                      value == -1 && tracker.hasExplicitMark(methodDate)
+                          ? null
+                          : -1,
+                    ),
+              style: IconButton.styleFrom(
+                backgroundColor: value == -1
+                    ? color.withValues(alpha: 0.14)
+                    : null,
+                foregroundColor: value == -1 ? color : null,
+              ),
+              icon: const Icon(Icons.close),
+            ),
+          ],
+        ],
       ),
     );
   }
@@ -439,8 +582,16 @@ class _TodayScreenState extends ConsumerState<TodayScreen>
     return ref.read(todayJournalDataSourceProvider);
   }
 
+  TrackerDataSource _trackerDataSource() {
+    return ref.read(trackerDataSourceProvider);
+  }
+
   Future<DailyLogSnapshot> _loadSnapshot() {
     return _dataSource().load(formatJournalMethodDate(_today));
+  }
+
+  Future<List<TrackerRecord>> _loadTrackers() {
+    return _trackerDataSource().loadForDay(formatJournalMethodDate(_today));
   }
 
   KeyEventResult _handleComposerKeyEvent(FocusNode node, KeyEvent event) {
@@ -498,6 +649,32 @@ class _TodayScreenState extends ConsumerState<TodayScreen>
       }
       ref.read(daymarkNoticeProvider.notifier).showError(l10n.saveEntryFailed);
       setState(() => _saving = false);
+    }
+  }
+
+  Future<void> _setTrackerMark(TrackerRecord tracker, int? value) async {
+    if (_trackerActionId != null) return;
+    final AppLocalizations l10n = AppLocalizations.of(context);
+    final String methodDate = formatJournalMethodDate(_today);
+    setState(() => _trackerActionId = tracker.id);
+    try {
+      await _trackerDataSource().setMark(
+        trackerId: tracker.id,
+        methodDate: methodDate,
+        value: value,
+      );
+      if (!mounted) return;
+      setState(() {
+        _trackerFuture = _loadTrackers();
+        _trackerActionId = null;
+      });
+    } catch (error, stackTrace) {
+      _reportUnexpectedJournalError('tracker mark', error, stackTrace);
+      if (!mounted) return;
+      setState(() => _trackerActionId = null);
+      ref
+          .read(daymarkNoticeProvider.notifier)
+          .showError(l10n.trackerUpdateFailed);
     }
   }
 
@@ -580,7 +757,6 @@ class _TodayScreenState extends ConsumerState<TodayScreen>
       }
     }
 
-    // Any deliberate journal action supersedes the short-lived capture Undo.
     ref.read(daymarkNoticeProvider.notifier).dismiss();
     final AppLocalizations l10n = AppLocalizations.of(context);
     setState(() => _entryActionId = entry.id);
@@ -646,7 +822,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen>
   }
 
   void _toggleReflection() {
-    if (_saving || _entryActionId != null) {
+    if (_saving || _entryActionId != null || _trackerActionId != null) {
       return;
     }
 
@@ -664,7 +840,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen>
       return;
     }
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted && !_reflecting && !_saving) {
+      if (mounted && !_reflecting && !_saving && _trackerActionId == null) {
         _entryFocusNode.requestFocus();
       }
     });
@@ -686,6 +862,11 @@ class _TodayScreenState extends ConsumerState<TodayScreen>
   void _refreshDateIfNeeded() {
     final DateTime currentDate = _dateOnly(DateTime.now());
     if (currentDate == _today) {
+      if (mounted) {
+        setState(() {
+          _trackerFuture = _loadTrackers();
+        });
+      }
       _scheduleDayRollover();
       return;
     }
@@ -694,6 +875,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen>
       setState(() {
         _today = currentDate;
         _snapshotFuture = _loadSnapshot();
+        _trackerFuture = _loadTrackers();
         _reflecting = false;
       });
     }
