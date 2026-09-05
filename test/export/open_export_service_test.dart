@@ -100,9 +100,8 @@ void main() {
       expect(tracker['plannedEndDate'], '2026-09-30');
       expect(tracker['colorSlot'], 2);
 
-      final Map<String, Object?> trackerMark = _maps(
-        payload['trackerMarks'],
-      ).single;
+      final Map<String, Object?> trackerMark = _maps(payload['trackerMarks'])
+          .single;
       expect(trackerMark['trackerId'], 'tracker-1');
       expect(trackerMark['methodDate'], '2026-09-04');
       expect(trackerMark['value'], 1);
