@@ -94,7 +94,7 @@ final class TrackerRepository {
         AND COALESCE(ended_date, planned_end_date) >= ?
       ORDER BY color_slot, start_date, created_at, id
       ''',
-      variables: <Variable<Object>>[
+      variables: <Variable>[
         Variable<String>(monthEnd),
         Variable<String>(periodStart),
       ],
@@ -128,7 +128,7 @@ final class TrackerRepository {
         AND COALESCE(ended_date, planned_end_date) >= ?
       ORDER BY color_slot, created_at, id
       ''',
-      variables: <Variable<Object>>[
+      variables: <Variable>[
         Variable<String>(methodDate),
         Variable<String>(methodDate),
       ],
@@ -172,7 +172,7 @@ final class TrackerRepository {
         WHERE start_date <= ?
           AND COALESCE(ended_date, planned_end_date) >= ?
         ''',
-        variables: <Variable<Object>>[
+        variables: <Variable>[
           Variable<String>(plannedEndDate),
           Variable<String>(startDate),
         ],
@@ -312,7 +312,7 @@ final class TrackerRepository {
       WHERE id = ?
       LIMIT 1
       ''',
-      variables: <Variable<Object>>[Variable<String>(trackerId)],
+      variables: <Variable>[Variable<String>(trackerId)],
     ).get();
     if (rows.isEmpty) {
       throw JournalNotFoundException('Tracker', trackerId);
@@ -335,7 +335,7 @@ final class TrackerRepository {
         AND method_date <= ?
       ORDER BY method_date
       ''',
-      variables: <Variable<Object>>[
+      variables: <Variable>[
         Variable<String>(id),
         Variable<String>(marksFrom),
         Variable<String>(marksThrough),
