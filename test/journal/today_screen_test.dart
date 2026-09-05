@@ -1,6 +1,7 @@
 import 'package:daymark/features/journal/data/daily_log_repository.dart';
 import 'package:daymark/features/journal/domain/journal_domain.dart';
 import 'package:daymark/features/journal/presentation/today_screen.dart';
+import 'package:daymark/features/journal/presentation/tracker_data_source.dart';
 import 'package:daymark/l10n/app_localizations.dart';
 import 'package:daymark/presentation/app_section_scope.dart';
 import 'package:flutter/foundation.dart';
@@ -8,6 +9,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+
+import 'tracker_test_data_source.dart';
 
 void main() {
   testWidgets('Today captures a task without a false save failure', (
@@ -238,6 +241,9 @@ void main() {
       ProviderScope(
         overrides: [
           todayJournalDataSourceProvider.overrideWithValue(dataSource),
+          trackerDataSourceProvider.overrideWithValue(
+            const EmptyTrackerDataSource(),
+          ),
         ],
         child: AppSectionScope(
           currentIndex: sectionIndex,
@@ -345,7 +351,12 @@ Future<void> _pumpToday(
 ) async {
   await tester.pumpWidget(
     ProviderScope(
-      overrides: [todayJournalDataSourceProvider.overrideWithValue(dataSource)],
+      overrides: [
+        todayJournalDataSourceProvider.overrideWithValue(dataSource),
+        trackerDataSourceProvider.overrideWithValue(
+          const EmptyTrackerDataSource(),
+        ),
+      ],
       child: MaterialApp(
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
