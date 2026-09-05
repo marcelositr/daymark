@@ -6,7 +6,7 @@ part 'daymark_database.g.dart';
 class DaymarkDatabase extends _$DaymarkDatabase {
   DaymarkDatabase(super.executor);
 
-  static const int currentSchemaVersion = 1;
+  static const int currentSchemaVersion = 2;
 
   @override
   int get schemaVersion => currentSchemaVersion;
@@ -16,6 +16,12 @@ class DaymarkDatabase extends _$DaymarkDatabase {
     onCreate: (Migrator migrator) async {
       await migrator.createAll();
       await _seedBuiltInSignifiers();
+    },
+    onUpgrade: (Migrator migrator, int from, int to) async {
+      if (from < 2) {
+        await migrator.createTable(trackers);
+        await migrator.createTable(trackerMarks);
+      }
     },
     beforeOpen: (OpeningDetails details) async {
       await customStatement('PRAGMA foreign_keys = ON');
