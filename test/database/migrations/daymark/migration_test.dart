@@ -1,8 +1,8 @@
 // dart format width=80
 // ignore_for_file: unused_local_variable, unused_import
+import 'package:daymark/core/database/daymark_database.dart';
 import 'package:drift/drift.dart';
 import 'package:drift_dev/api/migrations_native.dart';
-import 'package:daymark/core/database/daymark_database.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'generated/schema.dart';
@@ -19,9 +19,6 @@ void main() {
   });
 
   group('simple database migrations', () {
-    // These simple tests verify all possible schema updates with a simple (no
-    // data) migration. This is a quick way to ensure that written database
-    // migrations properly alter the schema.
     const versions = GeneratedHelper.versions;
     for (final (i, fromVersion) in versions.indexed) {
       group('from $fromVersion', () {
@@ -37,23 +34,43 @@ void main() {
     }
   });
 
-  // The following template shows how to write tests ensuring your migrations
-  // preserve existing data.
-  // Testing this can be useful for migrations that change existing columns
-  // (e.g. by alterating their type or constraints). Migrations that only add
-  // tables or columns typically don't need these advanced tests. For more
-  // information, see https://drift.simonbinder.eu/migrations/tests/#verifying-data-integrity
-  // TODO: This generated template shows how these tests could be written. Adopt
-  // it to your own needs when testing migrations with data integrity.
-  test('migration from v1 to v2 does not corrupt data', () async {
-    // Add data to insert into the old database, and the expected rows after the
-    // migration.
-    // TODO: Fill these lists
-    final oldJournalMetadataData = <v1.JournalMetadataData>[];
-    final expectedNewJournalMetadataData = <v2.JournalMetadataData>[];
+  test('migration from v1 to v2 preserves published journal data', () async {
+    const String metadataId = '018f0000-0000-7000-8000-000000000001';
+    const String logId = '018f0000-0000-7000-8000-000000000002';
 
-    final oldLogsData = <v1.LogsData>[];
-    final expectedNewLogsData = <v2.LogsData>[];
+    final oldJournalMetadataData = <v1.JournalMetadataData>[
+      const v1.JournalMetadataData(
+        id: metadataId,
+        singleton: 1,
+        createdAt: 1,
+        updatedAt: 2,
+      ),
+    ];
+    final expectedNewJournalMetadataData = <v2.JournalMetadataData>[
+      const v2.JournalMetadataData(
+        id: metadataId,
+        singleton: 1,
+        createdAt: 1,
+        updatedAt: 2,
+      ),
+    ];
+
+    final oldLogsData = <v1.LogsData>[
+      const v1.LogsData(
+        id: logId,
+        kind: 'daily',
+        periodStart: '2026-09-04',
+        createdAt: 3,
+      ),
+    ];
+    final expectedNewLogsData = <v2.LogsData>[
+      const v2.LogsData(
+        id: logId,
+        kind: 'daily',
+        periodStart: '2026-09-04',
+        createdAt: 3,
+      ),
+    ];
 
     final oldCollectionsData = <v1.CollectionsData>[];
     final expectedNewCollectionsData = <v2.CollectionsData>[];
@@ -135,6 +152,8 @@ void main() {
           expectedNewIndexItemsData,
           await newDb.select(newDb.indexItems).get(),
         );
+        expect(await newDb.select(newDb.trackers).get(), isEmpty);
+        expect(await newDb.select(newDb.trackerMarks).get(), isEmpty);
       },
     );
   });

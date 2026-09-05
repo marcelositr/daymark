@@ -20,6 +20,7 @@ Future<TrackerDraft?> showTrackerCreateDialog({
   final TextEditingController titleController = TextEditingController();
   DateTime startDate = DateTime(today.year, today.month, today.day);
   DateTime plannedEndDate = startDate.add(const Duration(days: 29));
+  final DateTime lastStartDate = DateTime(today.year, today.month + 1, 0);
 
   try {
     return await showDialog<TrackerDraft>(
@@ -51,7 +52,7 @@ Future<TrackerDraft?> showTrackerCreateDialog({
                           context: context,
                           initialDate: startDate,
                           firstDate: DateTime(today.year, today.month, 1),
-                          lastDate: today,
+                          lastDate: lastStartDate,
                         );
                         if (selected == null) return;
                         setState(() {

@@ -1,5 +1,7 @@
 import 'package:drift/drift.dart';
 
+import 'daymark_database.steps.dart';
+
 part 'daymark_database.g.dart';
 
 @DriftDatabase(include: {'daymark.drift'})
@@ -17,12 +19,14 @@ class DaymarkDatabase extends _$DaymarkDatabase {
       await migrator.createAll();
       await _seedBuiltInSignifiers();
     },
-    onUpgrade: (Migrator migrator, int from, int to) async {
-      if (from < 2) {
-        await migrator.createTable(trackers);
-        await migrator.createTable(trackerMarks);
-      }
-    },
+    onUpgrade: stepByStep(
+      from1To2: (Migrator migrator, Schema2 schema) async {
+        await migrator.createTable(schema.trackers);
+        await migrator.createIndex(schema.trackersPeriod);
+        await migrator.createTable(schema.trackerMarks);
+        await migrator.createIndex(schema.trackerMarksMethodDate);
+      },
+    ),
     beforeOpen: (OpeningDetails details) async {
       await customStatement('PRAGMA foreign_keys = ON');
     },
