@@ -4,6 +4,7 @@ import 'package:daymark/core/session/journal_monthly_history_session.dart';
 import 'package:daymark/core/session/journal_session.dart';
 import 'package:daymark/core/session/journal_session_controller.dart';
 import 'package:daymark/features/journal/data/monthly_log_repository.dart';
+import 'package:daymark/features/journal/data/tracker_repository.dart';
 import 'package:daymark/features/journal/domain/journal_domain.dart';
 import 'package:daymark/l10n/app_localizations.dart';
 import 'package:daymark/presentation/app_section_scope.dart';
@@ -18,6 +19,9 @@ import 'entry_collection_reference_dialog.dart';
 import 'journal_activity_guard.dart';
 import 'task_collection_migration_dialog.dart';
 import 'task_schedule_dialog.dart';
+import 'tracker_create_dialog.dart';
+import 'tracker_data_source.dart';
+import 'tracker_month_view.dart';
 
 abstract interface class MonthlyJournalDataSource {
   Future<MonthlyLogSnapshot> load(String periodStart);
@@ -132,11 +136,13 @@ class _MonthlyScreenState extends ConsumerState<MonthlyScreen>
 
   late DateTime _month;
   late Future<MonthlyLogSnapshot?> _snapshotFuture;
+  late Future<TrackerMonthSnapshot> _trackerFuture;
   late int _selectedDay;
   late bool _followingCurrentMonth;
   Timer? _monthRolloverTimer;
-  late JournalMonthlySection _section;
+  late _MonthlyViewSection _section;
   bool _saving = false;
+  bool _trackerSaving = false;
   String? _entryActionId;
   bool _sectionScopeInitialized = false;
   bool _wasMonthlySectionActive = false;
@@ -145,7 +151,10 @@ class _MonthlyScreenState extends ConsumerState<MonthlyScreen>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    _section = widget.initialSection ?? JournalMonthlySection.calendar;
+    _section = switch (widget.initialSection) {
+      JournalMonthlySection.tasks => _MonthlyViewSection.tasks,
+      _ => _MonthlyViewSection.calendar,
+    };
     final DateTime now = _now();
     final DateTime currentMonth = DateTime(now.year, now.month);
     final DateTime seed = widget.initialMonth ?? now;
@@ -159,6 +168,7 @@ class _MonthlyScreenState extends ConsumerState<MonthlyScreen>
       _month,
       writable: _followingCurrentMonth,
     );
+    _trackerFuture = _loadTrackerMonth(_month);
     _scheduleMonthRollover();
   }
 
@@ -178,6 +188,7 @@ class _MonthlyScreenState extends ConsumerState<MonthlyScreen>
     if (_sectionScopeInitialized &&
         isMonthlySectionActive &&
         !_wasMonthlySectionActive) {
+      setState(() => _trackerFuture = _loadTrackerMonth(_month));
       _restoreComposerFocus();
     }
 
@@ -206,7 +217,7 @@ class _MonthlyScreenState extends ConsumerState<MonthlyScreen>
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = AppLocalizations.of(context);
-    final bool busy = _saving || _entryActionId != null;
+    final bool busy = _saving || _trackerSaving || _entryActionId != null;
 
     return SafeArea(
       child: Padding(
@@ -251,62 +262,130 @@ class _MonthlyScreenState extends ConsumerState<MonthlyScreen>
             const SizedBox(height: 12),
             Align(
               alignment: AlignmentDirectional.centerStart,
-              child: SegmentedButton<JournalMonthlySection>(
+              child: SegmentedButton<_MonthlyViewSection>(
                 showSelectedIcon: false,
                 segments: [
-                  ButtonSegment<JournalMonthlySection>(
-                    value: JournalMonthlySection.calendar,
+                  ButtonSegment<_MonthlyViewSection>(
+                    value: _MonthlyViewSection.calendar,
                     label: Text(l10n.monthlyCalendar),
                   ),
-                  ButtonSegment<JournalMonthlySection>(
-                    value: JournalMonthlySection.tasks,
+                  ButtonSegment<_MonthlyViewSection>(
+                    value: _MonthlyViewSection.tasks,
                     label: Text(l10n.monthlyTasks),
                   ),
+                  ButtonSegment<_MonthlyViewSection>(
+                    value: _MonthlyViewSection.tracker,
+                    label: Text(l10n.monthlyTracker),
+                  ),
                 ],
-                selected: <JournalMonthlySection>{_section},
-                onSelectionChanged: _saving
+                selected: <_MonthlyViewSection>{_section},
+                onSelectionChanged: busy
                     ? null
                     : (selection) {
                         _entryController.clear();
                         setState(() => _section = selection.single);
-                        _restoreComposerFocus();
+                        if (_section == _MonthlyViewSection.tracker) {
+                          _entryFocusNode.unfocus();
+                        } else {
+                          _restoreComposerFocus();
+                        }
                       },
               ),
             ),
             const SizedBox(height: 16),
             Expanded(
-              child: FutureBuilder<MonthlyLogSnapshot?>(
-                future: _snapshotFuture,
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState != ConnectionState.done) {
-                    return const Center(child: CircularProgressIndicator());
-                  }
-                  if (snapshot.hasError) {
-                    return Center(child: Text(l10n.monthlyLogLoadFailed));
-                  }
-                  return switch (_section) {
-                    JournalMonthlySection.calendar => _buildCalendar(
-                      context,
-                      l10n,
-                      snapshot.data,
+              child: _section == _MonthlyViewSection.tracker
+                  ? _buildTrackerSection(context, l10n)
+                  : FutureBuilder<MonthlyLogSnapshot?>(
+                      future: _snapshotFuture,
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState != ConnectionState.done) {
+                          return const Center(
+                            child: CircularProgressIndicator(),
+                          );
+                        }
+                        if (snapshot.hasError) {
+                          return Center(
+                            child: Text(l10n.monthlyLogLoadFailed),
+                          );
+                        }
+                        return switch (_section) {
+                          _MonthlyViewSection.calendar => _buildCalendar(
+                            context,
+                            l10n,
+                            snapshot.data,
+                          ),
+                          _MonthlyViewSection.tasks => _buildTasks(
+                            context,
+                            l10n,
+                            snapshot.data,
+                          ),
+                          _MonthlyViewSection.tracker => const SizedBox.shrink(),
+                        };
+                      },
                     ),
-                    JournalMonthlySection.tasks => _buildTasks(
-                      context,
-                      l10n,
-                      snapshot.data,
-                    ),
-                  };
-                },
-              ),
             ),
             const DaymarkNoticeRegion(),
-            if (_followingCurrentMonth) ...[
+            if (_followingCurrentMonth &&
+                _section != _MonthlyViewSection.tracker) ...[
               const SizedBox(height: 12),
               _buildComposer(l10n),
             ],
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildTrackerSection(
+    BuildContext context,
+    AppLocalizations l10n,
+  ) {
+    return FutureBuilder<TrackerMonthSnapshot>(
+      future: _trackerFuture,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState != ConnectionState.done) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        if (snapshot.hasError || !snapshot.hasData) {
+          return Center(child: Text(l10n.trackerLoadFailed));
+        }
+
+        final int maxSelectableDay = _followingCurrentMonth
+            ? _clampDay(_now().day, _month)
+            : _daysInMonth(_month);
+        final int selectedDay = _selectedDay.clamp(1, maxSelectableDay);
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            if (_followingCurrentMonth) ...<Widget>[
+              Align(
+                alignment: AlignmentDirectional.centerEnd,
+                child: TextButton.icon(
+                  onPressed: _trackerSaving ? null : _createTracker,
+                  icon: const Icon(Icons.add),
+                  label: Text(l10n.trackerCreate),
+                ),
+              ),
+              const SizedBox(height: 6),
+            ],
+            Expanded(
+              child: TrackerMonthView(
+                snapshot: snapshot.requireData,
+                selectedDay: selectedDay,
+                maxSelectableDay: maxSelectableDay,
+                writable: _followingCurrentMonth && !_trackerSaving,
+                onSelectedDayChanged: (int day) {
+                  setState(() => _selectedDay = day);
+                },
+                onSetMark: _setTrackerMark,
+                onEndEarly: _endTrackerEarly,
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -508,7 +587,7 @@ class _MonthlyScreenState extends ConsumerState<MonthlyScreen>
   }
 
   Widget _buildComposer(AppLocalizations l10n) {
-    final bool calendar = _section == JournalMonthlySection.calendar;
+    final bool calendar = _section == _MonthlyViewSection.calendar;
     return Row(
       crossAxisAlignment: CrossAxisAlignment.end,
       children: [
@@ -581,6 +660,7 @@ class _MonthlyScreenState extends ConsumerState<MonthlyScreen>
   void _restoreComposerFocus() {
     if (defaultTargetPlatform != TargetPlatform.linux ||
         !_followingCurrentMonth ||
+        _section == _MonthlyViewSection.tracker ||
         _saving ||
         _entryActionId != null) {
       return;
@@ -588,6 +668,7 @@ class _MonthlyScreenState extends ConsumerState<MonthlyScreen>
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted &&
           _followingCurrentMonth &&
+          _section != _MonthlyViewSection.tracker &&
           !_saving &&
           _entryActionId == null) {
         _entryFocusNode.requestFocus();
@@ -597,6 +678,10 @@ class _MonthlyScreenState extends ConsumerState<MonthlyScreen>
 
   MonthlyJournalDataSource _dataSource() {
     return ref.read(monthlyJournalDataSourceProvider);
+  }
+
+  TrackerDataSource _trackerDataSource() {
+    return ref.read(trackerDataSourceProvider);
   }
 
   Future<MonthlyLogSnapshot?> _loadSnapshotFor(
@@ -610,8 +695,12 @@ class _MonthlyScreenState extends ConsumerState<MonthlyScreen>
         : dataSource.find(periodStart);
   }
 
+  Future<TrackerMonthSnapshot> _loadTrackerMonth(DateTime month) {
+    return _trackerDataSource().loadMonth(formatJournalMonthStart(month));
+  }
+
   Future<void> _selectMonth(int offset) async {
-    if (_saving || _entryActionId != null) {
+    if (_saving || _trackerSaving || _entryActionId != null) {
       return;
     }
     final DateTime target = DateTime(_month.year, _month.month + offset);
@@ -632,6 +721,7 @@ class _MonthlyScreenState extends ConsumerState<MonthlyScreen>
         target,
         writable: followingCurrentMonth,
       );
+      _trackerFuture = _loadTrackerMonth(target);
     });
     _scheduleMonthRollover();
     if (followingCurrentMonth) {
@@ -641,11 +731,17 @@ class _MonthlyScreenState extends ConsumerState<MonthlyScreen>
 
   Future<void> _capture() async {
     final String content = _entryController.text.trim();
-    if (content.isEmpty || _saving || !_followingCurrentMonth) {
+    if (content.isEmpty ||
+        _saving ||
+        !_followingCurrentMonth ||
+        _section == _MonthlyViewSection.tracker) {
       return;
     }
 
-    final JournalMonthlySection section = _section;
+    final JournalMonthlySection section =
+        _section == _MonthlyViewSection.calendar
+        ? JournalMonthlySection.calendar
+        : JournalMonthlySection.tasks;
     final DateTime month = _month;
     final int selectedDay = _selectedDay;
     final AppLocalizations l10n = AppLocalizations.of(context);
@@ -699,6 +795,118 @@ class _MonthlyScreenState extends ConsumerState<MonthlyScreen>
       }
       ref.read(daymarkNoticeProvider.notifier).showError(l10n.saveEntryFailed);
       setState(() => _saving = false);
+    }
+  }
+
+  Future<void> _createTracker() async {
+    if (_trackerSaving || !_followingCurrentMonth) return;
+    final AppLocalizations l10n = AppLocalizations.of(context);
+    final DateTime now = _now();
+    final TrackerDraft? draft = await showTrackerCreateDialog(
+      context: context,
+      today: DateTime(now.year, now.month, now.day),
+    );
+    if (!mounted || draft == null) return;
+
+    setState(() => _trackerSaving = true);
+    try {
+      await _trackerDataSource().create(
+        title: draft.title,
+        startDate: _formatMethodDate(draft.startDate),
+        plannedEndDate: _formatMethodDate(draft.plannedEndDate),
+      );
+      if (!mounted) return;
+      setState(() {
+        _trackerFuture = _loadTrackerMonth(_month);
+        _trackerSaving = false;
+      });
+      ref.read(daymarkNoticeProvider.notifier).showInfo(l10n.trackerCreated);
+    } catch (error, stackTrace) {
+      _reportUnexpectedMonthlyError('create tracker', error, stackTrace);
+      if (!mounted) return;
+      setState(() => _trackerSaving = false);
+      ref
+          .read(daymarkNoticeProvider.notifier)
+          .showError(l10n.trackerCreateFailed);
+    }
+  }
+
+  Future<void> _setTrackerMark(TrackerRecord tracker, int? value) async {
+    if (_trackerSaving || !_followingCurrentMonth) return;
+    final AppLocalizations l10n = AppLocalizations.of(context);
+    final String methodDate = _formatMethodDate(
+      DateTime(_month.year, _month.month, _selectedDay),
+    );
+    setState(() => _trackerSaving = true);
+    try {
+      await _trackerDataSource().setMark(
+        trackerId: tracker.id,
+        methodDate: methodDate,
+        value: value,
+      );
+      if (!mounted) return;
+      setState(() {
+        _trackerFuture = _loadTrackerMonth(_month);
+        _trackerSaving = false;
+      });
+    } catch (error, stackTrace) {
+      _reportUnexpectedMonthlyError('update tracker mark', error, stackTrace);
+      if (!mounted) return;
+      setState(() => _trackerSaving = false);
+      ref
+          .read(daymarkNoticeProvider.notifier)
+          .showError(l10n.trackerUpdateFailed);
+    }
+  }
+
+  Future<void> _endTrackerEarly(TrackerRecord tracker) async {
+    if (_trackerSaving || !_followingCurrentMonth) return;
+    final AppLocalizations l10n = AppLocalizations.of(context);
+    final bool confirmed =
+        await showDialog<bool>(
+          context: context,
+          builder: (BuildContext dialogContext) => AlertDialog(
+            title: Text(l10n.trackerEndConfirmTitle),
+            content: Text(l10n.trackerEndConfirmMessage),
+            actions: <Widget>[
+              TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(false),
+                child: Text(
+                  MaterialLocalizations.of(context).cancelButtonLabel,
+                ),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.of(dialogContext).pop(true),
+                child: Text(l10n.trackerEndConfirm),
+              ),
+            ],
+          ),
+        ) ??
+        false;
+    if (!mounted || !confirmed) return;
+
+    final String methodDate = _formatMethodDate(
+      DateTime(_month.year, _month.month, _selectedDay),
+    );
+    setState(() => _trackerSaving = true);
+    try {
+      await _trackerDataSource().endEarly(
+        trackerId: tracker.id,
+        methodDate: methodDate,
+      );
+      if (!mounted) return;
+      setState(() {
+        _trackerFuture = _loadTrackerMonth(_month);
+        _trackerSaving = false;
+      });
+      ref.read(daymarkNoticeProvider.notifier).showInfo(l10n.trackerEnded);
+    } catch (error, stackTrace) {
+      _reportUnexpectedMonthlyError('end tracker', error, stackTrace);
+      if (!mounted) return;
+      setState(() => _trackerSaving = false);
+      ref
+          .read(daymarkNoticeProvider.notifier)
+          .showError(l10n.trackerUpdateFailed);
     }
   }
 
@@ -784,7 +992,6 @@ class _MonthlyScreenState extends ConsumerState<MonthlyScreen>
       }
     }
 
-    // Any deliberate journal action supersedes the short-lived capture Undo.
     ref.read(daymarkNoticeProvider.notifier).dismiss();
     final AppLocalizations l10n = AppLocalizations.of(context);
     setState(() => _entryActionId = entry.id);
@@ -864,6 +1071,7 @@ class _MonthlyScreenState extends ConsumerState<MonthlyScreen>
     final DateTime now = _now();
     final DateTime currentMonth = DateTime(now.year, now.month);
     if (_sameMonth(currentMonth, _month)) {
+      setState(() => _trackerFuture = _loadTrackerMonth(_month));
       _scheduleMonthRollover();
       return;
     }
@@ -872,6 +1080,7 @@ class _MonthlyScreenState extends ConsumerState<MonthlyScreen>
       _month = currentMonth;
       _selectedDay = _clampDay(now.day, _month);
       _snapshotFuture = _loadSnapshotFor(_month, writable: true);
+      _trackerFuture = _loadTrackerMonth(_month);
     });
     _scheduleMonthRollover();
   }
@@ -897,6 +1106,8 @@ class _MonthlyScreenState extends ConsumerState<MonthlyScreen>
     return DateTime(now.year, now.month);
   }
 }
+
+enum _MonthlyViewSection { calendar, tasks, tracker }
 
 enum _MonthlyEntryAction { complete, migrate, schedule, reference, discard }
 
