@@ -81,7 +81,7 @@ At most **five Trackers may overlap on the same method date**.
 
 The limit exists for readability and focus, not as an arbitrary subscription or configuration limit. One combined graph is the intended reflection view; too many simultaneous trajectories undermine that purpose.
 
-The five visual identities are fixed slots. Version 1 does not expose a color picker. A slot may be reused by another Tracker only when their active periods do not overlap.
+The five visual identities are fixed slots. Version 1 does not expose a color picker. A slot may be reused by another Tracker only when their active periods do not overlap. To keep one Tracker's color stable across its whole history, creation requires one slot to be free for the Tracker's entire proposed period; in unusual fragmented schedules this can be stricter than merely counting five Trackers on each individual day. Version 1 deliberately prefers stable visual identity over silently recoloring existing Tracker history.
 
 Color is the primary visual identity, but the graph should remain understandable when a line is focused individually. Future accessibility work may add a secondary distinction if color alone proves insufficient; that must not turn the feature into a configurable chart designer.
 

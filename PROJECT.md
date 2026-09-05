@@ -15,13 +15,14 @@ This is Daymark's canonical living handoff. Read this file and `AGENTS.md` befor
 - GitHub Release `Daymark 1.0.0-alpha.2` is published as a prerelease with the final Linux archive, signed Android APK, and `SHA256SUMS`.
 - Post-alpha.2 documentation alignment merged via PR #34 as `main` commit `6e0784fc15d6321c341ca7eeae2169bf020beaf9`.
 - Navigation and organization merged via PR #35 as `main` commit `49ff9494c49bd8ceafe0cf8198c63e452bc91d0b`.
-- Reflection and Rapid Logging UX merged via PR #36 as current `main` commit `0b7c79c96a17f76479aa81ea7002ab7c0971028c`.
+- Reflection and Rapid Logging UX merged via PR #36 as `main` commit `0b7c79c96a17f76479aa81ea7002ab7c0971028c`.
 - PR #36 Ready CI #482 passed on exact head `596b4ad678a2d08a9e7f5d60f1ef847eabd2abd9`; post-merge `main` CI #483 passed on exact squash SHA `0b7c79c96a17f76479aa81ea7002ab7c0971028c`.
-- Current development branch: `feat/security-and-next-release`, adding Open Export reauthentication and clipboard output before the next prerelease preparation.
+- Security/Open Export/session-lock work merged via PR #37 as current `main` commit `70a4206ccaf7d29f83a89c29f16abbb25baffcc7`. PR #37 Ready CI #484 passed on exact head `6e91e4a64c7e8589bac0f9df325c35571512ee9a`; post-merge `main` CI #485 passed on the squash SHA.
+- Current development branch: `feat/monthly-trackers`, PR #38 (Draft), implementing the explicitly documented optional Daymark Tracker adaptation and schema v2 from exact `main` `70a4206ccaf7d29f83a89c29f16abbb25baffcc7`.
 - The completed `release/1.0.0-alpha.2` branch is retained as historical reference/backup and is not an active integration line.
 - Runtime targets: Linux and Android.
 - Pinned toolchain: Flutter 3.47.2 / Dart 3.13.2.
-- Merge policy: never merge without explicit user approval; squash merge is the default.
+- Merge policy: ordinary technically Ready PRs may be squash-merged under standing user authorization after exact-head required CI and `merge-gate` are green; release/tag/artifact publication remains an explicit user-approval boundary.
 - Production Argon2id baseline: 19 MiB / 2 iterations / p=1 / 32-byte output.
 - Last release checkpoint: 2026-09-04 (America/Sao_Paulo).
 
@@ -37,13 +38,14 @@ Daymark is a faithful digital Bullet Journal, not a generic productivity suite.
 - no automatic choices that replace deliberate reflection;
 - no generic planner/Kanban/workspace abstractions merely because digital software can support them;
 - English is canonical/fallback; exact `pt_BR` is the first additional locale;
-- primary navigation concepts are Today, Monthly, Future, Collections, Search, and Index; compact layouts group Search/Index behind More without merging their meaning.
+- primary navigation concepts are Today, Monthly, Future, Collections, Search, and Index; compact layouts group Search/Index behind More without merging their meaning;
+- optional Daymark-specific adaptations such as Tracker must be labeled as adaptations, preserve the core method model, and document provenance instead of being presented as canonical Bullet Journal rules.
 
 ## Mandatory working rules
 
 - `main` is the only permanent integration branch. Use short-lived branches and PRs.
 - PR titles use Conventional Commit form.
-- The user makes every merge and release-promotion decision. Never enable auto-merge or merge/publish implicitly.
+- Ordinary technically Ready PRs may be squash-merged under the user's standing authorization only after exact-head required CI and `merge-gate` are green. Release/tag/artifact publication and promotion still require explicit user approval. Never enable auto-merge or publish implicitly.
 - The agent owns implementation design, Git/GitHub operations available through connected tooling, test design, command construction, and diagnosis of returned evidence.
 - When local execution is faster or GitHub Actions/API evidence is degraded, the user may act as an execution bridge using complete agent-provided command blocks.
 - Local execution does not transfer debugging responsibility to the user. The agent interprets failures and decides the next safe step.
@@ -71,13 +73,13 @@ For each substantive branch unless the change is too small to justify every step
 9. diagnose surprising results before changing production behavior;
 10. align documentation on the final branch head;
 11. use full Ready CI once the branch is reviewable;
-12. merge only after exact-head CI is green and the user explicitly approves squash merge.
+12. squash-merge an ordinary Ready PR only after exact-head CI is green under the standing authorization; stop for explicit user approval before any release/tag/artifact publication or promotion.
 
 If GitHub Actions or API evidence is delayed, continue independent work where safe. `gh` is available on the primary local validation host as a fallback. Never infer a green result.
 
 ## Stable domain and persistence baseline
 
-Schema v1 contains:
+Published schema v1 contains:
 
 - `journal_metadata`
 - `logs`
@@ -89,6 +91,13 @@ Schema v1 contains:
 - `signifiers`
 - `entry_signifiers`
 - `index_items`
+
+Current development schema v2 extends that published baseline additively with:
+
+- `trackers`;
+- `tracker_marks`.
+
+The v1-to-v2 path is represented by retained Drift schema snapshots, generated versioned migration helpers, and migration tests that preserve representative v1 journal data.
 
 Durable rules:
 
@@ -110,9 +119,10 @@ Durable rules:
 - Search is transient read-only retrieval and is never an owner or persistent Index source;
 - historical Monthly and Daily lookups are non-mutating;
 - cross-table semantic writes remain transactional through repository/service boundaries;
-- `JournalSession` serializes unlocked journal work and owns encrypted persistence/key lifetime.
+- `JournalSession` serializes unlocked journal work and owns encrypted persistence/key lifetime;
+- Trackers are separate optional finite entities: explicit marks persist only `+1 / -1`, absence renders as `0` inside the effective period, and the feature never creates a daily Task or changes Entry ownership.
 
-Schema v1 is now a published compatibility boundary because `v1.0.0-alpha.2` ships real user-journal support. Future supported builds must provide explicit tested compatibility/migration paths rather than silently regenerating or resetting published data.
+Schema v1 is now a published compatibility boundary because `v1.0.0-alpha.2` ships real user-journal support. Current schema v2 therefore migrates forward explicitly and additively; future supported builds must continue to provide tested compatibility/migration paths rather than silently regenerating or resetting published data.
 
 ## Retained-navigation lifecycle rule
 
@@ -140,7 +150,8 @@ Current foundation includes:
 - user-facing portable authenticated encrypted backup/restore with rollback/recovery protections;
 - explicit plaintext Open Export to deterministic JSON and human-readable Markdown, requiring master-password reauthentication before plaintext generation and supporting deliberate file save or clipboard copy;
 - Appearance is non-secret device/application state outside the encrypted journal database;
-- Android release builds fail closed if dedicated release signing is absent and never silently use debug signing.
+- Android release builds fail closed if dedicated release signing is absent and never silently use debug signing;
+- Android screen-off and Linux systemd-logind session-lock events request immediate lock through the same serialized journal-session path as manual/inactivity locking.
 
 The published `v1.0.0-alpha.2` key-envelope interpretation, 48-byte journal-key serialization, schema v1, backup format v1, and Open Export format v1 are compatibility-sensitive boundaries. Future changes require deliberate compatibility handling.
 
