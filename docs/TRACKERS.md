@@ -2,20 +2,37 @@
 
 ## Status
 
-Trackers are an **optional Daymark adaptation** for deliberate daily observation and reflection.
+Trackers are an **optional Daymark adaptation** for deliberate daily observation and reflection and are part of Daymark's frozen product scope.
 
-They are not presented as a mandatory or canonical part of Ryder Carroll's core Bullet Journal method. Daymark keeps the core method-native structures authoritative: Daily Log, Monthly Log, Future Log, Collections, Index, Rapid Logging, Migration, and Reflection.
+They are not presented as a mandatory or canonical part of Ryder Carroll's core Bullet Journal method. Daymark keeps the method-native structures authoritative: Daily Log, Monthly Log, Future Log, Collections, Index, Rapid Logging, Migration, and Reflection.
 
-Bullet Journal community and official-site examples have long used habit/behavior trackers as optional spreads or Collections. Daymark uses that broader compatible practice as context, but the exact model in this document is Daymark-specific.
+Bullet Journal community and official-site examples have used habit/behavior trackers as optional spreads or Collections. Daymark uses that broader compatible practice as context, but the exact model here is Daymark-specific.
 
-The Daymark Tracker also has an explicit maintainer origin: it is based on Marcelo Trindade's personal paper practice of recording daily commitments and manually drawing their trajectories in a notebook. The digital feature exists mainly to remove the repetitive mechanical work of redrawing that graph while preserving the deliberate daily mark and later reflection.
+The Daymark Tracker also has an explicit maintainer origin: it is based on Marcelo Trindade's personal paper practice of recording daily commitments and manually drawing their trajectories in a notebook. The digital adaptation removes the repetitive mechanical work of redrawing that graph while preserving the deliberate daily mark and later reflection.
 
-Nothing in the UI or documentation should imply that the graph, the `+1 / 0 / -1` encoding, the five-color limit, or the responsive layout described here is an official Bullet Journal rule.
+Nothing in the UI or documentation should imply that the graph, `+1 / 0 / -1` encoding, five-color limit, or responsive layout is an official Bullet Journal rule.
 
 Useful background from the Bullet Journal site:
 
 - <https://bulletjournal.com/blogs/bulletjournalist/puppies-chains-and-jerry-seinfeld>
 - <https://bulletjournal.com/blogs/bulletjournalist/intentional-habit-tracking>
+
+## Frozen scope
+
+Tracker behavior is feature-complete. Maintenance may fix bugs, accessibility regressions, compatibility/data issues, or supported-platform rendering problems, but must not expand the Tracker product.
+
+In particular, Daymark does not plan:
+
+- reflection-note fields attached to Trackers;
+- "create new from this" / clone/renew convenience actions;
+- starting a Tracker from a Daily Entry;
+- configurable colors, styles, axes, graph types, or analytics;
+- extra simultaneous slots beyond the existing five-color model;
+- reminders, notifications, streaks, scores, rankings, goals, predictions, or gamification;
+- automatic renewal or continuation;
+- new Tracker ownership/Entry semantics.
+
+Historical references to such ideas in older commits are not roadmap commitments.
 
 ## Product purpose
 
@@ -45,11 +62,11 @@ For every day inside a Tracker's active period:
 - `-1` means the user explicitly marked the commitment as not fulfilled for that day;
 - `0` means the user made no explicit mark for that day.
 
-The user never selects `0` directly. Removing an existing positive or negative mark returns that day to the absence state and therefore to `0` in the graph.
+The user never selects `0` directly. Removing an existing positive or negative mark returns that day to absence and therefore to `0` in the graph.
 
 `0` is not failure. It means **no recorded mark**.
 
-Outside the Tracker's active period there is no datum. The graph must not draw zero-valued history before the start or after the effective end merely to fill visual space.
+Outside the active period there is no datum. The graph must not draw zero-valued history before start or after effective end merely to fill visual space.
 
 ## Lifecycle
 
@@ -62,44 +79,46 @@ A Tracker has:
 - zero or more explicit daily marks (`+1` or `-1`);
 - an optional early-end method date.
 
-A Tracker may therefore be interpreted as:
+A Tracker is interpreted as:
 
 - **planned** before its start date;
 - **active** from its start through its effective end while the period is current;
 - **completed** after reaching its planned end without being ended early;
 - **ended** when the user deliberately stops it before the planned end.
 
-The persisted state does not need a mutable status flag when the status can be derived without ambiguity from the dates. An early end is deliberate and preserves all history through the chosen end date.
+The persisted state does not need a mutable status flag when status can be derived unambiguously from dates. An early end is deliberate and preserves history through the chosen end date.
 
-A normal completion or early end may later support a reflection note, but no reflection text is required merely to make the Tracker valid.
+Completion or early ending does not create a reflection-note record. Reflection remains the user's interpretation of the trajectory rather than a required Tracker field.
 
-Continuing a finished Tracker must be another deliberate action. A future "create new from this" convenience may copy its structure, but Daymark must not renew or extend Trackers automatically.
+A finished Tracker remains finished. Daymark does not automatically renew, extend, clone, or restart it. A new commitment is created as a separate new Tracker through the existing creation flow.
 
 ## Simultaneous limit and colors
 
 At most **five Trackers may overlap on the same method date**.
 
-The limit exists for readability and focus, not as an arbitrary subscription or configuration limit. One combined graph is the intended reflection view; too many simultaneous trajectories undermine that purpose.
+The limit exists for readability and focus, not as a subscription/configuration limit. One combined graph is the intended reflection view; too many simultaneous trajectories undermine that purpose.
 
-The five visual identities are fixed slots. Version 1 does not expose a color picker. A slot may be reused by another Tracker only when their active periods do not overlap. To keep one Tracker's color stable across its whole history, creation requires one slot to be free for the Tracker's entire proposed period; in unusual fragmented schedules this can be stricter than merely counting five Trackers on each individual day. Version 1 deliberately prefers stable visual identity over silently recoloring existing Tracker history.
+The five visual identities are fixed slots. Daymark does not expose a color picker. A slot may be reused by another Tracker only when their active periods do not overlap.
 
-Color is the primary visual identity, but the graph should remain understandable when a line is focused individually. Future accessibility work may add a secondary distinction if color alone proves insufficient; that must not turn the feature into a configurable chart designer.
+To keep one Tracker's color stable across its whole history, creation requires one slot to be free for the Tracker's entire proposed period. In fragmented schedules this can be stricter than merely counting five Trackers on each individual day. Stable visual identity is preferred over silently recoloring history.
+
+Color is the main visual identity, but the existing accessibility semantics must keep the data understandable without relying solely on color. Accessibility fixes may strengthen non-color semantics when required, but must not turn Tracker into a configurable chart designer.
 
 ## Graph semantics
 
-The graph contains all Trackers that intersect the month being viewed, up to the simultaneous five-Tracker invariant.
+The graph contains all Trackers that intersect the displayed month, subject to the simultaneous five-Tracker invariant.
 
 For the normal month view:
 
-- one axis is the method day within the displayed month;
+- one axis is method day within the displayed month;
 - the value axis contains exactly `+1`, `0`, and `-1`;
 - explicit marks land exactly on `+1` or `-1`;
-- absence inside the active period lands exactly on `0`;
-- no line exists outside the Trackers' active periods.
+- absence inside active period lands exactly on `0`;
+- no line exists outside active periods.
 
-Lines may use restrained smooth Bezier transitions between adjacent daily points. Smoothing is presentation only: control points must not overshoot the semantic `+1 / 0 / -1` range, and the actual daily points remain visible so the curve cannot be mistaken for measured intermediate values.
+Lines may use restrained smooth Bezier transitions between adjacent daily points. Smoothing is presentation only: control points must not overshoot the semantic `+1 / 0 / -1` range, and actual daily points remain visible so the curve cannot be mistaken for measured intermediate values.
 
-The graph may visually show recovery after a difficult day, but Daymark itself does not congratulate, shame, score, or interpret the trajectory for the user.
+The graph may visually show recovery after a difficult day, but Daymark does not congratulate, shame, score, rank, or interpret the trajectory for the user.
 
 ## Responsive hierarchy
 
@@ -107,35 +126,35 @@ The approved responsive principle is **data first, graph second**, approximately
 
 ### Portrait / tall compact screen
 
-The daily data/controls occupy roughly two thirds of the width. The graph occupies roughly one third as a vertical strip.
+Daily data/controls occupy roughly two thirds of the width. The graph occupies roughly one third as a vertical strip.
 
-To avoid compressing an entire month into a narrow horizontal strip, the graph transposes its axes in this layout: method days run along the long vertical dimension while `-1 / 0 / +1` span the narrow horizontal dimension.
+To avoid compressing a month into a narrow horizontal strip, method days run along the long vertical dimension while `-1 / 0 / +1` span the narrow horizontal dimension.
 
 ### Landscape / wide screen
 
-The daily data/controls occupy roughly two thirds of the height. The graph occupies roughly the lower third and uses the full available width, with method days running horizontally.
+Daily data/controls occupy roughly two thirds of the height. The graph occupies roughly the lower third and uses available width, with method days running horizontally.
 
-The ratio is a hierarchy rather than a pixel contract. Small adaptations for usable controls, text scale, safe areas, or desktop window constraints are allowed as long as the graph remains secondary and the full monthly trajectory remains legible.
+The ratio is a hierarchy rather than a pixel contract. Maintenance adaptations for text scale, safe areas, supported device sizes, or desktop window constraints are allowed when they preserve data-first hierarchy and the existing semantics.
 
 ## Placement in Daymark
 
-Tracker is not a new top-level navigation destination.
+Tracker is not a top-level navigation destination.
 
-Monthly is the administration and reflection home. The Monthly surface gains a third internal section alongside Calendar and Tasks:
+Monthly is the administration/reflection home, with:
 
 - Calendar;
 - Tasks;
 - Tracker.
 
-Today may show active Trackers as a compact daily marking surface. Today does not create a new Task every day and does not turn a Tracker into an Entry.
+Today may show active Trackers as a compact daily marking surface. Today does not create a Task every day and does not turn a Tracker into an Entry.
 
-A future action that starts a Tracker from a Daily entry must preserve the original Entry as historical journal content and create a separate Tracker entity. Daymark must never silently convert or repurpose the source Entry.
+Daymark does not convert a Daily Entry into a Tracker and does not expose an Entry-to-Tracker creation action under the frozen scope.
 
-Historical Monthly views remain read-only. They may display the Tracker trajectories that intersect that month, but they must not allow creation, marking, ending, or other mutation.
+Historical Monthly views remain read-only. They may display Tracker trajectories intersecting that month, but do not allow creation, marking, ending, or other mutation.
 
 ## Deliberate exclusions
 
-Tracker must not gain:
+Tracker does not gain:
 
 - streak counters;
 - badges, trophies, XP, confetti, or gamification;
@@ -146,9 +165,12 @@ Tracker must not gain:
 - aggressive reminders;
 - moralized labels for `0` or `-1`;
 - predictive trend claims;
-- a large configurable analytics dashboard.
+- configurable analytics dashboards;
+- clone/restart convenience workflows;
+- attached reflection-note records;
+- additional chart customization systems.
 
-If a future proposal needs those concepts, it is a separate product decision and must pass the normal Daymark feature test rather than being smuggled in as a Tracker enhancement.
+These are frozen exclusions, not a feature backlog.
 
 ## Fidelity rule
 
