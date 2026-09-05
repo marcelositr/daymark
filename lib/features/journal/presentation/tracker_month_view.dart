@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:daymark/features/journal/data/tracker_repository.dart';
 import 'package:daymark/l10n/app_localizations.dart';
+import 'package:daymark/presentation/daymark_empty_state.dart';
 import 'package:flutter/material.dart';
 
 import 'tracker_visuals.dart';
@@ -46,15 +47,9 @@ class _TrackerMonthViewState extends State<TrackerMonthView> {
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
         if (widget.snapshot.trackers.isEmpty) {
-          return Align(
-            alignment: AlignmentDirectional.topStart,
-            child: Padding(
-              padding: const EdgeInsets.only(top: 16),
-              child: Text(
-                AppLocalizations.of(context).trackerEmptyMonth,
-                style: Theme.of(context).textTheme.bodyLarge,
-              ),
-            ),
+          return DaymarkEmptyState(
+            message: AppLocalizations.of(context).trackerEmptyMonth,
+            topPadding: 16,
           );
         }
 
@@ -231,6 +226,8 @@ class _TrackerDataPanel extends StatelessWidget {
                       children: <Widget>[
                         InkWell(
                           onTap: () => onFocus(tracker.id),
+                          canRequestFocus: false,
+                          excludeFromSemantics: true,
                           borderRadius: BorderRadius.circular(8),
                           child: Padding(
                             padding: const EdgeInsets.symmetric(

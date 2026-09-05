@@ -45,15 +45,18 @@ class DaymarkTrackerMarkButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return IconButton(
-      tooltip: tooltip,
-      visualDensity: VisualDensity.compact,
-      onPressed: onPressed,
-      style: IconButton.styleFrom(
-        backgroundColor: selected ? color.withValues(alpha: 0.14) : null,
-        foregroundColor: selected ? color : null,
+    return Semantics(
+      selected: selected,
+      child: IconButton(
+        tooltip: tooltip,
+        visualDensity: VisualDensity.compact,
+        onPressed: onPressed,
+        style: IconButton.styleFrom(
+          backgroundColor: selected ? color.withValues(alpha: 0.14) : null,
+          foregroundColor: selected ? color : null,
+        ),
+        icon: Icon(icon),
       ),
-      icon: Icon(icon),
     );
   }
 }

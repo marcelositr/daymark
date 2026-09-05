@@ -8,6 +8,7 @@ import 'package:daymark/features/journal/domain/journal_domain.dart';
 import 'package:daymark/features/journal/presentation/source_navigation.dart';
 import 'package:daymark/l10n/app_localizations.dart';
 import 'package:daymark/presentation/app_section_scope.dart';
+import 'package:daymark/presentation/daymark_empty_state.dart';
 import 'package:daymark/presentation/daymark_notice.dart';
 import 'package:daymark/presentation/daymark_page_frame.dart';
 import 'package:flutter/foundation.dart';
@@ -151,16 +152,10 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
       );
     }
     if (!_hasSearched) {
-      return Align(
-        alignment: AlignmentDirectional.topStart,
-        child: Text(l10n.searchPrompt),
-      );
+      return DaymarkEmptyState(message: l10n.searchPrompt);
     }
     if (_results.isEmpty) {
-      return Align(
-        alignment: AlignmentDirectional.topStart,
-        child: Text(l10n.searchNoResults),
-      );
+      return DaymarkEmptyState(message: l10n.searchNoResults);
     }
 
     return ListView.separated(
@@ -264,6 +259,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     } finally {
       if (showProgress && mounted && requestId == _searchRequestId) {
         setState(() => _searching = false);
+        _restoreSearchFocus();
       }
     }
   }

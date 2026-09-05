@@ -16,6 +16,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'entry_capture_undo.dart';
 import 'entry_collection_reference_dialog.dart';
+import 'entry_semantics.dart';
 import 'journal_activity_guard.dart';
 
 abstract interface class FutureJournalDataSource {
@@ -286,11 +287,23 @@ class _FutureScreenState extends ConsumerState<FutureScreen>
         SizedBox(width: 28, child: marker),
         const SizedBox(width: 8),
         Expanded(
-          child: Text(
-            entry.content,
-            style: entry.taskState == JournalTaskState.discarded
-                ? entryStyle?.copyWith(decoration: TextDecoration.lineThrough)
-                : entryStyle,
+          child: Semantics(
+            label: journalEntrySemanticLabel(
+              l10n,
+              type: entry.type,
+              taskState: entry.taskState,
+              content: entry.content,
+            ),
+            child: ExcludeSemantics(
+              child: Text(
+                entry.content,
+                style: entry.taskState == JournalTaskState.discarded
+                    ? entryStyle?.copyWith(
+                        decoration: TextDecoration.lineThrough,
+                      )
+                    : entryStyle,
+              ),
+            ),
           ),
         ),
       ],
@@ -346,6 +359,7 @@ class _FutureScreenState extends ConsumerState<FutureScreen>
                     : (value) {
                         if (value != null) {
                           setState(() => _selectedMonth = value);
+                          _restoreComposerFocus();
                         }
                       },
                 items: [
@@ -369,6 +383,7 @@ class _FutureScreenState extends ConsumerState<FutureScreen>
                   : (value) {
                       if (value != null) {
                         setState(() => _entryType = value);
+                        _restoreComposerFocus();
                       }
                     },
               items: [

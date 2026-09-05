@@ -188,6 +188,37 @@ void main() {
 
     await tester.pumpWidget(const SizedBox.shrink());
   });
+
+  testWidgets('Future exposes entry type and Task state to semantics', (
+    tester,
+  ) async {
+    final _MemoryFutureJournal dataSource = _MemoryFutureJournal(
+      entriesByPeriod: <String, List<FutureLogEntry>>{
+        '2026-10-01': <FutureLogEntry>[
+          const FutureLogEntry(
+            id: 'task-a11y',
+            type: JournalEntryType.task,
+            taskState: JournalTaskState.open,
+            content: 'Accessible future task',
+            ordinal: 0,
+          ),
+        ],
+      },
+    );
+
+    await _pumpFuture(tester, dataSource);
+
+    expect(
+      find.byWidgetPredicate(
+        (widget) =>
+            widget is Semantics &&
+            widget.properties.label == 'Task, Open, Accessible future task',
+      ),
+      findsOneWidget,
+    );
+
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
 }
 
 Future<void> _pumpFuture(

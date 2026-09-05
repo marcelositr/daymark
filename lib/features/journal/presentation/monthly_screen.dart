@@ -9,6 +9,7 @@ import 'package:daymark/features/journal/domain/journal_domain.dart';
 import 'package:daymark/l10n/app_localizations.dart';
 import 'package:daymark/presentation/app_section_scope.dart';
 import 'package:daymark/presentation/daymark_controls.dart';
+import 'package:daymark/presentation/daymark_empty_state.dart';
 import 'package:daymark/presentation/daymark_notice.dart';
 import 'package:daymark/presentation/daymark_page_frame.dart';
 import 'package:flutter/foundation.dart';
@@ -18,6 +19,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'entry_capture_undo.dart';
 import 'entry_collection_reference_dialog.dart';
+import 'entry_semantics.dart';
 import 'journal_activity_guard.dart';
 import 'task_collection_migration_dialog.dart';
 import 'task_schedule_dialog.dart';
@@ -472,16 +474,7 @@ class _MonthlyScreenState extends ConsumerState<MonthlyScreen>
     final List<MonthlyLogEntry> taskEntries =
         snapshot?.taskEntries ?? const <MonthlyLogEntry>[];
     if (taskEntries.isEmpty) {
-      return Align(
-        alignment: AlignmentDirectional.topStart,
-        child: Padding(
-          padding: const EdgeInsets.only(top: 16),
-          child: Text(
-            l10n.emptyMonthlyTasks,
-            style: Theme.of(context).textTheme.bodyLarge,
-          ),
-        ),
-      );
+      return DaymarkEmptyState(message: l10n.emptyMonthlyTasks, topPadding: 16);
     }
 
     return ListView.separated(
@@ -526,11 +519,23 @@ class _MonthlyScreenState extends ConsumerState<MonthlyScreen>
         SizedBox(width: 28, child: marker),
         const SizedBox(width: 8),
         Expanded(
-          child: Text(
-            entry.content,
-            style: entry.taskState == JournalTaskState.discarded
-                ? entryStyle?.copyWith(decoration: TextDecoration.lineThrough)
-                : entryStyle,
+          child: Semantics(
+            label: journalEntrySemanticLabel(
+              l10n,
+              type: entry.type,
+              taskState: entry.taskState,
+              content: entry.content,
+            ),
+            child: ExcludeSemantics(
+              child: Text(
+                entry.content,
+                style: entry.taskState == JournalTaskState.discarded
+                    ? entryStyle?.copyWith(
+                        decoration: TextDecoration.lineThrough,
+                      )
+                    : entryStyle,
+              ),
+            ),
           ),
         ),
       ],
@@ -593,6 +598,7 @@ class _MonthlyScreenState extends ConsumerState<MonthlyScreen>
                 : (value) {
                     if (value != null) {
                       setState(() => _selectedDay = value);
+                      _restoreComposerFocus();
                     }
                   },
             items: [

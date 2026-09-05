@@ -7,6 +7,7 @@ import 'package:daymark/features/journal/data/index_repository.dart';
 import 'package:daymark/features/journal/domain/journal_domain.dart';
 import 'package:daymark/features/journal/presentation/source_navigation.dart';
 import 'package:daymark/l10n/app_localizations.dart';
+import 'package:daymark/presentation/daymark_empty_state.dart';
 import 'package:daymark/presentation/daymark_notice.dart';
 import 'package:daymark/presentation/daymark_page_frame.dart';
 import 'package:flutter/material.dart';
@@ -127,10 +128,7 @@ class _IndexScreenState extends ConsumerState<IndexScreen> {
                 }
                 final List<IndexItem> items = snapshot.requireData;
                 if (items.isEmpty) {
-                  return Align(
-                    alignment: AlignmentDirectional.topStart,
-                    child: Text(l10n.emptyIndex),
-                  );
+                  return DaymarkEmptyState(message: l10n.emptyIndex);
                 }
                 return ListView.separated(
                   itemCount: items.length,

@@ -8,6 +8,7 @@ import 'package:daymark/features/journal/domain/journal_domain.dart';
 import 'package:daymark/l10n/app_localizations.dart';
 import 'package:daymark/presentation/app_section_scope.dart';
 import 'package:daymark/presentation/daymark_controls.dart';
+import 'package:daymark/presentation/daymark_empty_state.dart';
 import 'package:daymark/presentation/daymark_notice.dart';
 import 'package:daymark/presentation/daymark_page_frame.dart';
 import 'package:flutter/foundation.dart';
@@ -18,6 +19,7 @@ import 'package:go_router/go_router.dart';
 
 import 'entry_capture_undo.dart';
 import 'entry_collection_reference_dialog.dart';
+import 'entry_semantics.dart';
 import 'journal_activity_guard.dart';
 import 'task_collection_migration_dialog.dart';
 import 'task_schedule_dialog.dart';
@@ -380,15 +382,9 @@ class _TodayScreenState extends ConsumerState<TodayScreen>
         : snapshot.entries;
 
     if (visibleEntries.isEmpty) {
-      return Align(
-        alignment: AlignmentDirectional.topStart,
-        child: Padding(
-          padding: const EdgeInsets.only(top: 24),
-          child: Text(
-            _reflecting ? l10n.dailyReflectionEmpty : l10n.emptyDailyLog,
-            style: Theme.of(context).textTheme.bodyLarge,
-          ),
-        ),
+      return DaymarkEmptyState(
+        message: _reflecting ? l10n.dailyReflectionEmpty : l10n.emptyDailyLog,
+        topPadding: 24,
       );
     }
 
@@ -435,7 +431,12 @@ class _TodayScreenState extends ConsumerState<TodayScreen>
         const SizedBox(width: 8),
         Expanded(
           child: Semantics(
-            label: _entrySemanticLabel(l10n, entry),
+            label: journalEntrySemanticLabel(
+              l10n,
+              type: entry.type,
+              taskState: entry.taskState,
+              content: entry.content,
+            ),
             child: ExcludeSemantics(
               child: Text(
                 entry.content,
@@ -507,6 +508,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen>
               : (value) {
                   if (value != null) {
                     setState(() => _entryType = value);
+                    _restoreComposerFocus();
                   }
                 },
           items: [
@@ -890,26 +892,6 @@ String _entrySymbol(DailyLogEntry entry) => switch (entry.type) {
   JournalEntryType.event => '○',
   JournalEntryType.note => '–',
 };
-
-String _entrySemanticLabel(AppLocalizations l10n, DailyLogEntry entry) {
-  final String typeLabel = switch (entry.type) {
-    JournalEntryType.task => l10n.entryTask,
-    JournalEntryType.event => l10n.entryEvent,
-    JournalEntryType.note => l10n.entryNote,
-  };
-  if (entry.type != JournalEntryType.task) {
-    return '$typeLabel, ${entry.content}';
-  }
-
-  final String stateLabel = switch (entry.taskState) {
-    JournalTaskState.completed => l10n.taskStateCompleted,
-    JournalTaskState.migrated => l10n.taskStateMigrated,
-    JournalTaskState.scheduled => l10n.taskStateScheduled,
-    JournalTaskState.discarded => l10n.taskStateDiscarded,
-    JournalTaskState.open || null => l10n.taskStateOpen,
-  };
-  return '$typeLabel, $stateLabel, ${entry.content}';
-}
 
 void _reportUnexpectedJournalError(
   String operation,
