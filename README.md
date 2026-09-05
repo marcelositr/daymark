@@ -4,6 +4,8 @@ Daymark is a minimal, local-first Bullet Journal application for Linux and Andro
 
 > The interface should disappear during use. The journal, reflection, and decisions come first.
 
+Project website: [devnux.com.br/daymark](https://devnux.com.br/daymark)
+
 ## Project status
 
 Daymark is in **alpha development**.
@@ -32,6 +34,8 @@ The current product line includes:
 - device-local System / Light / Dark appearance selection;
 - Daymark application branding plus a restrained responsive visual system shared by Linux and Android;
 - Linux keyboard/focus refinements, accessibility semantics, consistent empty states, and adaptive navigation;
+- a localized About surface exposing the current app version, project website, source, issue-reporting location, author, license, and open-source licenses;
+- structured public Bug Report and Feature Request forms, with security vulnerabilities directed away from public Issues;
 - Linux and Android release packaging with dedicated Android release signing that fails closed if signing configuration is missing.
 
 The pinned toolchain is Flutter 3.47.2 with Dart 3.13.2, targeting Linux and Android.
