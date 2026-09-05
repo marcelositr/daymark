@@ -1,3 +1,4 @@
+import 'package:daymark/core/session/journal_session.dart';
 import 'package:daymark/core/session/journal_session_controller.dart';
 import 'package:daymark/core/session/journal_tracker_session.dart';
 import 'package:daymark/features/journal/data/tracker_repository.dart';
@@ -40,16 +41,16 @@ final Provider<TrackerDataSource> trackerDataSourceProvider =
 final class _SessionTrackerDataSource implements TrackerDataSource {
   const _SessionTrackerDataSource(this._session);
 
-  final dynamic _session;
+  final JournalSession _session;
 
   @override
   Future<TrackerMonthSnapshot> loadMonth(String periodStart) {
-    return _session.loadTrackerMonth(periodStart) as Future<TrackerMonthSnapshot>;
+    return _session.loadTrackerMonth(periodStart);
   }
 
   @override
   Future<List<TrackerRecord>> loadForDay(String methodDate) {
-    return _session.loadTrackersForDay(methodDate) as Future<List<TrackerRecord>>;
+    return _session.loadTrackersForDay(methodDate);
   }
 
   @override
@@ -59,11 +60,10 @@ final class _SessionTrackerDataSource implements TrackerDataSource {
     required String plannedEndDate,
   }) {
     return _session.createTracker(
-          title: title,
-          startDate: startDate,
-          plannedEndDate: plannedEndDate,
-        )
-        as Future<String>;
+      title: title,
+      startDate: startDate,
+      plannedEndDate: plannedEndDate,
+    );
   }
 
   @override
@@ -73,11 +73,10 @@ final class _SessionTrackerDataSource implements TrackerDataSource {
     required int? value,
   }) {
     return _session.setTrackerMark(
-          trackerId: trackerId,
-          methodDate: methodDate,
-          value: value,
-        )
-        as Future<void>;
+      trackerId: trackerId,
+      methodDate: methodDate,
+      value: value,
+    );
   }
 
   @override
@@ -86,9 +85,8 @@ final class _SessionTrackerDataSource implements TrackerDataSource {
     required String methodDate,
   }) {
     return _session.endTrackerEarly(
-          trackerId: trackerId,
-          methodDate: methodDate,
-        )
-        as Future<void>;
+      trackerId: trackerId,
+      methodDate: methodDate,
+    );
   }
 }
