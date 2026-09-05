@@ -147,7 +147,9 @@ class _TodayScreenState extends ConsumerState<TodayScreen>
     if (_sectionScopeInitialized &&
         isTodaySectionActive &&
         !_wasTodaySectionActive) {
-      setState(() => _trackerFuture = _loadTrackers());
+      setState(() {
+        _trackerFuture = _loadTrackers();
+      });
       if (!_reflecting &&
           !_saving &&
           _entryActionId == null &&
@@ -861,7 +863,9 @@ class _TodayScreenState extends ConsumerState<TodayScreen>
     final DateTime currentDate = _dateOnly(DateTime.now());
     if (currentDate == _today) {
       if (mounted) {
-        setState(() => _trackerFuture = _loadTrackers());
+        setState(() {
+          _trackerFuture = _loadTrackers();
+        });
       }
       _scheduleDayRollover();
       return;

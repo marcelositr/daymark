@@ -188,7 +188,9 @@ class _MonthlyScreenState extends ConsumerState<MonthlyScreen>
     if (_sectionScopeInitialized &&
         isMonthlySectionActive &&
         !_wasMonthlySectionActive) {
-      setState(() => _trackerFuture = _loadTrackerMonth(_month));
+      setState(() {
+        _trackerFuture = _loadTrackerMonth(_month);
+      });
       _restoreComposerFocus();
     }
 
@@ -1067,7 +1069,9 @@ class _MonthlyScreenState extends ConsumerState<MonthlyScreen>
     final DateTime now = _now();
     final DateTime currentMonth = DateTime(now.year, now.month);
     if (_sameMonth(currentMonth, _month)) {
-      setState(() => _trackerFuture = _loadTrackerMonth(_month));
+      setState(() {
+        _trackerFuture = _loadTrackerMonth(_month);
+      });
       _scheduleMonthRollover();
       return;
     }

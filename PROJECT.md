@@ -18,11 +18,11 @@ This is Daymark's canonical living handoff. Read this file and `AGENTS.md` befor
 - Reflection and Rapid Logging UX merged via PR #36 as `main` commit `0b7c79c96a17f76479aa81ea7002ab7c0971028c`.
 - PR #36 Ready CI #482 passed on exact head `596b4ad678a2d08a9e7f5d60f1ef847eabd2abd9`; post-merge `main` CI #483 passed on exact squash SHA `0b7c79c96a17f76479aa81ea7002ab7c0971028c`.
 - Security/Open Export/session-lock work merged via PR #37 as current `main` commit `70a4206ccaf7d29f83a89c29f16abbb25baffcc7`. PR #37 Ready CI #484 passed on exact head `6e91e4a64c7e8589bac0f9df325c35571512ee9a`; post-merge `main` CI #485 passed on the squash SHA.
-- Current development branch: `feat/monthly-trackers`, PR #38 (Draft), implementing the explicitly documented optional Daymark Tracker adaptation and schema v2 from exact `main` `70a4206ccaf7d29f83a89c29f16abbb25baffcc7`.
+- Current development branch: `feat/monthly-trackers`, PR #38, implementing the explicitly documented optional Daymark Tracker adaptation and schema v2 from exact `main` `70a4206ccaf7d29f83a89c29f16abbb25baffcc7`.
 - The completed `release/1.0.0-alpha.2` branch is retained as historical reference/backup and is not an active integration line.
 - Runtime targets: Linux and Android.
 - Pinned toolchain: Flutter 3.47.2 / Dart 3.13.2.
-- Merge policy: ordinary technically Ready PRs may be squash-merged under standing user authorization after exact-head required CI and `merge-gate` are green; release/tag/artifact publication remains an explicit user-approval boundary.
+- Merge policy: a PR becomes eligible only after exact-head required CI and `merge-gate` are green; the user must explicitly approve each merge. Release/tag/artifact publication remains a separate explicit user-approval boundary.
 - Production Argon2id baseline: 19 MiB / 2 iterations / p=1 / 32-byte output.
 - Last release checkpoint: 2026-09-04 (America/Sao_Paulo).
 
@@ -45,7 +45,7 @@ Daymark is a faithful digital Bullet Journal, not a generic productivity suite.
 
 - `main` is the only permanent integration branch. Use short-lived branches and PRs.
 - PR titles use Conventional Commit form.
-- Ordinary technically Ready PRs may be squash-merged under the user's standing authorization only after exact-head required CI and `merge-gate` are green. Release/tag/artifact publication and promotion still require explicit user approval. Never enable auto-merge or publish implicitly.
+- The user makes every merge and release-promotion decision. Never enable auto-merge, merge implicitly, or publish implicitly.
 - The agent owns implementation design, Git/GitHub operations available through connected tooling, test design, command construction, and diagnosis of returned evidence.
 - When local execution is faster or GitHub Actions/API evidence is degraded, the user may act as an execution bridge using complete agent-provided command blocks.
 - Local execution does not transfer debugging responsibility to the user. The agent interprets failures and decides the next safe step.
@@ -73,7 +73,7 @@ For each substantive branch unless the change is too small to justify every step
 9. diagnose surprising results before changing production behavior;
 10. align documentation on the final branch head;
 11. use full Ready CI once the branch is reviewable;
-12. squash-merge an ordinary Ready PR only after exact-head CI is green under the standing authorization; stop for explicit user approval before any release/tag/artifact publication or promotion.
+12. after exact-head CI and `merge-gate` are green, stop for explicit user approval before squash-merging the PR; release/tag/artifact publication or promotion remains a separate explicit approval boundary.
 
 If GitHub Actions or API evidence is delayed, continue independent work where safe. `gh` is available on the primary local validation host as a fallback. Never infer a green result.
 
@@ -250,32 +250,79 @@ The local safety directory created during this migration should be retained thro
 - PR #34: accelerated post-alpha.2 execution-plan alignment. Squash `6e0784fc15d6321c341ca7eeae2169bf020beaf9`.
 - PR #35: source navigation and organization controls. Squash `49ff9494c49bd8ceafe0cf8198c63e452bc91d0b`.
 - PR #36: contextual reflection, Rapid Logging UX, immediate capture Undo, and centralized notices. Squash `0b7c79c96a17f76479aa81ea7002ab7c0971028c`.
+- PR #37: Open Export reauthentication/clipboard output plus immediate Android/Linux system-session locking. Squash `70a4206ccaf7d29f83a89c29f16abbb25baffcc7`.
 
 ## Next development state
 
-The first three accelerated post-alpha.2 branches are complete and merged:
+### Four-stage post-alpha.2 plan
 
-1. `chore/post-alpha2-alignment`;
-2. `feat/navigation-and-organization`;
-3. `feat/reflection-and-daily-ux`.
+The current accelerated plan is intentionally narrow:
 
-The fourth branch, `feat/security-and-next-release`, is active.
+1. Today + Inbox — complete;
+2. Review + Calibrate — complete;
+3. Monthly Trackers — active in PR #38;
+4. UI/UX polish — next after PR #38, after the functional Tracker slice is closed and manually validated.
 
-Completed in this branch:
+Release preparation is explicitly deferred by user direction and is not part of stage 4. Do not change application version/build numbers, create publication artifacts, create tags, or publish/promote a GitHub Release until the user explicitly changes that direction.
 
-- Open Export requires master-password reauthentication before any plaintext representation is created;
-- Open Export supports deliberate Markdown/JSON clipboard copy and file save with an explicit plaintext/clipboard warning;
-- manual Linux Open Export validation passed for wrong-password rejection, correct-password Copy/Save, and both formats;
-- Android listens for the system device-noninteractive transition and requests immediate Daymark lock;
-- Linux listens for the current systemd-logind session `Lock` signal and requests immediate Daymark lock;
-- both OS-level hooks use the same serialized journal-session lock path as manual/inactivity locking.
+### Current PR #38
 
-Before this branch is Ready:
+`feat/monthly-trackers` adds the optional Daymark Tracker adaptation while preserving the core Bullet Journal ownership model.
 
-- manually validate the Linux logind lock signal with the real application;
-- run focused tests, analyzer, Linux build, and Android build for the native lock hooks;
-- align the final branch diff and run exact-head Ready CI / `merge-gate`.
+The branch currently includes:
 
-Device-assisted/biometric unlock is explicitly deferred beyond this branch. The official Flutter `local_auth` stack does not support Linux, and biometric authentication alone is not a secure substitute for device-bound wrapping of Daymark's random journal key. Daymark will not store/replay the master password merely to advertise biometric unlock.
+- persisted finite Trackers and explicit `+1 / -1` daily marks;
+- additive database schema v2 with a tested migration from published schema v1;
+- five fixed overlapping visual slots with stable color identity;
+- responsive Monthly Tracker presentation;
+- deliberate creation, daily marking, and early ending;
+- compact active-Tracker controls in Today;
+- historical read-only Tracker viewing;
+- Open Export format v2 with Tracker periods and explicit marks;
+- English and Brazilian Portuguese localization;
+- explicit provenance and method-fidelity documentation in `docs/TRACKERS.md`.
 
-After this branch is merged, release preparation may begin from the resulting current `main`. Daymark remains alpha; the next prerelease must receive a new version/build number and must not be tagged, built for publication, or promoted to GitHub Release without explicit user approval.
+### PR #38 validation and repair history
+
+Ready CI #500 on head `98e732675650ce4c479904b051208a6815e667c5` passed dependency review, Linux build, and Android build, but `quality` failed during the complete Flutter suite: 181 tests passed and 20 presentation tests failed.
+
+The primary #500 defect was test isolation. Today and Monthly had gained `trackerDataSourceProvider`, while older isolated widget tests overrode only their original presentation data sources. The real Tracker provider requires an unlocked journal session, so otherwise unrelated widget tests entered a real session boundary.
+
+The repair added `EmptyTrackerDataSource` and injected it into the affected Today, Monthly, Collection-migration, and Collection-reference presentation harnesses. Exact repair head `8e52432193ac9043615b680f19292d486b44212e` then ran Ready CI #506.
+
+CI #506 passed:
+
+- dependency review;
+- localization generation;
+- Drift generation and migration-snapshot verification;
+- generated-artifact reproducibility;
+- pinned Dart formatting;
+- static analysis;
+- Linux debug build;
+- Android debug APK build.
+
+Its complete Flutter suite improved to 198 passing tests and 3 failures. The first failure identified the remaining production defect: Tracker refresh during retained Today activation used a `setState` callback whose assignment expression returned a `Future`. The later Semantics failure and ten-minute test timeout were cascading test-environment contamination after that first failed Linux widget test left a foundation debug override active.
+
+PR #38 was returned to Draft after CI #506 so this final repair could be validated without repeatedly running the full Ready tier.
+
+The current repair must:
+
+- keep Tracker refresh work outside any asynchronous `setState` callback in both Today and Monthly;
+- make Linux widget-test platform override cleanup failure-safe;
+- pass pinned formatting and analysis;
+- pass focused Today/Monthly widget tests;
+- pass the complete Flutter suite;
+- update this checkpoint on the same reviewed branch head;
+- return PR #38 to Ready only after the implementation is coherent;
+- pass exact-head full Ready CI and `merge-gate`;
+- merge only after explicit user approval.
+
+### Stage 4 boundary
+
+After PR #38 is merged, proceed to UI/UX polish.
+
+This final stage should review the application as one coherent journal experience on Linux and Android: spacing, hierarchy, responsiveness, keyboard/focus behavior, accessibility, visual consistency, interaction friction, and restrained polish while preserving Daymark's digital-minimalism doctrine.
+
+The stage must not reopen stable domain, persistence, or security architecture merely for cosmetic cleanup. Genuine defects discovered during polish may still be fixed at their owning layer.
+
+Device-assisted/biometric unlock remains explicitly deferred. Release preparation also remains explicitly deferred.

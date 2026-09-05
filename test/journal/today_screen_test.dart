@@ -206,6 +206,9 @@ void main() {
   testWidgets('Linux composer autofocuses and Ctrl+Enter captures', (
     tester,
   ) async {
+    addTearDown(() {
+      debugDefaultTargetPlatformOverride = null;
+    });
     debugDefaultTargetPlatformOverride = TargetPlatform.linux;
 
     final _MemoryTodayJournal dataSource = _MemoryTodayJournal();
@@ -230,6 +233,9 @@ void main() {
   testWidgets('Linux composer regains focus when Today becomes active', (
     tester,
   ) async {
+    addTearDown(() {
+      debugDefaultTargetPlatformOverride = null;
+    });
     debugDefaultTargetPlatformOverride = TargetPlatform.linux;
 
     final ValueNotifier<int> sectionIndex = ValueNotifier<int>(0);
