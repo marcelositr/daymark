@@ -22,9 +22,9 @@ Normal development is now limited to:
 
 New product features, additional platforms, additional product languages, cloud/account systems, biometric/device-assisted unlock, recovery-secret UX, AI features, collaboration, dashboards, richer planner abstractions, and other roadmap expansion are not planned while this freeze is active.
 
-The latest published prerelease is [`v1.0.0-alpha.2`](https://github.com/marcelositr/daymark/releases/tag/v1.0.0-alpha.2), published on 2026-09-04 for Linux x64 and Android.
+The latest published prerelease is [`v1.0.0-alpha.3`](https://github.com/marcelositr/daymark/releases/tag/v1.0.0-alpha.3), published on 2026-09-06 for Linux x64 and Android.
 
-The current release-stabilization branch prepares **`v1.0.0-alpha.3` / `1.0.0-alpha.3+3`** from the completed product baseline. Alpha.3 does not add a new feature stage; it packages and validates the completed post-alpha.2 work.
+Alpha.3 packages the completed post-alpha.2 product line. Daymark has returned to `main` maintenance mode; the next release version will be chosen from observed stabilization, bug-fix, security, compatibility, or platform-maintenance needs rather than a feature roadmap.
 
 ## Current product
 
