@@ -8,7 +8,7 @@ This file is for user-visible behavior, data compatibility, security, packaging,
 
 No post-alpha.3 changes are staged yet. The functional product scope is frozen; future entries are expected to be maintenance fixes rather than new features unless the maintainer explicitly reverses that policy.
 
-## [1.0.0-alpha.3] - 2026-09-05
+## [1.0.0-alpha.3] - 2026-09-06
 
 Feature-complete Daymark prerelease consolidating the post-alpha.2 product line for Linux and Android.
 

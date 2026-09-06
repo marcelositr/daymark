@@ -4,22 +4,20 @@ This is Daymark's canonical living handoff. Read this file and `AGENTS.md` befor
 
 ## Current state
 
-- Phase: **feature-complete prerelease stabilization and maintenance**.
+- Phase: **feature-complete prerelease maintenance**.
 - Integration branch: `main` only.
-- Current integrated `main` baseline: `a08c5f8f1e2bc340801f9e3f33e9353d6cb9122b`, squash merge of PR #41 `feat(app): add About and support entry points`.
-- Active release-stabilization branch: `release/1.0.0-alpha.3`, created from that exact `main` baseline.
-- Release candidate application version: `1.0.0-alpha.3+3`.
-- Planned release tag: `v1.0.0-alpha.3`.
-- Latest published release remains `v1.0.0-alpha.2` / `1.0.0-alpha.2+2` until alpha.3 is explicitly promoted and published.
-- Published alpha.2 source commit: `5c073c6bbbe298c15f975740a5499f2b9a0c98ba`.
-- Alpha.3 validated binary build-source head: `e19ab982d2898cae223e396a1c2e4e26fc0446b0`; later documentation-only release commits must not be presented as the binary build source.
-- Alpha.3 local generated-source/formatter/analyzer/full Flutter suite passed on that build-source head.
-- Alpha.3 Linux release build and complete maintainer manual smoke passed.
-- Alpha.3 Android release APK built and verified with the new dedicated release certificate recorded below.
-- A retained alpha.2 encrypted backup restored successfully into a clean alpha.3 Android installation and remained readable after force-stop/relaunch, proving the supported alpha.2 -> alpha.3 portable migration path.
+- Current integrated `main` baseline: `f09665a76e0eb7c068a02d9e4513c53bd2b48481`, squash merge of PR #42 `build(release): prepare 1.0.0-alpha.3`.
+- Latest published prerelease: `v1.0.0-alpha.3` / `1.0.0-alpha.3+3`, published on 2026-09-06 for Linux x64 and Android.
+- Published alpha.3 release source commit: `f09665a76e0eb7c068a02d9e4513c53bd2b48481`.
+- Alpha.3 validated binary build-source head: `e19ab982d2898cae223e396a1c2e4e26fc0446b0`; later documentation/release commits are not presented as the binary build source.
+- Alpha.3 Linux x64 archive SHA-256: `bf11b1a9df952fdc3d4ce333490872a1b885dab2a56a56b6ff1062bd6b9d0189`.
+- Alpha.3 Android APK SHA-256: `007f23c006282cb3eb9a7a2c62a97018631e36641d1539278436ba8d4ee41199`.
+- Alpha.3 Android release certificate SHA-256: `77bca227f0cd95eb9e3c5a2c24902ba9d20e296dbdba9fde87d024cd0febb311`.
+- Alpha.3 generated-source/formatter/analyzer/full Flutter suite, Linux release validation, Android release validation, and alpha.2 encrypted Backup -> alpha.3 Restore migration validation passed before publication.
 - Runtime targets are **Linux and Android**.
 - Pinned toolchain: Flutter 3.47.2 / Dart 3.13.2.
 - Production Argon2id baseline: 19 MiB / 2 iterations / p=1 / 32-byte output.
+- `release/1.0.0-alpha.3` is retained as historical release evidence; there is no active release-stabilization branch.
 - Completed release and feature branches are retained as historical reference/backup and are not deleted as routine cleanup.
 
 ## Product scope is frozen
@@ -55,9 +53,9 @@ A requested change that alters what Daymark *does* rather than fixing or preserv
 
 Release progression may continue even though feature development is frozen. Alpha, beta, RC, stable, and later maintenance releases are validation/stability milestones, not permission to reopen feature scope.
 
-The current alpha.3 goal is to publish the completed post-alpha.2 product line as a validated prerelease. No feature may be added to the alpha.3 release branch. Only release blockers or maintenance corrections discovered during validation may change its production behavior.
+Alpha.3 has been published and the release-stabilization cycle is complete.
 
-After alpha.3, development returns to `main` in maintenance mode. The next release version is chosen from actual stabilization/bug-fix needs, not from a feature roadmap.
+Development is back on `main` in maintenance mode. The next release version is chosen from actual stabilization, bug-fix, security, compatibility, packaging, or supported-platform needs, not from a feature roadmap.
 
 ## Product doctrine
 
@@ -190,46 +188,29 @@ Security maintenance may strengthen implementation safety when required by a con
 
 The private signing key corresponding to the alpha.2 certificate was not recoverable during alpha.3 release preparation. The published alpha.2 artifact and certificate remain immutable historical evidence, but alpha.3 cannot be an Android install-over update of that signing lineage.
 
-## Alpha.3 release preparation
+## Published alpha.3 checkpoint
 
-The alpha.3 release branch freezes the current product as `1.0.0-alpha.3+3`.
-
-Validated alpha.3 candidate identity built from exact source head `e19ab982d2898cae223e396a1c2e4e26fc0446b0`:
-
+- application version: `1.0.0-alpha.3+3`;
+- annotated tag: `v1.0.0-alpha.3`;
+- published release source commit: `f09665a76e0eb7c068a02d9e4513c53bd2b48481`;
+- validated binary build-source head: `e19ab982d2898cae223e396a1c2e4e26fc0446b0`;
 - Linux x64 archive SHA-256: `bf11b1a9df952fdc3d4ce333490872a1b885dab2a56a56b6ff1062bd6b9d0189`;
 - signed Android APK SHA-256: `007f23c006282cb3eb9a7a2c62a97018631e36641d1539278436ba8d4ee41199`;
-- alpha.3-and-later Android release certificate SHA-256: `77bca227f0cd95eb9e3c5a2c24902ba9d20e296dbdba9fde87d024cd0febb311`;
-- retained alpha.2 encrypted backup used for compatibility validation SHA-256: `d6d6b7f94b869d95a61369ff675ba96dcc51633917995734e68dfac46628a23f`.
+- Android release certificate SHA-256: `77bca227f0cd95eb9e3c5a2c24902ba9d20e296dbdba9fde87d024cd0febb311`;
+- retained alpha.2 encrypted backup used for compatibility validation SHA-256: `d6d6b7f94b869d95a61369ff675ba96dcc51633917995734e68dfac46628a23f`;
+- GitHub Release published as a prerelease on 2026-09-06 with Linux, Android, and `SHA256SUMS` assets.
 
 Release-critical compatibility result:
 
 1. direct Android alpha.2 -> alpha.3 install-over is **not supported** because the alpha.2 private signing key was unavailable and alpha.3 establishes a new dedicated signing lineage;
-2. the supported alpha.2 -> alpha.3 Android migration path is explicit encrypted Backup / uninstall alpha.2 / clean-install alpha.3 / Restore using the existing master password;
-3. a retained real alpha.2 encrypted backup was copied to a physical Android device, restored into a clean alpha.3 release installation, and the restored journal remained usable after force-stop/relaunch;
-4. schema-v1-to-v2 compatibility therefore remains protected by the portable encrypted backup boundary plus the tested additive Drift migration path rather than by install-over for this one signing-lineage transition;
-5. alpha.3 Linux release behavior was manually rechecked by the maintainer across the complete release checklist;
-6. alpha.3 Android APK signing was verified with `apksigner` as one RSA-4096 signer using certificate `77bca227f0cd95eb9e3c5a2c24902ba9d20e296dbdba9fde87d024cd0febb311`;
-7. the alpha.3 signing keystore is local-only and backed up outside the repository; its secrets are not repository data.
+2. the supported alpha.2 -> alpha.3 Android migration path is encrypted Backup / uninstall alpha.2 / clean-install alpha.3 / Restore using the existing master password;
+3. a retained real alpha.2 encrypted backup restored successfully into a clean alpha.3 installation on physical Android hardware and remained usable after force-stop/relaunch;
+4. schema-v1-to-v2 compatibility remains protected by the portable encrypted backup boundary plus the retained additive Drift migration tests;
+5. Linux and Android release validation completed successfully before publication;
+6. the alpha.3 signing keystore remains local-only and backed up outside the repository;
+7. later Android releases intended for install-over upgrades must preserve the alpha.3 signing lineage unless an explicit platform-supported signing migration is deliberately adopted, tested, and documented.
 
-From alpha.3 onward, Android maintenance releases intended for install-over upgrades must preserve the alpha.3 signing lineage unless a future platform-supported migration is explicitly required and documented.
-
-The release branch may receive only fixes required by this validation. No product expansion is permitted.
-
-Before promotion require:
-
-- version/docs/changelog aligned;
-- generated-source/formatter/analyzer/full test suite green;
-- Linux release build and smoke test green;
-- signed Android release build and physical-device smoke/restore test green;
-- alpha.2 encrypted backup -> alpha.3 restore/schema-v2 compatibility green;
-- Open Export reauthentication/save/copy checks green;
-- final Linux/Android artifact identities recorded;
-- alpha.3 Android signing identity recorded and preserved for later install-over releases;
-- dependency/security review complete;
-- no secrets/local-only material committed;
-- exact Ready PR `merge-gate` green;
-- explicit user approval to merge;
-- explicit user approval to create tag/GitHub Release and publish artifacts.
+The published tag and artifacts are immutable release evidence. Future maintenance starts from `main`.
 
 ## Merged product baseline
 
@@ -262,6 +243,8 @@ Before promotion require:
 
 ## Next development state
 
-The only active work is alpha.3 release stabilization.
+Daymark is back on `main` in maintenance mode after publication of `v1.0.0-alpha.3`.
 
-After publication, Daymark returns to maintenance mode. There is no feature backlog to resume. New work begins from observed bugs, vulnerabilities, compatibility failures, platform/toolchain breakage, release/packaging defects, or documentation inaccuracies.
+There is no feature backlog to resume. New work begins only from observed bugs, vulnerabilities, compatibility failures, supported platform/toolchain breakage, release/packaging defects, accessibility/localization corrections, or documentation inaccuracies.
+
+No next release is currently selected. A beta, RC, stable release, or another prerelease is chosen only when actual validation or maintenance needs justify it.
