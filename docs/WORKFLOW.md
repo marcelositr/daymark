@@ -306,17 +306,21 @@ For every tagged prerelease or stable release:
 
 `1.0.0-alpha.3+3` is the first public release candidate containing schema v2 and the completed post-alpha.2 product baseline.
 
+For this specific transition, the alpha.2 private Android signing key is unavailable. Therefore **direct alpha.2 -> alpha.3 install-over is not a supported claim** and must not be required by the release gate.
+
 Before publishing alpha.3, specifically prove:
 
-- direct install-over upgrade from the public release-signed alpha.2 lineage using the same Android signing certificate;
-- preservation/migration of representative alpha.2 schema-v1 journal data to schema v2;
-- unlock/restart persistence after migration;
-- Tracker creation/marking after migration;
-- alpha.2 encrypted backup restore into alpha.3;
-- Backup/Restore and Open Export behavior on alpha.3;
-- Linux release bundle smoke test;
-- signed Android physical-device smoke test;
-- exact artifact SHA-256 checksums.
+- the signed alpha.3 APK uses the recorded alpha.3 release certificate and is not debug-signed;
+- the supported alpha.2 -> alpha.3 path is documented as encrypted Backup / uninstall alpha.2 / clean-install alpha.3 / Restore;
+- a real alpha.2 encrypted backup restores successfully into a clean alpha.3 installation;
+- representative alpha.2 schema-v1 journal data is preserved/migrated to schema v2 through that restore path plus the retained schema migration tests;
+- unlock/restart persistence remains correct after restore/migration;
+- Tracker creation/marking works after migration;
+- Backup/Restore and Open Export behavior remain correct on alpha.3;
+- Linux release bundle smoke test passes;
+- signed Android physical-device smoke test passes;
+- exact artifact SHA-256 checksums and exact binary build-source head are recorded;
+- the new alpha.3 signing lineage is backed up and becomes the install-over identity for later Android releases.
 
 No feature work belongs in this release branch.
 
