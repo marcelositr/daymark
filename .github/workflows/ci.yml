@@ -173,6 +173,12 @@ jobs:
       - name: Resolve locked dependencies
         run: flutter pub get --enforce-lockfile
 
+      - name: Generate Android launcher icons
+        run: dart run icons_launcher:create
+
+      - name: Reject stale Android launcher icons
+        run: git diff --exit-code -- android/app/src/main/res/mipmap-*
+
       - name: Build Android debug APK
         run: flutter build apk --debug
 
