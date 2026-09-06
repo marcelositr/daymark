@@ -244,10 +244,10 @@ The beta.1 promotion gate must prove:
 10. exact Ready PR head passes required CI and `merge-gate`;
 11. publication occurs only after explicit maintainer promotion approval.
 
-Local validation evidence gathered on 2026-09-06 from branch baseline `01bb4a439b336c16a9017aaac038122ab468c8a6` with the current uncommitted beta.1 documentation, packaging, Wiki, CI, and Spanish-localization maintenance changes present:
+Local validation evidence gathered on 2026-09-06 for beta.1 implementation commit `70885b9a7f9906d0a54d696b43dc2cf18a966931`:
 
 - locked dependency resolution, localization generation, Drift generation, migration snapshot verification, and generated-artifact drift check passed;
-- pinned formatting check passed with 136 files unchanged;
+- pinned formatting check passed with no changes required;
 - `flutter analyze` passed with no issues;
 - the complete Flutter suite passed with 214 tests, including Spanish catalog parity, critical security-language assertions, general Spanish regional-locale resolution, and unsupported-locale English fallback;
 - Linux debug and release builds passed, including a release rebuild after Spanish localization generation;
@@ -258,18 +258,16 @@ Local validation evidence gathered on 2026-09-06 from branch baseline `01bb4a439
 - the backup recovery test emitted Drift's expected debug warning because it deliberately keeps the source database open while validating a separately restored snapshot; both databases are distinct and explicitly closed;
 - the Android toolchain emitted non-blocking SDK XML-version and unused `CupertinoIcons` font warnings; no `CupertinoIcons` reference exists in Daymark source, tests, or dependency declarations.
 
-Pre-PR candidate artifacts were regenerated from this uncommitted working-tree state after Spanish localization was added:
+Candidate artifacts regenerated from exact beta.1 implementation commit `70885b9a7f9906d0a54d696b43dc2cf18a966931`:
 
-- Debian `amd64` candidate SHA-256: `8ab86fbb84bbfc6241bf1ef703e1aa9b0a55f464e53272cd66ec231ec168e52a`;
-- AppImage x86-64 candidate SHA-256: `32e86525f9738f1dd109211bc941487ff66fae535c797478e3ae9111e7676387`;
+- Debian `amd64` candidate SHA-256: `41ae8d09bb4efcb2b7055a034809263331f4ed25879c52d4a5455f475231c301`;
+- AppImage x86-64 candidate SHA-256: `bcaad4e3d777cb8d13cd4217ff28009eb60abc69147422125cb1806daf0ac2dc`;
 - signed Android APK candidate SHA-256: `4ec6dd5166fc1ca343b4080b01d12c9e70bf6aabb565a83b23614169cde0aab9`;
 - Android signer certificate SHA-256 remains `77bca227f0cd95eb9e3c5a2c24902ba9d20e296dbdba9fde87d024cd0febb311`.
 
-These hashes are diagnostic pre-PR evidence only and are not release identities because the changes do not yet have a committed source head. Regenerate and record final artifact hashes from the exact committed build-source head.
-
 This local evidence does not replace physical-device install-over/behavior validation, Linux smoke validation, final artifact identity recording, or exact final-head Ready CI and `merge-gate`.
 
-No new product capability belongs in this branch.
+No product capability beyond the maintainer-approved general Spanish localization belongs in this branch.
 
 ## Merged product baseline
 
@@ -308,4 +306,4 @@ Daymark is currently validating `v1.0.0-beta.1` on `release/1.0.0-beta.1` after 
 
 There is no feature backlog to resume. New work begins only from observed bugs, vulnerabilities, compatibility failures, supported platform/toolchain breakage, release/packaging defects, accessibility/localization corrections, or documentation inaccuracies.
 
-The selected next release is `v1.0.0-beta.1`. The next concrete step is to review and commit the documentation/packaging corrections, open the release PR, and continue the beta.1 gate with installed `.deb` and AppImage smoke checks plus physical Android `alpha.3 -> beta.1` install-over validation. No merge, tag, promotion, or publication is authorized until the required exact-head evidence is complete and the maintainer explicitly approves it.
+The selected next release is `v1.0.0-beta.1`. The next concrete step is to open the release PR and continue the beta.1 gate with installed `.deb` and AppImage smoke checks plus physical Android `alpha.3 -> beta.1` install-over validation. No merge, tag, promotion, or publication is authorized until the required exact-head evidence is complete and the maintainer explicitly approves it.
