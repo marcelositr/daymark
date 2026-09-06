@@ -223,6 +223,7 @@ The published tag and artifacts are immutable release evidence. Future maintenan
 - candidate application version: `1.0.0-beta.1+4`;
 - planned annotated tag: `v1.0.0-beta.1`;
 - active branch: `release/1.0.0-beta.1`;
+- Draft PR: #44 `build(release): prepare 1.0.0-beta.1`, opened from head `6bf9ff8b18dabb5e5913ba5d628f8d1fb17e7738`;
 - release base: `c5879d147958da33eec20f0332cd96e38693788e`;
 - latest published prerelease remains `v1.0.0-alpha.3`;
 - schema remains v2; beta.1 does not introduce a schema change;
@@ -306,4 +307,4 @@ Daymark is currently validating `v1.0.0-beta.1` on `release/1.0.0-beta.1` after 
 
 There is no feature backlog to resume. New work begins only from observed bugs, vulnerabilities, compatibility failures, supported platform/toolchain breakage, release/packaging defects, accessibility/localization corrections, or documentation inaccuracies.
 
-The selected next release is `v1.0.0-beta.1`. The next concrete step is to open the release PR and continue the beta.1 gate with installed `.deb` and AppImage smoke checks plus physical Android `alpha.3 -> beta.1` install-over validation. No merge, tag, promotion, or publication is authorized until the required exact-head evidence is complete and the maintainer explicitly approves it.
+The selected next release is `v1.0.0-beta.1`. Draft PR #44 is open. The next concrete step is to continue the beta.1 gate with installed `.deb` and AppImage smoke checks plus physical Android `alpha.3 -> beta.1` install-over validation, then move the exact final PR head to Ready for required CI. No merge, tag, promotion, or publication is authorized until the required exact-head evidence is complete and the maintainer explicitly approves it.
