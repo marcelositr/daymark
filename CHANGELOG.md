@@ -44,6 +44,8 @@ Feature-complete Daymark prerelease consolidating the post-alpha.2 product line 
 - Feature Request intake is removed. Public Issues are for bugs; security vulnerabilities use the private/security-policy path.
 - Linux and Android remain the supported product platforms, and English plus Portuguese (Brazil) remain the supported product languages. Additional platforms/languages are not roadmap items under the freeze.
 - Device-assisted/biometric unlock, recovery-secret UX, cloud/accounts/network features, AI features, collaboration, richer planner/search/collection systems, automatic backup scheduling, attachments, dashboards, gamification, and freeform editing are explicitly not planned under the frozen scope.
+- Android alpha.2 -> alpha.3 migration is performed through encrypted Backup / uninstall alpha.2 / clean-install alpha.3 / Restore because the alpha.2 private signing key was not recoverable during alpha.3 release preparation. Direct install-over between those two published lineages is not supported.
+- Alpha.3 establishes a new dedicated Android signing lineage that must be preserved by later Android releases intended to install over alpha.3.
 
 ### Security
 
@@ -52,11 +54,28 @@ Feature-complete Daymark prerelease consolidating the post-alpha.2 product line 
 - The Open Export warning explicitly covers both saved plaintext files and the system clipboard, including clipboard-manager retention risk.
 - Android device non-interactive events and Linux systemd-logind session-lock signals request immediate Daymark lock through the same serialized journal-session path as manual and inactivity locking.
 - The portable master-password model remains Daymark's unlock security model; device-assisted/biometric unlock is intentionally not planned rather than being left as unfinished release work.
+- Android release signing continues to fail closed when local release-signing configuration is absent. The alpha.3 candidate uses one RSA-4096 signer with certificate SHA-256 `77bca227f0cd95eb9e3c5a2c24902ba9d20e296dbdba9fde87d024cd0febb311`; signing secrets remain local-only and outside Git.
 
 ### Compatibility
 
-- Schema v1 from public `v1.0.0-alpha.2` migrates additively to schema v2 for Trackers; alpha.3 release validation must prove preservation of representative alpha.2 journal data through direct signed install-over and encrypted-backup restore paths.
-- Published key-envelope interpretation, 48-byte journal-key serialization, encrypted backup boundary, Open Export versioning, and Android signing identity remain compatibility-sensitive.
+- Schema v1 from public `v1.0.0-alpha.2` migrates additively to schema v2 for Trackers.
+- The supported alpha.2 -> alpha.3 Android transition is encrypted Backup / uninstall / clean install / Restore, not direct install-over, because the alpha.2 private signing key is unavailable.
+- A retained alpha.2 encrypted backup restored successfully into a clean alpha.3 physical-Android installation and remained readable after force-stop/relaunch, validating the portable migration boundary and schema-v1-to-v2 path.
+- Published key-envelope interpretation, 48-byte journal-key serialization, encrypted backup boundary, and Open Export versioning remain compatibility-sensitive.
+- From alpha.3 onward, Android signing identity is also compatibility-sensitive for install-over upgrades and must preserve the alpha.3 certificate unless an explicit platform-supported signing migration is required and validated.
+
+### Release validation
+
+Validated alpha.3 candidate binaries were built from exact source head `e19ab982d2898cae223e396a1c2e4e26fc0446b0` before later documentation-only evidence commits.
+
+- Linux x64 archive SHA-256: `bf11b1a9df952fdc3d4ce333490872a1b885dab2a56a56b6ff1062bd6b9d0189`.
+- Signed Android APK SHA-256: `007f23c006282cb3eb9a7a2c62a97018631e36641d1539278436ba8d4ee41199`.
+- Android release certificate SHA-256: `77bca227f0cd95eb9e3c5a2c24902ba9d20e296dbdba9fde87d024cd0febb311`.
+- Retained alpha.2 encrypted backup used for physical migration validation SHA-256: `d6d6b7f94b869d95a61369ff675ba96dcc51633917995734e68dfac46628a23f`.
+- Generated sources, formatter, analyzer, and full Flutter test suite passed on the binary build-source head.
+- Linux release behavior was manually rechecked across the maintainer's full release checklist.
+- The alpha.3 APK was verified with `apksigner` and installed successfully on physical Android hardware.
+- The retained alpha.2 encrypted backup restored successfully into the clean alpha.3 installation; the restored journal remained usable after force-stop and relaunch.
 
 ## [1.0.0-alpha.2] - 2026-09-04
 
