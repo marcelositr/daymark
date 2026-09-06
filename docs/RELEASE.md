@@ -17,6 +17,45 @@ A release branch is a stabilization boundary, not a feature branch. Release prep
 
 No new product capability belongs in a release branch while the freeze is active.
 
+## Active beta.1 release preparation
+
+Current candidate:
+
+- application version: `1.0.0-beta.1+4`;
+- planned annotated tag: `v1.0.0-beta.1`;
+- release branch: `release/1.0.0-beta.1`;
+- release base: `c5879d147958da33eec20f0332cd96e38693788e`;
+- release name: `Daymark 1.0.0-beta.1`;
+- GitHub Release type: prerelease;
+- target platforms: Linux x64 and Android;
+- Android build number/version code: `4`;
+- schema: v2, unchanged from alpha.3.
+
+Beta.1 is a stability promotion of the already feature-complete alpha.3 product line. No product capability is added by this release preparation.
+
+Until beta.1 is explicitly promoted and published, the latest public prerelease remains `v1.0.0-alpha.3`.
+
+### Beta.1 compatibility gate
+
+The alpha.3 signing identity is now the maintained Android upgrade lineage. Beta.1 must therefore prove the normal direct-upgrade path that was unavailable for alpha.2 -> alpha.3.
+
+Before promotion require:
+
+1. signed beta.1 APK uses certificate SHA-256 `77bca227f0cd95eb9e3c5a2c24902ba9d20e296dbdba9fde87d024cd0febb311`;
+2. beta.1 installs directly over published alpha.3 without uninstalling alpha.3;
+3. the existing alpha.3 journal opens with the same master password after upgrade;
+4. journal data and schema-v2 Tracker data remain intact;
+5. force-stop/relaunch preserves the upgraded journal;
+6. Today, Monthly, Future, Collections, Search, Index, Reflection, Task states, and Tracker operations remain correct;
+7. encrypted Backup / Restore remains correct;
+8. Open Export password reauthentication plus JSON/Markdown Save/Copy remains correct;
+9. Appearance and About/version identity remain correct;
+10. Linux release bundle passes the maintainer release smoke test;
+11. exact binary build-source head and artifact SHA-256 identities are recorded.
+
+The upgrade test must use controlled data and must not expose signing secrets or real private journal content.
+
+
 ## Latest published release
 
 Current published prerelease:
@@ -203,11 +242,11 @@ Do not expose real private journal content or signing secrets in release evidenc
 
 ## Artifact names
 
-Alpha.3 distributed artifacts use:
+Beta.1 candidate artifacts use:
 
 ```text
-daymark-1.0.0-alpha.3-linux-x64.tar.gz
-daymark-1.0.0-alpha.3-android.apk
+daymark-1.0.0-beta.1-linux-x64.tar.gz
+daymark-1.0.0-beta.1-android.apk
 SHA256SUMS
 ```
 

@@ -6,7 +6,7 @@ This is Daymark's canonical living handoff. Read this file and `AGENTS.md` befor
 
 - Phase: **feature-complete prerelease maintenance**.
 - Integration branch: `main` only.
-- Current integrated `main` baseline: `f09665a76e0eb7c068a02d9e4513c53bd2b48481`, squash merge of PR #42 `build(release): prepare 1.0.0-alpha.3`.
+- Current integrated `main` baseline: `c5879d147958da33eec20f0332cd96e38693788e`, squash merge of PR #43 `docs: record alpha.3 publication`.
 - Latest published prerelease: `v1.0.0-alpha.3` / `1.0.0-alpha.3+3`, published on 2026-09-06 for Linux x64 and Android.
 - Published alpha.3 release source commit: `f09665a76e0eb7c068a02d9e4513c53bd2b48481`.
 - Alpha.3 validated binary build-source head: `e19ab982d2898cae223e396a1c2e4e26fc0446b0`; later documentation/release commits are not presented as the binary build source.
@@ -17,7 +17,11 @@ This is Daymark's canonical living handoff. Read this file and `AGENTS.md` befor
 - Runtime targets are **Linux and Android**.
 - Pinned toolchain: Flutter 3.47.2 / Dart 3.13.2.
 - Production Argon2id baseline: 19 MiB / 2 iterations / p=1 / 32-byte output.
-- `release/1.0.0-alpha.3` is retained as historical release evidence; there is no active release-stabilization branch.
+- `release/1.0.0-alpha.3` is retained as historical release evidence.
+- Active release-stabilization branch: `release/1.0.0-beta.1`, created from `main` commit `c5879d147958da33eec20f0332cd96e38693788e`.
+- Current release candidate application version: `1.0.0-beta.1+4`.
+- Planned release tag: `v1.0.0-beta.1`.
+- Latest published prerelease remains `v1.0.0-alpha.3` until beta.1 is explicitly promoted and published.
 - Completed release and feature branches are retained as historical reference/backup and are not deleted as routine cleanup.
 
 ## Product scope is frozen
@@ -53,9 +57,11 @@ A requested change that alters what Daymark *does* rather than fixing or preserv
 
 Release progression may continue even though feature development is frozen. Alpha, beta, RC, stable, and later maintenance releases are validation/stability milestones, not permission to reopen feature scope.
 
-Alpha.3 has been published and the release-stabilization cycle is complete.
+Alpha.3 has been published and its release-stabilization cycle is complete.
 
-Development is back on `main` in maintenance mode. The next release version is chosen from actual stabilization, bug-fix, security, compatibility, packaging, or supported-platform needs, not from a feature roadmap.
+The maintainer has approved promotion work for `v1.0.0-beta.1`. The active beta.1 release branch is a stabilization and release-validation boundary only; product scope remains frozen and no feature expansion is permitted.
+
+Beta.1 is intended to promote the existing feature-complete product line after additional compatibility, platform, persistence, signing, and release validation.
 
 ## Product doctrine
 
@@ -212,6 +218,33 @@ Release-critical compatibility result:
 
 The published tag and artifacts are immutable release evidence. Future maintenance starts from `main`.
 
+## Active beta.1 release preparation
+
+- candidate application version: `1.0.0-beta.1+4`;
+- planned annotated tag: `v1.0.0-beta.1`;
+- active branch: `release/1.0.0-beta.1`;
+- release base: `c5879d147958da33eec20f0332cd96e38693788e`;
+- latest published prerelease remains `v1.0.0-alpha.3`;
+- schema remains v2; beta.1 does not introduce a schema change;
+- Linux and Android remain the only release targets;
+- English and Portuguese (Brazil) remain the only supported product languages;
+- Android beta.1 must preserve the alpha.3 signing certificate SHA-256 `77bca227f0cd95eb9e3c5a2c24902ba9d20e296dbdba9fde87d024cd0febb311`.
+
+The beta.1 promotion gate must prove:
+
+1. complete generated-source, formatting, analyzer, and Flutter test validation;
+2. Linux release build and maintainer smoke validation;
+3. signed Android release build using the exact alpha.3 signing lineage;
+4. direct Android `alpha.3 -> beta.1` install-over succeeds without uninstalling alpha.3;
+5. the existing alpha.3 journal remains unlockable with the same master password after install-over;
+6. journal data, schema-v2 Trackers, Task states, migration lineage, appearance, and persistence remain intact after upgrade and force-stop/relaunch;
+7. encrypted Backup / Restore remains valid on beta.1;
+8. Open Export reauthentication plus JSON/Markdown Save/Copy remains valid;
+9. exact release artifact SHA-256 values and exact binary build-source head are recorded;
+10. exact Ready PR head passes required CI and `merge-gate`;
+11. publication occurs only after explicit maintainer promotion approval.
+
+No new product capability belongs in this branch.
 ## Merged product baseline
 
 - PR #13: encrypted create/unlock/manual lock plus Today.
@@ -240,10 +273,12 @@ The published tag and artifacts are immutable release evidence. Future maintenan
 - PR #38: optional Monthly Trackers and schema v2, squash `0c77e689e8feed8bdd5245f86b26774d47289d12`.
 - PR #40: final branding/UI/UX/accessibility polish, squash `740120052b56f155a136ac640cbaa1831cdd1e74`.
 - PR #41: About/support identity and structured issue entry points, squash `a08c5f8f1e2bc340801f9e3f33e9353d6cb9122b`.
+- PR #42: alpha.3 release preparation and frozen release baseline, squash `f09665a76e0eb7c068a02d9e4513c53bd2b48481`.
+- PR #43: post-alpha.3 publication-state documentation alignment, squash `c5879d147958da33eec20f0332cd96e38693788e`.
 
 ## Next development state
 
-Daymark is back on `main` in maintenance mode after publication of `v1.0.0-alpha.3`.
+Daymark is currently validating `v1.0.0-beta.1` on `release/1.0.0-beta.1` after publication of `v1.0.0-alpha.3`.
 
 There is no feature backlog to resume. New work begins only from observed bugs, vulnerabilities, compatibility failures, supported platform/toolchain breakage, release/packaging defects, accessibility/localization corrections, or documentation inaccuracies.
 

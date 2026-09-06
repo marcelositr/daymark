@@ -24,7 +24,7 @@ New product features, additional platforms, additional product languages, cloud/
 
 The latest published prerelease is [`v1.0.0-alpha.3`](https://github.com/marcelositr/daymark/releases/tag/v1.0.0-alpha.3), published on 2026-09-06 for Linux x64 and Android.
 
-Alpha.3 packages the completed post-alpha.2 product line. Daymark has returned to `main` maintenance mode; the next release version will be chosen from observed stabilization, bug-fix, security, compatibility, or platform-maintenance needs rather than a feature roadmap.
+Alpha.3 packages the completed post-alpha.2 product line. `v1.0.0-beta.1` is now in release stabilization as a promotion of that same feature-complete product line. Beta preparation is limited to validation, bugs, security, compatibility, packaging, and supported-platform corrections; it does not reopen feature development.
 
 ## Current product
 
