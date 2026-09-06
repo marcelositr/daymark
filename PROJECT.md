@@ -268,7 +268,15 @@ Candidate artifacts regenerated from exact beta.1 implementation commit `70885b9
 
 Draft PR CI #533 (`https://github.com/marcelositr/daymark/actions/runs/34035717273`) passed `dev-check` on exact PR head `4e18ffbc1e3e14b6afe450d7c259de3fbbfb4ec3`. The follow-up Draft CI #534 (`https://github.com/marcelositr/daymark/actions/runs/34035887839`) passed `dev-check` on exact documentation head `bbfeace0d4fd426d106ade114dd793ccbb8fada2`. As expected for a Draft PR, `quality`, Linux, Android, dependency review, and `merge-gate` were skipped in both runs. This evidence validates the Draft tier only; the final documented Ready head still requires the complete merge tier.
 
-This local evidence does not replace physical-device install-over/behavior validation, Linux smoke validation, final artifact identity recording, or exact final-head Ready CI and `merge-gate`.
+Maintainer Linux smoke validation passed for both beta.1 package formats using controlled disposable data and Spanish `es_ES` locale:
+
+- the Debian package installed as `daymark 1.0.0~beta.1 amd64`, registered `/usr/bin/daymark`, desktop metadata, icon, and AppStream metadata, and passed `dpkg --verify`;
+- the installed Debian application completed journal creation, Task/Event/Note capture, principal navigation, appearance, About version `1.0.0-beta.1+4`, encrypted Backup dialog, plaintext Open Export warning, lock/unlock, and normal window close with exit code 0;
+- the AppImage completed the same controlled Spanish-language flow and closed normally;
+- no unexpected English text, clipping, overflow, inaccessible control, or functional failure was reported in either package;
+- the observed GTK/OpenGL resize warning did not prevent rendering, interaction, or normal shutdown.
+
+This evidence does not replace physical-device Android install-over/behavior validation, final Ready-head CI, or `merge-gate`.
 
 No product capability beyond the maintainer-approved general Spanish localization belongs in this branch.
 
