@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>io.github.marcelositr.daymark</id>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>GPL-3.0-or-later</project_license>
+  <name>Daymark</name>
+  <developer id="io.github.marcelositr">
+    <name>Marcelo Trindade</name>
+  </developer>
+  <summary>A minimal, local-first Bullet Journal</summary>
+  <description>
+    <p>
+      Daymark is an encrypted, offline-first digital Bullet Journal for Linux
+      and Android.
+    </p>
+  </description>
+  <launchable type="desktop-id">io.github.marcelositr.daymark.desktop</launchable>
+  <url type="homepage">https://devnux.com.br/daymark</url>
+  <url type="bugtracker">https://github.com/marcelositr/daymark/issues</url>
+  <content_rating type="oars-1.1" />
+</component>

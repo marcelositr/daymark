@@ -301,13 +301,15 @@ Use Flutter ARB/generated localization accessors.
 Supported product languages are fixed:
 
 - English canonical/fallback;
-- Portuguese (Brazil).
+- Portuguese (Brazil);
+- Spanish.
 
 Resources:
 
 ```text
 lib/l10n/
 ├── app_en.arb
+├── app_es.arb
 ├── app_pt.arb
 └── app_pt_BR.arb
 ```

@@ -158,9 +158,22 @@ Build:
 flutter build linux --release --no-pub
 ```
 
-Flutter places the relocatable bundle under `build/linux/x64/release/bundle/` on the current x64 Linux host. The complete bundle directory is the distributable runtime unit.
+Flutter places the relocatable bundle under `build/linux/x64/release/bundle/` on the current x64 Linux host. The complete bundle directory is the input to both supported Linux packages; it is no longer published directly as a `.tar.gz` artifact.
 
-Alpha.3 Linux validation should cover at least:
+Beta.1 and later Linux releases produce:
+
+- a Debian `amd64` package that installs the complete bundle under `/opt/daymark`, exposes `/usr/bin/daymark`, and installs desktop/icon/AppStream metadata;
+- an x86-64 AppImage containing the same complete bundle plus desktop/icon/AppStream metadata.
+
+`tool/package_linux.sh` builds and structurally validates both packages from an existing release bundle. It derives the release version from `pubspec.yaml` and requires an executable `appimagetool` plus a separately supplied type-2 runtime:
+
+```text
+tool/package_linux.sh /path/to/appimagetool-x86_64.AppImage /path/to/runtime-x86_64
+```
+
+CI downloads both AppImage tools from their official upstream continuous releases but accepts them only when their pinned SHA-256 values match. A changed upstream binary therefore fails closed until its provenance and checksum are deliberately reviewed and updated. CI uploads the generated `.deb` and AppImage as workflow artifacts for validation; it does not publish a GitHub Release.
+
+Current beta.1 Linux validation must cover both package formats and at least:
 
 - launch release bundle directly;
 - create/open a controlled encrypted journal;
@@ -223,36 +236,38 @@ That backup was copied to a physical Android device, restored into a clean alpha
 
 The lack of direct install-over for this one transition is a signing-lineage limitation, not a journal-format reset. Do not "fix" it by deleting or recreating user journal data without a backup.
 
-## Physical Android alpha.3 smoke test
+## Physical Android beta.1 smoke test
 
-Before public distribution test the signed candidate on physical Android hardware:
+Before beta.1 promotion, test the exact signed candidate on physical Android hardware:
 
-- clean install of the exact signed alpha.3 artifact;
-- alpha.2 encrypted backup -> alpha.3 Restore/migration;
-- unlock/restart persistence;
-- manual/inactivity/system-lock paths where practical;
-- Today/Monthly/Future/Collections basic operation;
-- Tracker operation after restore/migration;
-- Backup/Restore file-provider flow;
-- Open Export reauthentication, Save, and clipboard Copy;
-- Appearance persistence;
-- About version/project identity.
+- verify that the APK uses the maintained alpha.3 signing certificate;
+- install beta.1 directly over the published alpha.3 application without uninstalling it;
+- unlock the existing alpha.3 journal with the same master password;
+- verify journal data, schema-v2 Trackers, Task states, and migration lineage after upgrade;
+- force-stop and relaunch, then confirm unlock and persistence again;
+- exercise manual, inactivity, and system-lock paths where practical;
+- verify Today, Monthly, Future, Collections, Search, Index, and Reflection behavior;
+- verify Tracker operation with controlled data;
+- validate encrypted Backup / Restore through the Android file-provider flow;
+- validate Open Export reauthentication, JSON/Markdown Save, and clipboard Copy;
+- verify Appearance persistence and About/version identity.
 
-Do not expose real private journal content or signing secrets in release evidence.
+Use controlled data. Do not expose real private journal content or signing secrets in release evidence.
 
 ## Artifact names
 
 Beta.1 candidate artifacts use:
 
 ```text
-daymark-1.0.0-beta.1-linux-x64.tar.gz
+daymark_1.0.0-beta.1_amd64.deb
+Daymark-1.0.0-beta.1-x86_64.AppImage
 daymark-1.0.0-beta.1-android.apk
 SHA256SUMS
 ```
 
-The Linux artifact contains the complete Flutter release bundle, not only the executable.
+Both Linux artifacts contain the complete Flutter release bundle, not only the executable. The `.deb` provides conventional system integration; the AppImage is the portable no-install option. The raw bundle `.tar.gz` used by alpha.2 and alpha.3 remains historical evidence and is not a beta.1 distribution format.
 
-`SHA256SUMS` records exact SHA-256 identities for both distributed artifacts.
+`SHA256SUMS` records exact SHA-256 identities for all three distributed artifacts.
 
 ## Artifact identity
 

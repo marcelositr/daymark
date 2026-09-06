@@ -10,6 +10,9 @@ This file is for user-visible behavior, data compatibility, security, packaging,
 
 - Prerelease packaging candidate advances to `1.0.0-beta.1+4`.
 - Beta.1 is a stability promotion of the feature-complete alpha.3 product line; functional scope remains frozen and no feature expansion is included.
+- Linux distribution replaces the raw `.tar.gz` bundle with installable Debian (`.deb`) and portable AppImage packages, both built from the same Flutter release bundle.
+- A version-controlled user Wiki documents the complete frozen product in Portuguese (Brazil); pull requests validate it and merges to `main` publish it automatically to GitHub Wiki.
+- Spanish (`es`) joins English and Portuguese (Brazil) as the only supported product languages, following Spanish regional system locales without adding a manual language selector.
 
 ### Compatibility
 

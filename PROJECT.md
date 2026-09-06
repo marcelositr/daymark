@@ -45,7 +45,7 @@ The following are **not planned product work** and must not be treated as deferr
 - recovery-secret UX or account/password-reset systems;
 - cloud sync, accounts, collaboration, network services, or AI features;
 - additional platforms beyond Linux and Android;
-- additional product languages beyond English and Portuguese (Brazil);
+- additional product languages beyond English, Portuguese (Brazil), and Spanish;
 - richer Search/indexing, new migration destinations, new reflection systems, new Collection models, or other feature extensions;
 - dashboards, gamification, planner/Kanban/workspace abstractions, freeform pages/canvas editing, or engagement mechanics.
 
@@ -72,7 +72,7 @@ Daymark is a faithful digital Bullet Journal, not a generic productivity suite.
 - no feeds, ads, streaks, XP, productivity scoring, gamification, or attention-seeking UI;
 - no automatic choices that replace deliberate reflection;
 - no generic planner/Kanban/workspace abstractions;
-- English is canonical/fallback; exact `pt_BR` is the supported additional locale;
+- English is canonical/fallback; exact `pt_BR` and general Spanish `es` are the supported additional locales;
 - primary navigation concepts are Today, Monthly, Future, Collections, Search, and Index;
 - optional Daymark Trackers remain the one documented non-canonical adaptation and are already part of the frozen product.
 
@@ -227,13 +227,13 @@ The published tag and artifacts are immutable release evidence. Future maintenan
 - latest published prerelease remains `v1.0.0-alpha.3`;
 - schema remains v2; beta.1 does not introduce a schema change;
 - Linux and Android remain the only release targets;
-- English and Portuguese (Brazil) remain the only supported product languages;
+- English, Portuguese (Brazil), and Spanish are the only supported product languages; the maintainer explicitly approved Spanish as the sole language-scope expansion on 2026-09-06;
 - Android beta.1 must preserve the alpha.3 signing certificate SHA-256 `77bca227f0cd95eb9e3c5a2c24902ba9d20e296dbdba9fde87d024cd0febb311`.
 
 The beta.1 promotion gate must prove:
 
 1. complete generated-source, formatting, analyzer, and Flutter test validation;
-2. Linux release build and maintainer smoke validation;
+2. Linux release build, `.deb` and AppImage packaging validation, and maintainer smoke validation for both formats;
 3. signed Android release build using the exact alpha.3 signing lineage;
 4. direct Android `alpha.3 -> beta.1` install-over succeeds without uninstalling alpha.3;
 5. the existing alpha.3 journal remains unlockable with the same master password after install-over;
@@ -244,7 +244,33 @@ The beta.1 promotion gate must prove:
 10. exact Ready PR head passes required CI and `merge-gate`;
 11. publication occurs only after explicit maintainer promotion approval.
 
+Local validation evidence gathered on 2026-09-06 from branch baseline `01bb4a439b336c16a9017aaac038122ab468c8a6` with the current uncommitted beta.1 documentation, packaging, Wiki, CI, and Spanish-localization maintenance changes present:
+
+- locked dependency resolution, localization generation, Drift generation, migration snapshot verification, and generated-artifact drift check passed;
+- pinned formatting check passed with 136 files unchanged;
+- `flutter analyze` passed with no issues;
+- the complete Flutter suite passed with 214 tests, including Spanish catalog parity, critical security-language assertions, general Spanish regional-locale resolution, and unsupported-locale English fallback;
+- Linux debug and release builds passed, including a release rebuild after Spanish localization generation;
+- beta.1 Linux distribution now replaces the raw `.tar.gz` candidate with `.deb` and AppImage packages generated from the same release bundle; the local packaging script produced and structurally validated both formats, and offline AppStream validation passed with `appstreamcli` 1.0.5;
+- complete Portuguese (Brazil) user Wiki source now lives under `wiki/`; PRs to `main` validate it without write permission, and only a merged push to `main` synchronizes it automatically to `daymark.wiki.git`;
+- Android debug and signed release APK builds passed;
+- the signed release APK was verified as one signer with the required alpha.3 certificate SHA-256 `77bca227f0cd95eb9e3c5a2c24902ba9d20e296dbdba9fde87d024cd0febb311`;
+- the backup recovery test emitted Drift's expected debug warning because it deliberately keeps the source database open while validating a separately restored snapshot; both databases are distinct and explicitly closed;
+- the Android toolchain emitted non-blocking SDK XML-version and unused `CupertinoIcons` font warnings; no `CupertinoIcons` reference exists in Daymark source, tests, or dependency declarations.
+
+Pre-PR candidate artifacts were regenerated from this uncommitted working-tree state after Spanish localization was added:
+
+- Debian `amd64` candidate SHA-256: `8ab86fbb84bbfc6241bf1ef703e1aa9b0a55f464e53272cd66ec231ec168e52a`;
+- AppImage x86-64 candidate SHA-256: `32e86525f9738f1dd109211bc941487ff66fae535c797478e3ae9111e7676387`;
+- signed Android APK candidate SHA-256: `4ec6dd5166fc1ca343b4080b01d12c9e70bf6aabb565a83b23614169cde0aab9`;
+- Android signer certificate SHA-256 remains `77bca227f0cd95eb9e3c5a2c24902ba9d20e296dbdba9fde87d024cd0febb311`.
+
+These hashes are diagnostic pre-PR evidence only and are not release identities because the changes do not yet have a committed source head. Regenerate and record final artifact hashes from the exact committed build-source head.
+
+This local evidence does not replace physical-device install-over/behavior validation, Linux smoke validation, final artifact identity recording, or exact final-head Ready CI and `merge-gate`.
+
 No new product capability belongs in this branch.
+
 ## Merged product baseline
 
 - PR #13: encrypted create/unlock/manual lock plus Today.
@@ -282,4 +308,4 @@ Daymark is currently validating `v1.0.0-beta.1` on `release/1.0.0-beta.1` after 
 
 There is no feature backlog to resume. New work begins only from observed bugs, vulnerabilities, compatibility failures, supported platform/toolchain breakage, release/packaging defects, accessibility/localization corrections, or documentation inaccuracies.
 
-No next release is currently selected. A beta, RC, stable release, or another prerelease is chosen only when actual validation or maintenance needs justify it.
+The selected next release is `v1.0.0-beta.1`. The next concrete step is to review and commit the documentation/packaging corrections, open the release PR, and continue the beta.1 gate with installed `.deb` and AppImage smoke checks plus physical Android `alpha.3 -> beta.1` install-over validation. No merge, tag, promotion, or publication is authorized until the required exact-head evidence is complete and the maintainer explicitly approves it.

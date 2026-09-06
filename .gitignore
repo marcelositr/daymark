@@ -36,6 +36,7 @@ migrate_working_dir/
 # Generated localization accessors
 /lib/l10n/app_localizations.dart
 /lib/l10n/app_localizations_en.dart
+/lib/l10n/app_localizations_es.dart
 /lib/l10n/app_localizations_pt.dart
 
 # Symbolication related

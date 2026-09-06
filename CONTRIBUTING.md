@@ -50,7 +50,7 @@ Changes should:
 - keep domain logic independent from Flutter and platform APIs where the existing architecture requires it;
 - include tests at the layer that owns the behavior;
 - preserve Linux and Android support;
-- preserve English and Portuguese (Brazil) localization behavior;
+- preserve English, Portuguese (Brazil), and Spanish localization behavior;
 - keep encrypted persistence and plaintext boundaries intact;
 - avoid unnecessary dependencies and code generation;
 - keep user data local by default;

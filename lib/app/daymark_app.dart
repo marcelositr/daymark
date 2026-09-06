@@ -10,6 +10,7 @@ import 'theme.dart';
 
 const List<Locale> daymarkSupportedLocales = <Locale>[
   Locale('en'),
+  Locale('es'),
   Locale('pt', 'BR'),
 ];
 
@@ -18,6 +19,10 @@ Locale resolveDaymarkLocale(List<Locale>? preferredLocales) {
     for (final Locale locale in preferredLocales) {
       if (locale.languageCode == 'pt' && locale.countryCode == 'BR') {
         return const Locale('pt', 'BR');
+      }
+
+      if (locale.languageCode == 'es') {
+        return const Locale('es');
       }
 
       if (locale.languageCode == 'en') {

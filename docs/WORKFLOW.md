@@ -205,6 +205,20 @@ Green local checks and green required CI make a PR eligible for merge. They do n
 
 The maintainer makes the final merge decision. AI agents must not enable auto-merge or merge implicitly.
 
+## User Wiki publication
+
+The user-facing GitHub Wiki source lives under `wiki/` in the main repository so documentation changes are reviewed and retained with application history.
+
+The dedicated Wiki workflow follows a split trust boundary:
+
+- pull requests targeting `main` validate required pages, filenames, and internal Wiki links without remote write permission;
+- only a merged `push` to `main` that changes the Wiki source, validator, or workflow synchronizes `wiki/` to `daymark.wiki.git`;
+- synchronization replaces published Wiki content with the reviewed version-controlled source and commits as `github-actions[bot]`;
+- no feature-branch, fork PR, Draft/Ready transition, or manual workflow dispatch may publish Wiki content;
+- Wiki publication never tags, merges, or publishes an application release.
+
+The repository `GITHUB_TOKEN` is scoped read-only by default; only the post-merge `publish-wiki` job receives `contents: write`.
+
 ## Before merge
 
 Before a PR is eligible for merge:

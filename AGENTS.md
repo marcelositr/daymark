@@ -21,6 +21,8 @@ Agents must **not** propose, design, scaffold, or implement new product features
 
 In particular, do not reopen device-assisted/biometric unlock, recovery-secret UX, cloud/accounts/network services, AI features, collaboration, additional platforms/languages, richer Search/Index/Collection/migration/reflection capabilities, automatic backup scheduling, attachments, dashboards, gamification, or freeform editing unless the maintainer explicitly reverses the product freeze first.
 
+The maintainer explicitly reversed the language boundary only far enough to add general Spanish (`es`) on 2026-09-06. English, Portuguese (Brazil), and Spanish are now the complete supported language set; this does not authorize any further language or explicit language-selector work.
+
 `PROJECT.md` and `docs/PRODUCT.md` are authoritative for the current frozen scope. Historical documents may retain contextual references to earlier ideas, but those references are not a roadmap.
 
 ## Mandatory start sequence
