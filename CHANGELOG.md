@@ -6,6 +6,21 @@ This file is for user-visible behavior, data compatibility, security, packaging,
 
 ## Unreleased
 
+### Fixed
+
+- Linux Debian and AppImage packages install the canonical Daymark application icon through standard desktop icon locations, including scalable SVG and conventional fallbacks.
+- AppImage carries the canonical root application icon and `.DirIcon`.
+- Android CI regenerates launcher resources from the canonical Daymark branding asset and rejects stale committed launcher icons.
+
+### Compatibility
+
+- Application version advances to `1.0.0-beta.2+5`.
+- Database schema remains v2 with no beta.2 migration.
+- Android preserves the signing lineage established by alpha.3 and retained by beta.1.
+- Beta.2 remains an icon-integration maintenance release with no product capability changes.
+
+## [1.0.0-beta.1] - 2026-09-06
+
 ### Changed
 
 - Prerelease packaging candidate advances to `1.0.0-beta.1+4`.

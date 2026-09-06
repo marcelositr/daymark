@@ -4,11 +4,11 @@
 
 Daymark is prerelease software.
 
-The currently supported public line is the latest published prerelease, `1.0.0-alpha.3+3` / `v1.0.0-alpha.3`, published on 2026-09-06, plus current `main` for maintenance validation. Older prereleases and development builds are unsupported unless a release note explicitly says otherwise.
+The currently supported public line is the latest published prerelease, `1.0.0-beta.1+4` / `v1.0.0-beta.1`, published on 2026-09-06, plus current `main` for maintenance validation. Older prereleases and development builds are unsupported unless a release note explicitly says otherwise.
 
-`1.0.0-beta.1+4` is the active release candidate for stabilization validation. Until it is explicitly published, `v1.0.0-alpha.3` remains the latest supported public prerelease.
+`1.0.0-beta.2+5` is the active maintenance release candidate for stabilization validation. Until it is explicitly published, `v1.0.0-beta.1` remains the latest supported public prerelease.
 
-Beta.1 must preserve the alpha.3 Android signing lineage and the existing supported journal/security/data formats. Promotion does not change Daymark's frozen security product boundary.
+Beta.2 must preserve the Android signing lineage shared by alpha.3 and beta.1 and the existing supported journal/security/data formats. Promotion does not change Daymark's frozen security product boundary.
 
 Because `v1.0.0-alpha.2` has been published for real user journals, its persisted security/data formats are compatibility-sensitive. A later supported build must not silently make an alpha.2 journal, key envelope, encrypted backup, or documented migration path unreadable. Android install-over from alpha.2 to alpha.3 is not claimed because the alpha.2 private signing key is unavailable; the supported transition is explicit encrypted Backup / clean install / Restore as documented in `docs/RELEASE.md`.
 

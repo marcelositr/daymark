@@ -17,41 +17,37 @@ A release branch is a stabilization boundary, not a feature branch. Release prep
 
 No new product capability belongs in a release branch while the freeze is active.
 
-## Active beta.1 release preparation
+## Active beta.2 release preparation
 
 Current candidate:
 
-- application version: `1.0.0-beta.1+4`;
-- planned annotated tag: `v1.0.0-beta.1`;
-- release branch: `release/1.0.0-beta.1`;
-- release base: `c5879d147958da33eec20f0332cd96e38693788e`;
-- release name: `Daymark 1.0.0-beta.1`;
+- application version: `1.0.0-beta.2+5`;
+- planned annotated tag: `v1.0.0-beta.2`;
+- release branch: `release/1.0.0-beta.2`;
+- release base: `7560545267818bdf19e4baee2a89bb6cef2fbbda`;
+- release name: `Daymark 1.0.0-beta.2`;
 - GitHub Release type: prerelease;
 - target platforms: Linux x64 and Android;
-- Android build number/version code: `4`;
-- schema: v2, unchanged from alpha.3.
+- Android build number/version code: `5`;
+- schema: v2, unchanged from beta.1.
 
-Beta.1 is a stability promotion of the already feature-complete alpha.3 product line. No product capability is added by this release preparation.
+Beta.2 is an icon-integration maintenance release. It does not add product capability, change the database schema, application ID, journal format, or Android signing lineage.
 
-Until beta.1 is explicitly promoted and published, the latest public prerelease remains `v1.0.0-alpha.3`.
+Until beta.2 is explicitly promoted and published, the latest public prerelease remains `v1.0.0-beta.1`.
 
-### Beta.1 compatibility gate
-
-The alpha.3 signing identity is now the maintained Android upgrade lineage. Beta.1 must therefore prove the normal direct-upgrade path that was unavailable for alpha.2 -> alpha.3.
+### Beta.2 compatibility gate
 
 Before promotion require:
 
-1. signed beta.1 APK uses certificate SHA-256 `77bca227f0cd95eb9e3c5a2c24902ba9d20e296dbdba9fde87d024cd0febb311`;
-2. beta.1 installs directly over published alpha.3 without uninstalling alpha.3;
-3. the existing alpha.3 journal opens with the same master password after upgrade;
+1. signed beta.2 APK uses certificate SHA-256 `77bca227f0cd95eb9e3c5a2c24902ba9d20e296dbdba9fde87d024cd0febb311`;
+2. beta.2 installs directly over published beta.1 without uninstalling beta.1;
+3. the existing beta.1 journal opens with the same master password after upgrade;
 4. journal data and schema-v2 Tracker data remain intact;
-5. force-stop/relaunch preserves the upgraded journal;
-6. Today, Monthly, Future, Collections, Search, Index, Reflection, Task states, and Tracker operations remain correct;
-7. encrypted Backup / Restore remains correct;
-8. Open Export password reauthentication plus JSON/Markdown Save/Copy remains correct;
-9. Appearance and About/version identity remain correct;
-10. Linux release bundle passes the maintainer release smoke test;
-11. exact binary build-source head and artifact SHA-256 identities are recorded.
+5. Android shows the canonical Daymark launcher icon;
+6. Debian and AppImage packages expose the canonical Daymark application icon through their supported desktop integration paths;
+7. force-stop/relaunch or normal Linux restart preserves the upgraded journal;
+8. About/version identity reports `1.0.0-beta.2+5`;
+9. exact binary build-source head and artifact SHA-256 identities are recorded.
 
 The upgrade test must use controlled data and must not expose signing secrets or real private journal content.
 
@@ -60,24 +56,38 @@ The upgrade test must use controlled data and must not expose signing secrets or
 
 Current published prerelease:
 
+- application version: `1.0.0-beta.1+4`;
+- annotated tag: `v1.0.0-beta.1`;
+- published release source commit: `001392372b12b2ee9b17f216447899a5ebb4395a`;
+- validated binary build-source head: `001392372b12b2ee9b17f216447899a5ebb4395a`;
+- release name: `Daymark 1.0.0-beta.1`;
+- GitHub Release type: prerelease;
+- publication date: 2026-09-06;
+- target platforms: Linux x64 and Android;
+- Android build number/version code: `4`;
+- Debian SHA-256: `41ae8d09bb4efcb2b7055a034809263331f4ed25879c52d4a5455f475231c301`;
+- AppImage SHA-256: `bcaad4e3d777cb8d13cd4217ff28009eb60abc69147422125cb1806daf0ac2dc`;
+- Android SHA-256: `4ec6dd5166fc1ca343b4080b01d12c9e70bf6aabb565a83b23614169cde0aab9`;
+- Android signing certificate SHA-256: `77bca227f0cd95eb9e3c5a2c24902ba9d20e296dbdba9fde87d024cd0febb311`.
+
+Beta.1 remains immutable published evidence. Beta.2 corrects application-icon integration through a new version/build rather than replacing beta.1 artifacts.
+
+The release branch `release/1.0.0-beta.1` is retained as historical evidence.
+
+
+## Previous published release
+
 - application version: `1.0.0-alpha.3+3`;
 - annotated tag: `v1.0.0-alpha.3`;
 - published release source commit: `f09665a76e0eb7c068a02d9e4513c53bd2b48481`;
 - validated binary build-source head: `e19ab982d2898cae223e396a1c2e4e26fc0446b0`;
-- release name: `Daymark 1.0.0-alpha.3`;
-- GitHub Release type: prerelease;
 - publication date: 2026-09-06;
-- target platforms: Linux x64 and Android;
-- Android build number/version code: `3`;
-- Linux SHA-256: `bf11b1a9df952fdc3d4ce333490872a1b885dab2a56a56b6ff1062bd6b9d0189`;
-- Android SHA-256: `007f23c006282cb3eb9a7a2c62a97018631e36641d1539278436ba8d4ee41199`;
 - Android signing certificate SHA-256: `77bca227f0cd95eb9e3c5a2c24902ba9d20e296dbdba9fde87d024cd0febb311`.
 
-Alpha.3 packages the completed post-alpha.2 product line. Publication, uploaded assets, and artifact digests were verified after release creation.
+Alpha.3 established the Android signing lineage retained by beta.1 and beta.2.
 
-The release branch `release/1.0.0-alpha.3` is retained as historical evidence. Normal work has returned to `main` maintenance mode.
 
-## Previous published release
+## Earlier published release
 
 - application version: `1.0.0-alpha.2+2`;
 - annotated tag: `v1.0.0-alpha.2`;
