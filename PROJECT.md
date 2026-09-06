@@ -276,7 +276,18 @@ Maintainer Linux smoke validation passed for both beta.1 package formats using c
 - no unexpected English text, clipping, overflow, inaccessible control, or functional failure was reported in either package;
 - the observed GTK/OpenGL resize warning did not prevent rendering, interaction, or normal shutdown.
 
-This evidence does not replace physical-device Android install-over/behavior validation, final Ready-head CI, or `merge-gate`.
+Maintainer physical-Android validation passed on an older `M7_3G_PLUS` device running Android 8.1/API 27 on ARMv7:
+
+- the exact published alpha.3 APK with SHA-256 `007f23c006282cb3eb9a7a2c62a97018631e36641d1539278436ba8d4ee41199` and the maintained signing certificate was clean-installed first;
+- controlled alpha.3 data covered Today Task states/Event/Note, Monthly Task/Calendar/Tracker mark, Future, Collection content and migration, Index, Search, appearance, and encrypted Backup;
+- `adb install -r` installed beta.1 version code 4 directly over alpha.3 version code 3 without uninstalling or changing the package data directory; Android preserved the original `firstInstallTime` and updated only `lastUpdateTime`;
+- the existing journal unlocked with the same master password and retained all controlled data, schema-v2 Tracker state, Task state/lineage, Index/Search behavior, and appearance;
+- a new post-upgrade entry persisted after a real ADB force-stop and relaunch;
+- an encrypted Backup created by the previous version restored successfully into beta.1;
+- Open Export rejected an incorrect password before export, then completed JSON Save, Markdown Save, and clipboard Copy after correct reauthentication with the plaintext/clipboard warning present;
+- no Android functional or compatibility anomaly was reported.
+
+Linux and physical-Android release behavior gates are complete. The remaining merge eligibility boundary is exact final-head Ready CI including `quality`, Linux, Android, dependency review, and `merge-gate`.
 
 No product capability beyond the maintainer-approved general Spanish localization belongs in this branch.
 
