@@ -17,25 +17,28 @@ A release branch is a stabilization boundary, not a feature branch. Release prep
 
 No new product capability belongs in a release branch while the freeze is active.
 
-## Active release preparation
+## Latest published release
 
-Current candidate:
+Current published prerelease:
 
 - application version: `1.0.0-alpha.3+3`;
-- planned annotated tag: `v1.0.0-alpha.3`;
-- release branch: `release/1.0.0-alpha.3`;
-- release base: current `main` squash `a08c5f8f1e2bc340801f9e3f33e9353d6cb9122b` (PR #41);
+- annotated tag: `v1.0.0-alpha.3`;
+- published release source commit: `f09665a76e0eb7c068a02d9e4513c53bd2b48481`;
 - validated binary build-source head: `e19ab982d2898cae223e396a1c2e4e26fc0446b0`;
 - release name: `Daymark 1.0.0-alpha.3`;
 - GitHub Release type: prerelease;
+- publication date: 2026-09-06;
 - target platforms: Linux x64 and Android;
-- Android build number/version code: `3`.
+- Android build number/version code: `3`;
+- Linux SHA-256: `bf11b1a9df952fdc3d4ce333490872a1b885dab2a56a56b6ff1062bd6b9d0189`;
+- Android SHA-256: `007f23c006282cb3eb9a7a2c62a97018631e36641d1539278436ba8d4ee41199`;
+- Android signing certificate SHA-256: `77bca227f0cd95eb9e3c5a2c24902ba9d20e296dbdba9fde87d024cd0febb311`.
 
-Alpha.3 is the release-validation packaging of the completed post-alpha.2 product line. It includes schema v2 / Monthly Trackers, navigation/reflection/security/Open Export improvements, branding/UI/accessibility polish, and About/support identity. It does not begin another feature stage.
+Alpha.3 packages the completed post-alpha.2 product line. Publication, uploaded assets, and artifact digests were verified after release creation.
 
-Until alpha.3 is explicitly promoted/published, the latest public release remains alpha.2.
+The release branch `release/1.0.0-alpha.3` is retained as historical evidence. Normal work has returned to `main` maintenance mode.
 
-## Latest published release
+## Previous published release
 
 - application version: `1.0.0-alpha.2+2`;
 - annotated tag: `v1.0.0-alpha.2`;
@@ -235,9 +238,9 @@ Android candidate certificate SHA-256:
 77bca227f0cd95eb9e3c5a2c24902ba9d20e296dbdba9fde87d024cd0febb311
 ```
 
-## Alpha.3 Ready gate
+## Alpha.3 publication gate (historical)
 
-Before creating the alpha.3 tag/GitHub Release require:
+The published alpha.3 release was required to satisfy:
 
 - release branch/head exact and clean;
 - `pubspec.yaml` and About display version `1.0.0-alpha.3+3`;
