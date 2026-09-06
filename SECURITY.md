@@ -8,7 +8,7 @@ Until alpha.3 is published, the currently supported public line is the latest pu
 
 `1.0.0-alpha.3+3` is currently being prepared as the next prerelease. Publishing it requires the release gates documented in `PROJECT.md`, `docs/WORKFLOW.md`, and `docs/RELEASE.md`.
 
-Because `v1.0.0-alpha.2` has been published for real user journals, its persisted security/data formats are compatibility-sensitive. A later supported build must not silently make an alpha.2 journal, key envelope, encrypted backup, or claimed upgrade path unreadable.
+Because `v1.0.0-alpha.2` has been published for real user journals, its persisted security/data formats are compatibility-sensitive. A later supported build must not silently make an alpha.2 journal, key envelope, encrypted backup, or documented migration path unreadable. Android install-over from alpha.2 to alpha.3 is not claimed because the alpha.2 private signing key is unavailable; the supported transition is explicit encrypted Backup / clean install / Restore as documented in `docs/RELEASE.md`.
 
 ## Frozen security product boundary
 
@@ -265,9 +265,25 @@ Android release signing material is local-only and must never be committed or pr
 
 Release Gradle tasks fail closed if dedicated release signing configuration/keystore is absent. Daymark must never silently publish an artifact signed with the debug key.
 
-The public Android release lineage beginning with `v1.0.0-alpha.2` uses the dedicated release certificate recorded in `PROJECT.md` and `docs/RELEASE.md`.
+Published `v1.0.0-alpha.2` uses certificate SHA-256:
 
-Alpha.3 install-over validation must preserve this signing identity. Any release intended to upgrade the public lineage must continue to use compatible signing identity unless a platform-supported migration is explicitly required by a concrete maintenance need and fully tested/documented.
+```text
+44342dcd1343643bc56da2545ec10e5624fc2e49d1bcc3b418f4f9ab160e1b88
+```
+
+The corresponding alpha.2 private signing key could not be recovered during alpha.3 release preparation. Android therefore cannot authenticate alpha.3 as an install-over update of alpha.2. This is a package-signing boundary, not a failure of Daymark's encrypted journal or backup formats.
+
+The supported alpha.2 -> alpha.3 transition is encrypted Backup / uninstall alpha.2 / clean-install alpha.3 / Restore with the existing journal master password. That path was validated on physical Android hardware with a retained alpha.2 encrypted backup and persisted successfully across force-stop/relaunch.
+
+Alpha.3 establishes the maintained Android release lineage with certificate SHA-256:
+
+```text
+77bca227f0cd95eb9e3c5a2c24902ba9d20e296dbdba9fde87d024cd0febb311
+```
+
+The alpha.3 candidate was verified with `apksigner` as one RSA-4096 signer. Its private keystore remains local-only and is backed up outside the repository. Every later Android release intended to install over alpha.3 must preserve this signing identity unless Android provides an explicit supported signing-migration mechanism that is deliberately adopted, tested, and documented for a concrete maintenance need.
+
+Loss of a release private signing key is operationally significant because the public certificate embedded in a published APK cannot reconstruct the private key. Signing-key backups are therefore part of release security even though they are never repository content.
 
 ## Data disposal
 
@@ -295,5 +311,7 @@ Because `v1.0.0-alpha.2` has been published with real journal-data support, chan
 - encrypted backup format/cryptography;
 - Open Export format interpretation where backward machine readability is claimed;
 - Android signing identity for install-over upgrades.
+
+For alpha.2 -> alpha.3 specifically, install-over is not a supported claim because the alpha.2 private signing key is unavailable; encrypted Backup / Restore is the validated compatibility path. From alpha.3 onward, the alpha.3 signing certificate is the install-over compatibility identity.
 
 Failure to unlock, upgrade, or restore old supported data is data loss even when encrypted bytes remain intact. No release may solve compatibility by silently deleting/recreating a user's journal.
