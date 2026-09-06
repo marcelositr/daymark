@@ -2,6 +2,8 @@
 
 Daymark is a minimal, local-first Bullet Journal application for Linux and Android, designed to stay faithful to the original method while removing digital clutter.
 
+![Daymark](assets/branding/social_preview.png)
+
 > The interface should disappear during use. The journal, reflection, and decisions come first.
 
 Project website: [devnux.com.br/daymark](https://devnux.com.br/daymark)
