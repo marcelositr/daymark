@@ -12,6 +12,11 @@ This is Daymark's canonical living handoff. Read this file and `AGENTS.md` befor
 - Planned release tag: `v1.0.0-alpha.3`.
 - Latest published release remains `v1.0.0-alpha.2` / `1.0.0-alpha.2+2` until alpha.3 is explicitly promoted and published.
 - Published alpha.2 source commit: `5c073c6bbbe298c15f975740a5499f2b9a0c98ba`.
+- Alpha.3 validated binary build-source head: `e19ab982d2898cae223e396a1c2e4e26fc0446b0`; later documentation-only release commits must not be presented as the binary build source.
+- Alpha.3 local generated-source/formatter/analyzer/full Flutter suite passed on that build-source head.
+- Alpha.3 Linux release build and complete maintainer manual smoke passed.
+- Alpha.3 Android release APK built and verified with the new dedicated release certificate recorded below.
+- A retained alpha.2 encrypted backup restored successfully into a clean alpha.3 Android installation and remained readable after force-stop/relaunch, proving the supported alpha.2 -> alpha.3 portable migration path.
 - Runtime targets are **Linux and Android**.
 - Pinned toolchain: Flutter 3.47.2 / Dart 3.13.2.
 - Production Argon2id baseline: 19 MiB / 2 iterations / p=1 / 32-byte output.
@@ -183,19 +188,30 @@ Security maintenance may strengthen implementation safety when required by a con
 - signed Android APK SHA-256: `96f69264a4fc0fead8d31893f96aac428db341303abdfab929daaee5760f20f0`;
 - Android release certificate SHA-256: `44342dcd1343643bc56da2545ec10e5624fc2e49d1bcc3b418f4f9ab160e1b88`.
 
+The private signing key corresponding to the alpha.2 certificate was not recoverable during alpha.3 release preparation. The published alpha.2 artifact and certificate remain immutable historical evidence, but alpha.3 cannot be an Android install-over update of that signing lineage.
+
 ## Alpha.3 release preparation
 
 The alpha.3 release branch freezes the current product as `1.0.0-alpha.3+3`.
 
-Release-critical compatibility target:
+Validated alpha.3 candidate identity built from exact source head `e19ab982d2898cae223e396a1c2e4e26fc0446b0`:
 
-1. start from a real public alpha.2 signed installation with controlled journal data;
-2. install the signed alpha.3 candidate over alpha.2 using the same release-signing lineage;
-3. confirm alpha.2 schema-v1 journal data migrates to schema v2 without loss;
-4. confirm unlock, restart persistence, core journal navigation/actions, Trackers, Backup/Restore, Open Export, Appearance, and About remain functional;
-5. separately verify an encrypted backup created by alpha.2 restores correctly into alpha.3;
-6. validate Linux release bundle and signed Android release APK;
-7. record exact SHA-256 identities for distributed artifacts.
+- Linux x64 archive SHA-256: `bf11b1a9df952fdc3d4ce333490872a1b885dab2a56a56b6ff1062bd6b9d0189`;
+- signed Android APK SHA-256: `007f23c006282cb3eb9a7a2c62a97018631e36641d1539278436ba8d4ee41199`;
+- alpha.3-and-later Android release certificate SHA-256: `77bca227f0cd95eb9e3c5a2c24902ba9d20e296dbdba9fde87d024cd0febb311`;
+- retained alpha.2 encrypted backup used for compatibility validation SHA-256: `d6d6b7f94b869d95a61369ff675ba96dcc51633917995734e68dfac46628a23f`.
+
+Release-critical compatibility result:
+
+1. direct Android alpha.2 -> alpha.3 install-over is **not supported** because the alpha.2 private signing key was unavailable and alpha.3 establishes a new dedicated signing lineage;
+2. the supported alpha.2 -> alpha.3 Android migration path is explicit encrypted Backup / uninstall alpha.2 / clean-install alpha.3 / Restore using the existing master password;
+3. a retained real alpha.2 encrypted backup was copied to a physical Android device, restored into a clean alpha.3 release installation, and the restored journal remained usable after force-stop/relaunch;
+4. schema-v1-to-v2 compatibility therefore remains protected by the portable encrypted backup boundary plus the tested additive Drift migration path rather than by install-over for this one signing-lineage transition;
+5. alpha.3 Linux release behavior was manually rechecked by the maintainer across the complete release checklist;
+6. alpha.3 Android APK signing was verified with `apksigner` as one RSA-4096 signer using certificate `77bca227f0cd95eb9e3c5a2c24902ba9d20e296dbdba9fde87d024cd0febb311`;
+7. the alpha.3 signing keystore is local-only and backed up outside the repository; its secrets are not repository data.
+
+From alpha.3 onward, Android maintenance releases intended for install-over upgrades must preserve the alpha.3 signing lineage unless a future platform-supported migration is explicitly required and documented.
 
 The release branch may receive only fixes required by this validation. No product expansion is permitted.
 
@@ -204,9 +220,11 @@ Before promotion require:
 - version/docs/changelog aligned;
 - generated-source/formatter/analyzer/full test suite green;
 - Linux release build and smoke test green;
-- signed Android release build and physical-device smoke/upgrade test green;
-- backup/restore and schema-v1-to-v2 compatibility green;
+- signed Android release build and physical-device smoke/restore test green;
+- alpha.2 encrypted backup -> alpha.3 restore/schema-v2 compatibility green;
 - Open Export reauthentication/save/copy checks green;
+- final Linux/Android artifact identities recorded;
+- alpha.3 Android signing identity recorded and preserved for later install-over releases;
 - dependency/security review complete;
 - no secrets/local-only material committed;
 - exact Ready PR `merge-gate` green;
