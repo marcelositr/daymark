@@ -266,6 +266,8 @@ Candidate artifacts regenerated from exact beta.1 implementation commit `70885b9
 - signed Android APK candidate SHA-256: `4ec6dd5166fc1ca343b4080b01d12c9e70bf6aabb565a83b23614169cde0aab9`;
 - Android signer certificate SHA-256 remains `77bca227f0cd95eb9e3c5a2c24902ba9d20e296dbdba9fde87d024cd0febb311`.
 
+Draft PR CI #533 (`https://github.com/marcelositr/daymark/actions/runs/34035717273`) passed `dev-check` on exact PR head `4e18ffbc1e3e14b6afe450d7c259de3fbbfb4ec3`. As expected for a Draft PR, `quality`, Linux, Android, dependency review, and `merge-gate` were skipped. This evidence validates the Draft tier only; the final documented Ready head still requires the complete merge tier.
+
 This local evidence does not replace physical-device install-over/behavior validation, Linux smoke validation, final artifact identity recording, or exact final-head Ready CI and `merge-gate`.
 
 No product capability beyond the maintainer-approved general Spanish localization belongs in this branch.
