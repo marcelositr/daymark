@@ -252,10 +252,10 @@ v1.0.0
 
 Flutter's build number after `+` is separate from semantic precedence and must increase monotonically for distributable Android artifacts.
 
-Current beta.1 release preparation uses:
+Current beta.2 release preparation uses:
 
 ```text
-version: 1.0.0-beta.1+4
+version: 1.0.0-beta.2+5
 ```
 
 No published release version is retagged or rewritten. A changed artifact requires a new version/build number.

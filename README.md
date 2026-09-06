@@ -26,9 +26,9 @@ Normal development is now limited to:
 
 New product features, additional platforms, additional product languages, cloud/account systems, biometric/device-assisted unlock, recovery-secret UX, AI features, collaboration, dashboards, richer planner abstractions, and other roadmap expansion are not planned while this freeze is active.
 
-The latest published prerelease is [`v1.0.0-alpha.3`](https://github.com/marcelositr/daymark/releases/tag/v1.0.0-alpha.3), published on 2026-09-06 for Linux x64 and Android.
+The latest published prerelease is [`v1.0.0-beta.1`](https://github.com/marcelositr/daymark/releases/tag/v1.0.0-beta.1), published on 2026-09-06 for Linux x64 and Android.
 
-Alpha.3 packages the completed post-alpha.2 product line. `v1.0.0-beta.1` is now in release stabilization as a promotion of that same feature-complete product line. Beta preparation is limited to validation, bugs, security, compatibility, packaging, and supported-platform corrections; it does not reopen feature development.
+`v1.0.0-beta.2` is now in maintenance release stabilization to correct application-icon integration on Linux and Android. Product scope, database schema, Android application identity, signing lineage, and supported behavior remain unchanged.
 
 ## Current product
 

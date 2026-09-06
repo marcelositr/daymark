@@ -6,22 +6,22 @@ This is Daymark's canonical living handoff. Read this file and `AGENTS.md` befor
 
 - Phase: **feature-complete prerelease maintenance**.
 - Integration branch: `main` only.
-- Current integrated `main` baseline: `c5879d147958da33eec20f0332cd96e38693788e`, squash merge of PR #43 `docs: record alpha.3 publication`.
-- Latest published prerelease: `v1.0.0-alpha.3` / `1.0.0-alpha.3+3`, published on 2026-09-06 for Linux x64 and Android.
-- Published alpha.3 release source commit: `f09665a76e0eb7c068a02d9e4513c53bd2b48481`.
-- Alpha.3 validated binary build-source head: `e19ab982d2898cae223e396a1c2e4e26fc0446b0`; later documentation/release commits are not presented as the binary build source.
-- Alpha.3 Linux x64 archive SHA-256: `bf11b1a9df952fdc3d4ce333490872a1b885dab2a56a56b6ff1062bd6b9d0189`.
-- Alpha.3 Android APK SHA-256: `007f23c006282cb3eb9a7a2c62a97018631e36641d1539278436ba8d4ee41199`.
-- Alpha.3 Android release certificate SHA-256: `77bca227f0cd95eb9e3c5a2c24902ba9d20e296dbdba9fde87d024cd0febb311`.
-- Alpha.3 generated-source/formatter/analyzer/full Flutter suite, Linux release validation, Android release validation, and alpha.2 encrypted Backup -> alpha.3 Restore migration validation passed before publication.
+- Current integrated `main` baseline: `7560545267818bdf19e4baee2a89bb6cef2fbbda`, squash merge of PR #47 `fix: correct application icon packaging`.
+- Latest published prerelease: `v1.0.0-beta.1` / `1.0.0-beta.1+4`, published on 2026-09-06 for Linux x64 and Android.
+- Published beta.1 release source commit: `001392372b12b2ee9b17f216447899a5ebb4395a`.
+- Beta.1 Debian SHA-256: `41ae8d09bb4efcb2b7055a034809263331f4ed25879c52d4a5455f475231c301`.
+- Beta.1 AppImage SHA-256: `bcaad4e3d777cb8d13cd4217ff28009eb60abc69147422125cb1806daf0ac2dc`.
+- Beta.1 Android APK SHA-256: `4ec6dd5166fc1ca343b4080b01d12c9e70bf6aabb565a83b23614169cde0aab9`.
+- Beta.1 Android release certificate SHA-256: `77bca227f0cd95eb9e3c5a2c24902ba9d20e296dbdba9fde87d024cd0febb311`.
+- Beta.1 preserved the alpha.3 signing lineage and direct Android install-over compatibility.
 - Runtime targets are **Linux and Android**.
 - Pinned toolchain: Flutter 3.47.2 / Dart 3.13.2.
 - Production Argon2id baseline: 19 MiB / 2 iterations / p=1 / 32-byte output.
 - `release/1.0.0-alpha.3` is retained as historical release evidence.
-- Active release-stabilization branch: `release/1.0.0-beta.1`, created from `main` commit `c5879d147958da33eec20f0332cd96e38693788e`.
-- Current release candidate application version: `1.0.0-beta.1+4`.
-- Planned release tag: `v1.0.0-beta.1`.
-- Latest published prerelease remains `v1.0.0-alpha.3` until beta.1 is explicitly promoted and published.
+- Active release-stabilization branch: `release/1.0.0-beta.2`, created from `main` commit `7560545267818bdf19e4baee2a89bb6cef2fbbda`.
+- Current release candidate application version: `1.0.0-beta.2+5`.
+- Planned release tag: `v1.0.0-beta.2`.
+- Latest published prerelease remains `v1.0.0-beta.1` until beta.2 is explicitly promoted and published.
 - Completed release and feature branches are retained as historical reference/backup and are not deleted as routine cleanup.
 
 ## Product scope is frozen
@@ -57,11 +57,11 @@ A requested change that alters what Daymark *does* rather than fixing or preserv
 
 Release progression may continue even though feature development is frozen. Alpha, beta, RC, stable, and later maintenance releases are validation/stability milestones, not permission to reopen feature scope.
 
-Alpha.3 has been published and its release-stabilization cycle is complete.
+Beta.1 has been published and its release-stabilization cycle is complete.
 
-The maintainer has approved promotion work for `v1.0.0-beta.1`. The active beta.1 release branch is a stabilization and release-validation boundary only; product scope remains frozen and no feature expansion is permitted.
+The maintainer has approved maintenance release preparation for `v1.0.0-beta.2`. The active beta.2 release branch is a stabilization and release-validation boundary only; product scope remains frozen and no feature expansion is permitted.
 
-Beta.1 is intended to promote the existing feature-complete product line after additional compatibility, platform, persistence, signing, and release validation.
+Beta.2 is limited to correcting Daymark application-icon integration on Linux and Android while preserving schema, signing lineage, application identity, data compatibility, and existing product behavior.
 
 ## Product doctrine
 

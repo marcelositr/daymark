@@ -1,5 +1,5 @@
 abstract final class DaymarkAppInfo {
-  static const String version = '1.0.0-beta.1+4';
+  static const String version = '1.0.0-beta.2+5';
   static const String website = 'https://devnux.com.br/daymark';
   static const String sourceCode = 'https://github.com/marcelositr/daymark';
   static const String issues =
