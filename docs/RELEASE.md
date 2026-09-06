@@ -25,6 +25,7 @@ Current candidate:
 - planned annotated tag: `v1.0.0-alpha.3`;
 - release branch: `release/1.0.0-alpha.3`;
 - release base: current `main` squash `a08c5f8f1e2bc340801f9e3f33e9353d6cb9122b` (PR #41);
+- validated binary build-source head: `e19ab982d2898cae223e396a1c2e4e26fc0446b0`;
 - release name: `Daymark 1.0.0-alpha.3`;
 - GitHub Release type: prerelease;
 - target platforms: Linux x64 and Android;
@@ -69,15 +70,23 @@ keyPassword=<local secret>
 
 With this layout the keystore lives at `android/daymark-upload.jks`.
 
-The repository does not create, store, print, upload, or back up these secrets. Protect the keystore outside the repository.
+The repository does not create, store, print, upload, or back up these secrets. Protect the keystore outside the repository and keep at least one additional trusted backup of the private signing material.
 
-The public Android lineage beginning with `v1.0.0-alpha.2` is signed with certificate SHA-256:
+Published `v1.0.0-alpha.2` is signed with certificate SHA-256:
 
 ```text
 44342dcd1343643bc56da2545ec10e5624fc2e49d1bcc3b418f4f9ab160e1b88
 ```
 
-Alpha.3 intended as an install-over upgrade must use the same signing lineage. Confirm the built APK certificate before distribution.
+During alpha.3 release preparation the private key corresponding to that alpha.2 certificate could not be recovered. Therefore alpha.3 cannot be an Android install-over update of alpha.2 and must not claim signing continuity with that published artifact.
+
+Alpha.3 establishes the maintained Android signing lineage used by this candidate and intended for later install-over maintenance releases:
+
+```text
+77bca227f0cd95eb9e3c5a2c24902ba9d20e296dbdba9fde87d024cd0febb311
+```
+
+The alpha.3 candidate was verified with `apksigner` as one RSA-4096 signer using that certificate. The corresponding keystore is local-only, ignored by Git, and backed up outside the repository. Later Android releases intended to install over alpha.3 must preserve this signing identity unless a future platform-supported migration is explicitly required, tested, and documented.
 
 ## Local validation before release builds
 
@@ -126,6 +135,8 @@ Alpha.3 Linux validation should cover at least:
 - `ldd` inspection of native shared-library requirements;
 - no unexpected plaintext journal database.
 
+The maintainer completed the alpha.3 Linux release checklist successfully on the candidate built from `e19ab982d2898cae223e396a1c2e4e26fc0446b0`.
+
 ## Android release build
 
 The pinned Flutter toolchain can leave `android/app/src/main/java/io/flutter/plugins/GeneratedPluginRegistrant.java` configured with the dev-only `integration_test` plugin after dependency/test work. A later `--no-pub` release build may fail because `IntegrationTestPlugin` is absent from the release classpath.
@@ -143,49 +154,47 @@ A release build must fail when release signing is not configured.
 
 ## Alpha.2 -> alpha.3 compatibility gate
 
-This is the most important alpha.3 release-specific validation because alpha.2 is published with schema v1 and alpha.3 contains schema v2.
+Alpha.2 is published with schema v1 and alpha.3 contains schema v2, but Android install-over is not available for this transition because the alpha.2 private signing key was not recoverable during alpha.3 preparation.
 
-Use controlled data and a real release-signed alpha.2 installation.
+The supported Android transition is therefore the portable encrypted migration path that Daymark already exposes:
 
-Required direct-upgrade path:
+1. while still using alpha.2, create and preserve an encrypted `.daymark-backup` with the journal master password;
+2. verify the backup exists outside alpha.2 private app storage before removal;
+3. uninstall alpha.2;
+4. clean-install the alpha.3 release APK;
+5. restore the alpha.2 encrypted backup from the locked/empty alpha.3 state using the same master password;
+6. confirm schema-v1 journal data opens/migrates to schema v2 without loss;
+7. confirm restart persistence after restore/migration;
+8. confirm Today/Monthly/Future/Collections/Search/Index and Task states/lineage remain correct;
+9. confirm Tracker/schema-v2 operations work after restore/migration;
+10. validate Backup / Restore behavior on alpha.3;
+11. validate Open Export reauthentication plus JSON/Markdown Save/Copy;
+12. validate Appearance and About/version identity.
 
-1. install/use public `v1.0.0-alpha.2` signed APK;
-2. create or retain controlled representative journal data across Today/Monthly/Future/Collections and other existing alpha.2 surfaces;
-3. create an encrypted alpha.2 backup before install-over as a safety/compatibility artifact;
-4. verify the candidate alpha.3 APK uses the same public release-signing certificate;
-5. install alpha.3 over alpha.2 using the supported install-over path;
-6. unlock with the existing master password;
-7. confirm schema-v1 data migrated to schema v2 without loss or reset;
-8. confirm restart persistence after migration;
-9. confirm Today/Monthly/Future/Collections/Search/Index and Task states/lineage remain correct;
-10. create/mark/end a Tracker after migration and confirm persistence;
-11. validate Backup / Restore behavior on alpha.3;
-12. validate Open Export reauthentication plus JSON/Markdown Save/Copy;
-13. validate Appearance and About/version identity.
+Release evidence for alpha.3 used a retained alpha.2 encrypted backup with SHA-256:
 
-Required independent backup path:
+```text
+d6d6b7f94b869d95a61369ff675ba96dcc51633917995734e68dfac46628a23f
+```
 
-1. preserve a known alpha.2 encrypted backup;
-2. restore it into a controlled alpha.3 environment where restore is allowed;
-3. confirm restored schema-v1 journal opens/migrates correctly and existing data remains intact;
-4. confirm Tracker/schema-v2 operations work after restore/migration.
+That backup was copied to a physical Android device, restored into a clean alpha.3 release installation, and the restored journal remained usable after force-stop and relaunch. This validates the supported alpha.2 -> alpha.3 backup/restore migration boundary together with the retained schema-v1-to-v2 migration tests.
 
-A failure in either path is a release blocker. Do not "fix" compatibility by deleting/recreating user journal data.
+The lack of direct install-over for this one transition is a signing-lineage limitation, not a journal-format reset. Do not "fix" it by deleting or recreating user journal data without a backup.
 
 ## Physical Android alpha.3 smoke test
 
 Before public distribution test the signed candidate on physical Android hardware:
 
-- direct alpha.2 -> alpha.3 install-over as above;
+- clean install of the exact signed alpha.3 artifact;
+- alpha.2 encrypted backup -> alpha.3 Restore/migration;
 - unlock/restart persistence;
 - manual/inactivity/system-lock paths where practical;
 - Today/Monthly/Future/Collections basic operation;
-- Tracker operation after upgrade;
+- Tracker operation after restore/migration;
 - Backup/Restore file-provider flow;
 - Open Export reauthentication, Save, and clipboard Copy;
 - Appearance persistence;
-- About version/project identity;
-- clean install of alpha.3 where useful as a separate sanity check.
+- About version/project identity.
 
 Do not expose real private journal content or signing secrets in release evidence.
 
@@ -213,6 +222,19 @@ A checksum belongs to one exact artifact and must be regenerated whenever the ar
 
 Never publish an artifact from a different source head without recording that distinction. If documentation-only commits occur after validated binaries are built, record the exact build-source head separately rather than pretending the binaries were built from a later commit.
 
+Validated alpha.3 candidate artifacts built from `e19ab982d2898cae223e396a1c2e4e26fc0446b0`:
+
+```text
+bf11b1a9df952fdc3d4ce333490872a1b885dab2a56a56b6ff1062bd6b9d0189  daymark-1.0.0-alpha.3-linux-x64.tar.gz
+007f23c006282cb3eb9a7a2c62a97018631e36641d1539278436ba8d4ee41199  daymark-1.0.0-alpha.3-android.apk
+```
+
+Android candidate certificate SHA-256:
+
+```text
+77bca227f0cd95eb9e3c5a2c24902ba9d20e296dbdba9fde87d024cd0febb311
+```
+
 ## Alpha.3 Ready gate
 
 Before creating the alpha.3 tag/GitHub Release require:
@@ -223,10 +245,11 @@ Before creating the alpha.3 tag/GitHub Release require:
 - schema-v1-to-v2 migration tests green;
 - Linux release build/manual smoke green;
 - signed Android release build/physical smoke green;
-- direct public alpha.2 -> alpha.3 install-over green;
 - alpha.2 encrypted backup -> alpha.3 restore/migration green;
+- direct alpha.2 -> alpha.3 install-over explicitly documented as unsupported because the alpha.2 private signing key is unavailable;
 - Open Export reauthentication/Save/Copy checks green;
-- signing certificate continuity confirmed;
+- alpha.3 signing certificate identity confirmed and preserved for future install-over maintenance releases;
+- exact artifact hashes recorded with the exact binary build-source head;
 - dependency/security review complete;
 - no signing secrets/local-only files in Git;
 - product-scope freeze respected, with no feature additions in the release branch;
@@ -249,7 +272,7 @@ Final distributed alpha.2 SHA-256 values:
 
 GitHub's published release-asset digests match those values. `SHA256SUMS` is attached to the release.
 
-The alpha.2 release also established the public Android signing certificate shown above and validated real migration from the earlier debug-signed development lineage through encrypted Backup / Restore.
+The alpha.2 release established its own Android signing certificate shown above and validated migration from the earlier debug-signed development lineage through encrypted Backup / Restore. Its corresponding private signing key is no longer available during alpha.3 preparation, so the immutable alpha.2 artifact remains a separate historical signing lineage.
 
 Detailed alpha.2 historical evidence remains preserved in the alpha.2 tag/release, Git history, and prior release commits. It is historical evidence, not the active alpha.3 procedure.
 
