@@ -6,7 +6,7 @@ This is Daymark's canonical living handoff. Read this file and `AGENTS.md` befor
 
 - Phase: **feature-complete prerelease maintenance**.
 - Integration branch: `main` only.
-- Current integrated `main` baseline: `f09665a76e0eb7c068a02d9e4513c53bd2b48481`, squash merge of PR #42 `build(release): prepare 1.0.0-alpha.3`.
+- Current integrated `main` baseline: `c5879d147958da33eec20f0332cd96e38693788e`, squash merge of PR #43 `docs: record alpha.3 publication`.
 - Latest published prerelease: `v1.0.0-alpha.3` / `1.0.0-alpha.3+3`, published on 2026-09-06 for Linux x64 and Android.
 - Published alpha.3 release source commit: `f09665a76e0eb7c068a02d9e4513c53bd2b48481`.
 - Alpha.3 validated binary build-source head: `e19ab982d2898cae223e396a1c2e4e26fc0446b0`; later documentation/release commits are not presented as the binary build source.
@@ -17,7 +17,11 @@ This is Daymark's canonical living handoff. Read this file and `AGENTS.md` befor
 - Runtime targets are **Linux and Android**.
 - Pinned toolchain: Flutter 3.47.2 / Dart 3.13.2.
 - Production Argon2id baseline: 19 MiB / 2 iterations / p=1 / 32-byte output.
-- `release/1.0.0-alpha.3` is retained as historical release evidence; there is no active release-stabilization branch.
+- `release/1.0.0-alpha.3` is retained as historical release evidence.
+- Active release-stabilization branch: `release/1.0.0-beta.1`, created from `main` commit `c5879d147958da33eec20f0332cd96e38693788e`.
+- Current release candidate application version: `1.0.0-beta.1+4`.
+- Planned release tag: `v1.0.0-beta.1`.
+- Latest published prerelease remains `v1.0.0-alpha.3` until beta.1 is explicitly promoted and published.
 - Completed release and feature branches are retained as historical reference/backup and are not deleted as routine cleanup.
 
 ## Product scope is frozen
@@ -41,7 +45,7 @@ The following are **not planned product work** and must not be treated as deferr
 - recovery-secret UX or account/password-reset systems;
 - cloud sync, accounts, collaboration, network services, or AI features;
 - additional platforms beyond Linux and Android;
-- additional product languages beyond English and Portuguese (Brazil);
+- additional product languages beyond English, Portuguese (Brazil), and Spanish;
 - richer Search/indexing, new migration destinations, new reflection systems, new Collection models, or other feature extensions;
 - dashboards, gamification, planner/Kanban/workspace abstractions, freeform pages/canvas editing, or engagement mechanics.
 
@@ -53,9 +57,11 @@ A requested change that alters what Daymark *does* rather than fixing or preserv
 
 Release progression may continue even though feature development is frozen. Alpha, beta, RC, stable, and later maintenance releases are validation/stability milestones, not permission to reopen feature scope.
 
-Alpha.3 has been published and the release-stabilization cycle is complete.
+Alpha.3 has been published and its release-stabilization cycle is complete.
 
-Development is back on `main` in maintenance mode. The next release version is chosen from actual stabilization, bug-fix, security, compatibility, packaging, or supported-platform needs, not from a feature roadmap.
+The maintainer has approved promotion work for `v1.0.0-beta.1`. The active beta.1 release branch is a stabilization and release-validation boundary only; product scope remains frozen and no feature expansion is permitted.
+
+Beta.1 is intended to promote the existing feature-complete product line after additional compatibility, platform, persistence, signing, and release validation.
 
 ## Product doctrine
 
@@ -66,7 +72,7 @@ Daymark is a faithful digital Bullet Journal, not a generic productivity suite.
 - no feeds, ads, streaks, XP, productivity scoring, gamification, or attention-seeking UI;
 - no automatic choices that replace deliberate reflection;
 - no generic planner/Kanban/workspace abstractions;
-- English is canonical/fallback; exact `pt_BR` is the supported additional locale;
+- English is canonical/fallback; exact `pt_BR` and general Spanish `es` are the supported additional locales;
 - primary navigation concepts are Today, Monthly, Future, Collections, Search, and Index;
 - optional Daymark Trackers remain the one documented non-canonical adaptation and are already part of the frozen product.
 
@@ -212,6 +218,79 @@ Release-critical compatibility result:
 
 The published tag and artifacts are immutable release evidence. Future maintenance starts from `main`.
 
+## Active beta.1 release preparation
+
+- candidate application version: `1.0.0-beta.1+4`;
+- planned annotated tag: `v1.0.0-beta.1`;
+- active branch: `release/1.0.0-beta.1`;
+- Draft PR: #44 `build(release): prepare 1.0.0-beta.1`, opened from head `6bf9ff8b18dabb5e5913ba5d628f8d1fb17e7738`;
+- release base: `c5879d147958da33eec20f0332cd96e38693788e`;
+- latest published prerelease remains `v1.0.0-alpha.3`;
+- schema remains v2; beta.1 does not introduce a schema change;
+- Linux and Android remain the only release targets;
+- English, Portuguese (Brazil), and Spanish are the only supported product languages; the maintainer explicitly approved Spanish as the sole language-scope expansion on 2026-09-06;
+- Android beta.1 must preserve the alpha.3 signing certificate SHA-256 `77bca227f0cd95eb9e3c5a2c24902ba9d20e296dbdba9fde87d024cd0febb311`.
+
+The beta.1 promotion gate must prove:
+
+1. complete generated-source, formatting, analyzer, and Flutter test validation;
+2. Linux release build, `.deb` and AppImage packaging validation, and maintainer smoke validation for both formats;
+3. signed Android release build using the exact alpha.3 signing lineage;
+4. direct Android `alpha.3 -> beta.1` install-over succeeds without uninstalling alpha.3;
+5. the existing alpha.3 journal remains unlockable with the same master password after install-over;
+6. journal data, schema-v2 Trackers, Task states, migration lineage, appearance, and persistence remain intact after upgrade and force-stop/relaunch;
+7. encrypted Backup / Restore remains valid on beta.1;
+8. Open Export reauthentication plus JSON/Markdown Save/Copy remains valid;
+9. exact release artifact SHA-256 values and exact binary build-source head are recorded;
+10. exact Ready PR head passes required CI and `merge-gate`;
+11. publication occurs only after explicit maintainer promotion approval.
+
+Local validation evidence gathered on 2026-09-06 for beta.1 implementation commit `70885b9a7f9906d0a54d696b43dc2cf18a966931`:
+
+- locked dependency resolution, localization generation, Drift generation, migration snapshot verification, and generated-artifact drift check passed;
+- pinned formatting check passed with no changes required;
+- `flutter analyze` passed with no issues;
+- the complete Flutter suite passed with 214 tests, including Spanish catalog parity, critical security-language assertions, general Spanish regional-locale resolution, and unsupported-locale English fallback;
+- Linux debug and release builds passed, including a release rebuild after Spanish localization generation;
+- beta.1 Linux distribution now replaces the raw `.tar.gz` candidate with `.deb` and AppImage packages generated from the same release bundle; the local packaging script produced and structurally validated both formats, and offline AppStream validation passed with `appstreamcli` 1.0.5;
+- complete Portuguese (Brazil) user Wiki source now lives under `wiki/`; PRs to `main` validate it without write permission, and only a merged push to `main` synchronizes it automatically to `daymark.wiki.git`;
+- Android debug and signed release APK builds passed;
+- the signed release APK was verified as one signer with the required alpha.3 certificate SHA-256 `77bca227f0cd95eb9e3c5a2c24902ba9d20e296dbdba9fde87d024cd0febb311`;
+- the backup recovery test emitted Drift's expected debug warning because it deliberately keeps the source database open while validating a separately restored snapshot; both databases are distinct and explicitly closed;
+- the Android toolchain emitted non-blocking SDK XML-version and unused `CupertinoIcons` font warnings; no `CupertinoIcons` reference exists in Daymark source, tests, or dependency declarations.
+
+Candidate artifacts regenerated from exact beta.1 implementation commit `70885b9a7f9906d0a54d696b43dc2cf18a966931`:
+
+- Debian `amd64` candidate SHA-256: `41ae8d09bb4efcb2b7055a034809263331f4ed25879c52d4a5455f475231c301`;
+- AppImage x86-64 candidate SHA-256: `bcaad4e3d777cb8d13cd4217ff28009eb60abc69147422125cb1806daf0ac2dc`;
+- signed Android APK candidate SHA-256: `4ec6dd5166fc1ca343b4080b01d12c9e70bf6aabb565a83b23614169cde0aab9`;
+- Android signer certificate SHA-256 remains `77bca227f0cd95eb9e3c5a2c24902ba9d20e296dbdba9fde87d024cd0febb311`.
+
+Draft PR CI #533 (`https://github.com/marcelositr/daymark/actions/runs/34035717273`) passed `dev-check` on exact PR head `4e18ffbc1e3e14b6afe450d7c259de3fbbfb4ec3`. The follow-up Draft CI #534 (`https://github.com/marcelositr/daymark/actions/runs/34035887839`) passed `dev-check` on exact documentation head `bbfeace0d4fd426d106ade114dd793ccbb8fada2`. As expected for a Draft PR, `quality`, Linux, Android, dependency review, and `merge-gate` were skipped in both runs. This evidence validates the Draft tier only; the final documented Ready head still requires the complete merge tier.
+
+Maintainer Linux smoke validation passed for both beta.1 package formats using controlled disposable data and Spanish `es_ES` locale:
+
+- the Debian package installed as `daymark 1.0.0~beta.1 amd64`, registered `/usr/bin/daymark`, desktop metadata, icon, and AppStream metadata, and passed `dpkg --verify`;
+- the installed Debian application completed journal creation, Task/Event/Note capture, principal navigation, appearance, About version `1.0.0-beta.1+4`, encrypted Backup dialog, plaintext Open Export warning, lock/unlock, and normal window close with exit code 0;
+- the AppImage completed the same controlled Spanish-language flow and closed normally;
+- no unexpected English text, clipping, overflow, inaccessible control, or functional failure was reported in either package;
+- the observed GTK/OpenGL resize warning did not prevent rendering, interaction, or normal shutdown.
+
+Maintainer physical-Android validation passed on an older `M7_3G_PLUS` device running Android 8.1/API 27 on ARMv7:
+
+- the exact published alpha.3 APK with SHA-256 `007f23c006282cb3eb9a7a2c62a97018631e36641d1539278436ba8d4ee41199` and the maintained signing certificate was clean-installed first;
+- controlled alpha.3 data covered Today Task states/Event/Note, Monthly Task/Calendar/Tracker mark, Future, Collection content and migration, Index, Search, appearance, and encrypted Backup;
+- `adb install -r` installed beta.1 version code 4 directly over alpha.3 version code 3 without uninstalling or changing the package data directory; Android preserved the original `firstInstallTime` and updated only `lastUpdateTime`;
+- the existing journal unlocked with the same master password and retained all controlled data, schema-v2 Tracker state, Task state/lineage, Index/Search behavior, and appearance;
+- a new post-upgrade entry persisted after a real ADB force-stop and relaunch;
+- an encrypted Backup created by the previous version restored successfully into beta.1;
+- Open Export rejected an incorrect password before export, then completed JSON Save, Markdown Save, and clipboard Copy after correct reauthentication with the plaintext/clipboard warning present;
+- no Android functional or compatibility anomaly was reported.
+
+Linux and physical-Android release behavior gates are complete. The remaining merge eligibility boundary is exact final-head Ready CI including `quality`, Linux, Android, dependency review, and `merge-gate`.
+
+No product capability beyond the maintainer-approved general Spanish localization belongs in this branch.
+
 ## Merged product baseline
 
 - PR #13: encrypted create/unlock/manual lock plus Today.
@@ -240,11 +319,13 @@ The published tag and artifacts are immutable release evidence. Future maintenan
 - PR #38: optional Monthly Trackers and schema v2, squash `0c77e689e8feed8bdd5245f86b26774d47289d12`.
 - PR #40: final branding/UI/UX/accessibility polish, squash `740120052b56f155a136ac640cbaa1831cdd1e74`.
 - PR #41: About/support identity and structured issue entry points, squash `a08c5f8f1e2bc340801f9e3f33e9353d6cb9122b`.
+- PR #42: alpha.3 release preparation and frozen release baseline, squash `f09665a76e0eb7c068a02d9e4513c53bd2b48481`.
+- PR #43: post-alpha.3 publication-state documentation alignment, squash `c5879d147958da33eec20f0332cd96e38693788e`.
 
 ## Next development state
 
-Daymark is back on `main` in maintenance mode after publication of `v1.0.0-alpha.3`.
+Daymark is currently validating `v1.0.0-beta.1` on `release/1.0.0-beta.1` after publication of `v1.0.0-alpha.3`.
 
 There is no feature backlog to resume. New work begins only from observed bugs, vulnerabilities, compatibility failures, supported platform/toolchain breakage, release/packaging defects, accessibility/localization corrections, or documentation inaccuracies.
 
-No next release is currently selected. A beta, RC, stable release, or another prerelease is chosen only when actual validation or maintenance needs justify it.
+The selected next release is `v1.0.0-beta.1`. Draft PR #44 is open. The next concrete step is to continue the beta.1 gate with installed `.deb` and AppImage smoke checks plus physical Android `alpha.3 -> beta.1` install-over validation, then move the exact final PR head to Ready for required CI. No merge, tag, promotion, or publication is authorized until the required exact-head evidence is complete and the maintainer explicitly approves it.

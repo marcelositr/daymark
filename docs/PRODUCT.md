@@ -33,7 +33,7 @@ The following are intentionally **not planned** and must not be treated as merel
 - cloud sync, accounts, remote services, collaboration, or social features;
 - AI-generated or AI-assisted journal content inside Daymark;
 - Windows, macOS, iOS, web, or other additional product targets;
-- additional product languages beyond English and Portuguese (Brazil);
+- additional product languages beyond English, Portuguese (Brazil), and Spanish;
 - explicit language-selection UI;
 - new migration destinations or automatic rollover/migration behavior;
 - editing historical Daily/Monthly logs;
@@ -265,17 +265,18 @@ The architecture keeps domain/application logic reasonably platform-independent 
 The supported product languages are:
 
 - English;
-- Portuguese (Brazil).
+- Portuguese (Brazil);
+- Spanish.
 
 English is the canonical source/fallback locale.
 
-On first run, Daymark follows the operating-system locale only when it matches a supported product locale. Exact Brazilian Portuguese selects `pt_BR`; English selects English; unsupported locales fall back to English.
+On first run, Daymark follows the operating-system locale only when it matches a supported product locale. Exact Brazilian Portuguese selects `pt_BR`; any Spanish regional locale selects general Spanish `es`; English selects English; unsupported locales fall back to English.
 
 The Flutter localization generator requires a parent `pt` resource when `pt_BR` exists. That parent is a technical fallback and does not expand the supported-language promise.
 
 Product behavior, domain rules, persistence values, and identifiers never depend on translated display strings.
 
-Additional language support and explicit language-selection UI are not planned under the frozen scope.
+The maintainer explicitly approved Spanish as the sole language-scope expansion on 2026-09-06. Additional language support beyond English, Portuguese (Brazil), and Spanish, plus explicit language-selection UI, remain outside the frozen scope.
 
 ## Navigation
 

@@ -6,6 +6,8 @@ Daymark is a minimal, local-first Bullet Journal application for Linux and Andro
 
 Project website: [devnux.com.br/daymark](https://devnux.com.br/daymark)
 
+User guide: [Daymark Wiki](https://github.com/marcelositr/daymark/wiki)
+
 ## Project status
 
 Daymark is **feature-complete and in prerelease stabilization**.
@@ -24,7 +26,7 @@ New product features, additional platforms, additional product languages, cloud/
 
 The latest published prerelease is [`v1.0.0-alpha.3`](https://github.com/marcelositr/daymark/releases/tag/v1.0.0-alpha.3), published on 2026-09-06 for Linux x64 and Android.
 
-Alpha.3 packages the completed post-alpha.2 product line. Daymark has returned to `main` maintenance mode; the next release version will be chosen from observed stabilization, bug-fix, security, compatibility, or platform-maintenance needs rather than a feature roadmap.
+Alpha.3 packages the completed post-alpha.2 product line. `v1.0.0-beta.1` is now in release stabilization as a promotion of that same feature-complete product line. Beta preparation is limited to validation, bugs, security, compatibility, packaging, and supported-platform corrections; it does not reopen feature development.
 
 ## Current product
 
@@ -48,7 +50,7 @@ Daymark includes:
 - Linux keyboard/focus refinements, accessibility semantics, consistent empty states, and adaptive navigation;
 - a localized About surface exposing the app version, project website, source, bug-reporting location, author, GPL-3.0-or-later license, and open-source licenses;
 - structured public Bug Report intake, with blank issues disabled and security vulnerabilities directed away from public Issues;
-- Linux and Android release packaging with Android release signing that fails closed if signing configuration is missing.
+- Linux release packaging as Debian (`.deb`) and AppImage artifacts, plus Android release packaging with signing that fails closed if signing configuration is missing.
 
 The pinned toolchain is Flutter 3.47.2 with Dart 3.13.2.
 
@@ -59,7 +61,7 @@ The pinned toolchain is Flutter 3.47.2 with Dart 3.13.2.
 - Local-first and offline-first.
 - Encryption at rest for persisted journal data.
 - Linux and Android are the supported platforms.
-- English and Portuguese (Brazil) are the supported product languages.
+- English, Portuguese (Brazil), and Spanish are the supported product languages.
 - Open, documented user-data portability.
 - No advertising, feeds, engagement loops, streaks, productivity scoring, gamification, or attention-seeking UI.
 - Automation must not remove deliberate reflection or migration decisions from the method.

@@ -6,7 +6,19 @@ This file is for user-visible behavior, data compatibility, security, packaging,
 
 ## Unreleased
 
-No post-alpha.3 changes are staged yet. The functional product scope is frozen; future entries are expected to be maintenance fixes rather than new features unless the maintainer explicitly reverses that policy.
+### Changed
+
+- Prerelease packaging candidate advances to `1.0.0-beta.1+4`.
+- Beta.1 is a stability promotion of the feature-complete alpha.3 product line; functional scope remains frozen and no feature expansion is included.
+- Linux distribution replaces the raw `.tar.gz` bundle with installable Debian (`.deb`) and portable AppImage packages, both built from the same Flutter release bundle.
+- A version-controlled user Wiki documents the complete frozen product in Portuguese (Brazil); pull requests validate it and merges to `main` publish it automatically to GitHub Wiki.
+- Spanish (`es`) joins English and Portuguese (Brazil) as the only supported product languages, following Spanish regional system locales without adding a manual language selector.
+
+### Compatibility
+
+- Schema remains v2 with no beta.1 database schema change.
+- Android beta.1 is required to preserve the alpha.3 signing lineage and support direct install-over from published alpha.3 while retaining the existing journal and master-password unlock.
+- Published alpha.2 -> alpha.3 portable encrypted Backup / clean-install / Restore compatibility remains documented and unchanged.
 
 ## [1.0.0-alpha.3] - 2026-09-06
 

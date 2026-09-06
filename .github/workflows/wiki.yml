@@ -1,0 +1,57 @@
+name: Wiki
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'wiki/**'
+      - 'tool/validate_wiki.py'
+      - '.github/workflows/wiki.yml'
+
+concurrency:
+  group: daymark-wiki
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: validate-wiki
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+
+      - name: Validate Wiki source
+        run: python3 tool/validate_wiki.py
+
+  publish:
+    name: publish-wiki
+    if: github.event_name == 'push'
+    needs:
+      - validate
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+
+      - name: Synchronize GitHub Wiki
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git clone "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.wiki.git" wiki-repository
+          find wiki-repository -mindepth 1 -maxdepth 1 ! -name .git -exec rm -rf {} +
+          cp -a wiki/. wiki-repository/
+          git -C wiki-repository config user.name "github-actions[bot]"
+          git -C wiki-repository config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git -C wiki-repository add --all
+          if git -C wiki-repository diff --cached --quiet; then
+            echo "Wiki is already synchronized."
+          else
+            git -C wiki-repository commit -m "docs: synchronize wiki from ${GITHUB_SHA}"
+            git -C wiki-repository push origin HEAD:master
+          fi

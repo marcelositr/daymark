@@ -58,8 +58,19 @@ void main() {
   group('locale resolution', () {
     test('uses English when the system locale is unsupported', () {
       expect(
-        resolveDaymarkLocale(const <Locale>[Locale('es', 'BR')]),
+        resolveDaymarkLocale(const <Locale>[Locale('fr', 'FR')]),
         const Locale('en'),
+      );
+    });
+
+    test('uses Spanish for any Spanish regional locale', () {
+      expect(
+        resolveDaymarkLocale(const <Locale>[Locale('es', 'MX')]),
+        const Locale('es'),
+      );
+      expect(
+        resolveDaymarkLocale(const <Locale>[Locale('es', 'ES')]),
+        const Locale('es'),
       );
     });
 

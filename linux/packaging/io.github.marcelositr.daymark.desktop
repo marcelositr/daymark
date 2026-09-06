@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Daymark
+Comment=A minimal, local-first Bullet Journal
+Exec=daymark
+Icon=io.github.marcelositr.daymark
+Terminal=false
+Categories=Office;
+StartupNotify=true
+StartupWMClass=daymark

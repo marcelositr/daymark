@@ -58,6 +58,9 @@ jobs:
       - name: Analyze
         run: flutter analyze
 
+      - name: Validate user Wiki
+        run: python3 tool/validate_wiki.py
+
   quality:
     name: quality
     if: github.event_name == 'push' || (github.event_name == 'pull_request' && !github.event.pull_request.draft)
@@ -97,6 +100,9 @@ jobs:
       - name: Test
         run: flutter test
 
+      - name: Validate user Wiki
+        run: python3 tool/validate_wiki.py
+
   linux-build:
     name: linux-build
     if: github.event_name == 'push' || (github.event_name == 'pull_request' && !github.event.pull_request.draft)
@@ -112,16 +118,36 @@ jobs:
           channel: stable
           cache: true
 
-      - name: Install Linux build dependencies
+      - name: Install Linux build and packaging dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install --yes clang cmake ninja-build pkg-config libgtk-3-dev
+          sudo apt-get install --yes clang cmake ninja-build pkg-config libgtk-3-dev desktop-file-utils appstream
 
       - name: Resolve locked dependencies
         run: flutter pub get --enforce-lockfile
 
-      - name: Build Linux debug bundle
-        run: flutter build linux --debug
+      - name: Build Linux release bundle
+        run: flutter build linux --release --no-pub
+
+      - name: Download verified appimagetool
+        run: |
+          curl --fail --location --output build/appimagetool-x86_64.AppImage https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage
+          echo "a6d71e2b6cd66f8e8d16c37ad164658985e0cf5fcaa950c90a482890cb9d13e0  build/appimagetool-x86_64.AppImage" | sha256sum --check --strict
+          chmod 0755 build/appimagetool-x86_64.AppImage
+          curl --fail --location --output build/runtime-x86_64 https://github.com/AppImage/type2-runtime/releases/download/continuous/runtime-x86_64
+          echo "1cc49bcf1e2ccd593c379adb17c9f85a36d619088296504de95b1d06215aebbf  build/runtime-x86_64" | sha256sum --check --strict
+
+      - name: Package and validate Linux distributions
+        run: tool/package_linux.sh build/appimagetool-x86_64.AppImage build/runtime-x86_64
+
+      - name: Upload Linux distribution candidates
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: daymark-linux-x64
+          path: |
+            build/distributables/*.deb
+            build/distributables/*.AppImage
+          if-no-files-found: error
 
   android-build:
     name: android-build
