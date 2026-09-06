@@ -4,9 +4,33 @@
 
 Daymark is prerelease software.
 
-The currently supported line is the latest published prerelease, `1.0.0-alpha.2`, plus the current `main` development line. Older prereleases and development builds are unsupported unless a release note explicitly says otherwise.
+Until alpha.3 is published, the currently supported public line is the latest published prerelease, `1.0.0-alpha.2`, plus the current `main` / explicitly active release-stabilization line for development validation. Older prereleases and development builds are unsupported unless a release note explicitly says otherwise.
 
-Because `v1.0.0-alpha.2` has been published for real user journals, its persisted security/data formats are compatibility-sensitive. A later supported build must not silently make an alpha.2 journal, key envelope, or encrypted backup unreadable.
+`1.0.0-alpha.3+3` is currently being prepared as the next prerelease. Publishing it requires the release gates documented in `PROJECT.md`, `docs/WORKFLOW.md`, and `docs/RELEASE.md`.
+
+Because `v1.0.0-alpha.2` has been published for real user journals, its persisted security/data formats are compatibility-sensitive. A later supported build must not silently make an alpha.2 journal, key envelope, encrypted backup, or documented migration path unreadable. Android install-over from alpha.2 to alpha.3 is not claimed because the alpha.2 private signing key is unavailable; the supported transition is explicit encrypted Backup / clean install / Restore as documented in `docs/RELEASE.md`.
+
+## Frozen security product boundary
+
+Daymark's functional product scope was frozen on 2026-09-05.
+
+Security maintenance remains mandatory, but the freeze means security work is aimed at **protecting the product that already exists**, not adding convenience features or new trust models.
+
+The following are not planned Daymark capabilities under the freeze:
+
+- device-assisted or biometric unlock;
+- Android Keystore/Linux keyring convenience unlock layers;
+- recovery-secret UX;
+- account-based password reset, maintainer recovery, or backdoors;
+- cloud/network/account features;
+- automatic remote synchronization;
+- attachments;
+- plaintext/full-text shadow indexes;
+- automatic backup scheduling/retention systems.
+
+If a concrete vulnerability requires a change to cryptographic parameters, dependencies, storage handling, platform integration, or formats, that is permitted maintenance only when it uses an explicit reviewed compatibility/migration path and preserves supported user data.
+
+Historical security-foundation documents may describe some of the capabilities above as future/deferred. Those references are historical context, not an active roadmap.
 
 ## Reporting a vulnerability
 
@@ -14,17 +38,19 @@ Please do not disclose exploitable vulnerabilities in a public issue before a fi
 
 If private vulnerability reporting is enabled for this repository, use GitHub's private vulnerability reporting flow. Otherwise, contact the maintainer privately through the contact information associated with the repository owner.
 
+Public GitHub Issues are for bugs and must not contain passwords, journal contents, backups/exports, key material, recovery material, or other sensitive/personal data.
+
 ## Dependency and supply-chain policy
 
-Daymark must not knowingly introduce a dependency with an unresolved known vulnerability unless there is no reasonable alternative and the exception is explicitly documented.
+Daymark must not knowingly introduce or retain a dependency with an unresolved known vulnerability unless there is no reasonable maintenance alternative and the exception is explicitly documented.
 
 Security exceptions must record:
 
-- the advisory identifier;
-- why the dependency cannot currently be removed or upgraded;
-- the practical exposure in Daymark;
-- the upstream tracking reference;
-- a review condition or removal plan.
+- advisory identifier;
+- why the dependency cannot currently be removed/upgraded;
+- practical exposure in Daymark;
+- upstream tracking reference;
+- review/removal condition.
 
 Permanent blanket ignores are not acceptable.
 
@@ -35,14 +61,16 @@ Supply-chain rules:
 - stable published packages are preferred over mutable Git dependencies;
 - GitHub Actions are pinned to immutable commit SHAs;
 - CI includes static analysis, tests, native builds, and dependency/security review at the applicable merge boundary;
-- secrets must never be committed to the repository;
+- secrets must never be committed;
 - production code must not rely on dependencies fetched from mutable Git branches.
+
+Dependency maintenance must not be used to smuggle in new product capabilities under the frozen scope.
 
 ## Local-first data model and threat baseline
 
-Daymark is local-first. Core journal data must not be transmitted to remote services as part of normal operation.
+Daymark is local-first and offline-first. Core journal data is not transmitted to remote services as part of normal operation.
 
-Any future network feature must be optional, explicit, documented, and isolated from the core local workflow.
+No network product feature is planned under the frozen scope.
 
 Daymark assumes that a phone, computer, removable storage device, or backup medium containing journal data may be lost, stolen, sold, transferred, or accessed by a curious third party.
 
@@ -58,18 +86,18 @@ Journal entries may contain highly sensitive information, so encryption at rest 
 
 The implemented persistence baseline is Drift with `package:sqlite3` 3.x configured to bundle SQLite3MultipleCiphers through native build hooks.
 
-Daymark verifies during database initialization that the encrypted SQLite implementation is present. If cipher support is missing or misconfigured, the application must fail safely rather than opening or creating a plaintext journal database.
+Daymark verifies during database initialization that the encrypted SQLite implementation is present. If cipher support is missing or misconfigured, the application fails safely rather than opening or creating a plaintext journal database.
 
-The current database cipher is SQLite3MultipleCiphers ChaCha20-Poly1305 (`chacha20` / sqleet mode). Changing the database cipher requires a documented security and data-migration review.
+The database cipher is SQLite3MultipleCiphers ChaCha20-Poly1305 (`chacha20` / sqleet mode). Changing the database cipher is not normal product work; it requires a concrete security/compatibility reason plus documented migration/testing.
 
-The database receives 48 bytes of raw journal key material in SQLite3MultipleCiphers' documented ChaCha20 raw-key-plus-salt form:
+The database receives 48 bytes of raw journal key material in SQLite3MultipleCiphers' ChaCha20 raw-key-plus-salt form:
 
 - 32 bytes of cryptographically random journal data-encryption key;
 - 16 bytes of random cipher salt.
 
 The master password is never passed directly to SQLite3MultipleCiphers.
 
-`PRAGMA key` does not prove that a supplied key is correct. Daymark performs a real database read after applying the cipher/key. An existing journal that cannot be authenticated/read with the supplied key fails with the generic journal-unlock error.
+`PRAGMA key` does not prove that a supplied key is correct. Daymark performs a real database read after applying cipher/key. An existing journal that cannot be authenticated/read with the supplied key fails with the generic journal-unlock error.
 
 Tests cover correct-key reopen, incorrect-key rejection, unreadability through ordinary unkeyed SQLite, absence of representative sensitive plaintext in the database file, and preservation of normal schema constraints through encrypted persistence.
 
@@ -77,16 +105,16 @@ Tests cover correct-key reopen, incorrect-key rejection, unreadability through o
 
 A master password is required when a journal is created.
 
-The master password is not used directly as the database encryption key. Daymark generates cryptographically random journal key material and protects access to it using a password-derived key-encryption key.
+The master password is not used directly as the database encryption key. Daymark generates random journal key material and protects access to it using a password-derived key-encryption key.
 
-The application cryptography baseline is the published Dart `cryptography` package 2.9.0:
+The application cryptography baseline is `cryptography` 2.9.0:
 
 - Argon2id derives the password-based key-encryption key;
-- XChaCha20-Poly1305 authenticated encryption protects the serialized journal key material.
+- XChaCha20-Poly1305 authenticated encryption protects serialized journal key material.
 
 The version-1 key envelope is a strict JSON object outside the encrypted Drift database. It records only metadata required before the database can be opened:
 
-- Daymark key-envelope format identifier and version;
+- Daymark key-envelope format identifier/version;
 - Argon2id identifier and explicit parameters;
 - random 16-byte KDF salt;
 - XChaCha20-Poly1305 algorithm identifier;
@@ -98,11 +126,11 @@ Interpretation-sensitive metadata is authenticated as additional authenticated d
 
 The master password itself is never stored.
 
-Changing the master password must re-protect the same random journal key rather than require semantic journal data to be rewritten merely because authentication material changed.
+Any maintenance change that alters key-envelope interpretation or password/KDF behavior must preserve explicit compatibility for supported journals. No release may solve a password/key-envelope compatibility issue by silently recreating the journal.
 
 ### Argon2id production parameters
 
-The initial production baseline was frozen on 2026-09-02 after profile-mode measurements on physical Linux and Android hardware:
+The production baseline was frozen on 2026-09-02 after profile-mode measurements on physical Linux and Android hardware:
 
 - memory: 19 MiB (`19456 KiB`);
 - iterations: 2;
@@ -110,17 +138,13 @@ The initial production baseline was frozen on 2026-09-02 after profile-mode meas
 - derived-key length: 32 bytes;
 - random KDF salt: 16 bytes per envelope.
 
-The benchmark record and rationale are defined in `docs/ARGON2_BENCHMARK.md`.
-
-The review compared the OWASP-listed 19 MiB / 2, 12 MiB / 3, 9 MiB / 4, and 7 MiB / 5 tradeoffs on an Intel Core i5-2400 Linux system, a Samsung SM-A015M Android device, and an intentionally conservative M7 3G PLUS ARM32 Android device.
-
-Lower-memory alternatives produced negligible desktop benefit and only modest Android latency improvements. Daymark retains the 19 MiB / 2 baseline rather than lowering memory hardness merely to reduce unlock delay on unusually slow hardware.
+The benchmark record/rationale are defined in `docs/ARGON2_BENCHMARK.md`.
 
 Envelope metadata is untrusted until authentication succeeds, so Daymark validates Argon2id parameters before allocation/derivation. Parser safety ceilings remain 64 MiB memory, 5 iterations, parallelism 4, and exactly 32 bytes of derived output. These ceilings are defensive input bounds, not production targets.
 
-KDF parameters remain explicit versioned envelope data so future releases can strengthen defaults without reinterpreting existing journals.
+Published envelope metadata remains explicit so a security maintenance release can strengthen new defaults if a concrete security need justifies it without reinterpreting existing journals.
 
-`v1.0.0-alpha.2` publishes version-1 envelopes with this interpretation. Any future change to KDF interpretation/default migration for supported journals therefore requires an explicit tested compatibility path.
+`v1.0.0-alpha.2` publishes version-1 envelopes with this interpretation. Any change to KDF interpretation/default migration for supported journals requires an explicit tested compatibility path.
 
 ## Sensitive-memory limits
 
@@ -128,96 +152,92 @@ Dart and Flutter do not provide a universal guarantee that every runtime copy of
 
 Daymark follows practical ownership rules rather than claiming perfect memory erasure:
 
-- secret byte buffers are kept narrowly scoped;
+- secret byte buffers are narrowly scoped;
 - owned mutable serialized key buffers are overwritten after use where practical;
-- `SecretKeyData` is configured for overwrite-on-destroy and journal key holders expose an explicit `destroy()` lifecycle;
+- `SecretKeyData` uses overwrite-on-destroy and journal key holders expose explicit `destroy()` lifecycle;
 - the owned SQLite cipher salt buffer is overwritten when its journal-key holder is destroyed;
 - unnecessary temporary plaintext key copies are avoided;
-- secrets, passwords, keys, decrypted entries, and recovery material must never be logged.
+- secrets, passwords, keys, decrypted entries, and recovery material are never logged.
 
-SQLite3MultipleCiphers' SQL `PRAGMA key` interface currently requires raw key material to be encoded as a hexadecimal Dart `String`. Dart strings are immutable and cannot be reliably zeroized by application code. The mutable byte buffer used to construct that string is overwritten immediately, but Daymark does not claim that the runtime's immutable string copy can be erased on demand.
+SQLite3MultipleCiphers' SQL `PRAGMA key` interface requires raw key material to be encoded as a hexadecimal Dart `String`. Dart strings are immutable and cannot be reliably zeroized by application code. The mutable byte buffer used to construct that string is overwritten immediately, but Daymark does not claim that the runtime's immutable string copy can be erased on demand.
 
-Future native/database APIs may reduce this exposure, but replacing a reviewed working path requires evidence and must not introduce unsafe FFI merely to claim stronger zeroization than the runtime provides.
+A maintenance change may replace this path only when evidence shows a safer supported API/implementation and the replacement does not introduce unsafe FFI or compatibility regressions merely to claim stronger zeroization.
 
-## Device-assisted unlock
+## Unlock model
 
-Device-specific unlock mechanisms are convenience layers, not replacements for the portable master-password security model.
+Daymark's unlock model is the portable master-password model described above.
 
-The exact secure-storage integration remains deferred to a later focused task. The official Flutter `local_auth` stack does not provide Linux support, and a biometric prompt by itself would not safely recover Daymark's random journal key. Daymark therefore does not add a cosmetic biometric gate that stores or replays the master password. A future implementation must provide deliberate device-bound key wrapping and a clean master-password fallback on every supported platform where the feature is exposed.
+Device-assisted/biometric unlock is **not planned** under the frozen product scope. Daymark does not store/replay the master password behind a biometric prompt, does not create a device-bound-only recovery dependency, and does not expose a cosmetic biometric gate.
 
-On supported Android devices, Daymark may protect device-local unlock material using Android secure-storage/Keystore mechanisms and require strong biometric or device-credential authentication before that material can be used.
+The absence of biometric/device-assisted unlock is an intentional product/security boundary, not unfinished release work.
 
-On Linux, a compatible secret service or keyring may be used for optional convenience. A locked, missing, or unavailable keyring must be a recoverable device-assist failure, not loss of the journal itself.
+## Recovery model
 
-Device-assisted unlock must never silently store the master password in plaintext. The master password remains sufficient for portable unlock/restore when device-bound material is unavailable.
+Daymark provides recovery/migration through portable authenticated encrypted Backup / Restore plus the user's master password.
 
-## Recovery
+A separate recovery-secret feature, account-based password reset, server recovery, or maintainer backdoor is **not planned** under the frozen product scope.
 
-Daymark should offer an optional offline recovery secret during security setup in a future focused slice.
-
-Recovery remains at the same portable trust layer as the master password. A recovery secret must independently protect/recover the same random journal key rather than depend on Android Keystore, Linux keyring state, a server account, or the original device.
-
-The recovery secret must be generated from cryptographically secure random material, shown to the user for external safekeeping, and must not be persisted in plaintext alongside the journal.
-
-The final human representation and recovery UX are not yet frozen. The key-envelope architecture must preserve independent authenticated wrapping of the existing random journal key so adding recovery does not require changing the encrypted database key or creating a maintainer backdoor.
-
-Recovery is local and cryptographic. There is no account-based password reset and no maintainer backdoor.
-
-If both the master password and any configured recovery secret are lost, encrypted journal data may be permanently unrecoverable. The application must communicate this clearly before such a recovery feature is treated as complete.
+If the master password required for a journal/backup is lost, the encrypted data may be permanently unrecoverable. Daymark must not imply that the maintainer can bypass the cryptographic boundary.
 
 ## Locking policy
 
-Daymark provides an explicit manual lock action and automatically locks after five minutes without journal interaction.
+Daymark provides explicit manual lock and automatically locks after five minutes without journal interaction.
 
-The timeout policy may evolve, including a stricter immediate option. Daymark now requests immediate journal lock when the supported host exposes a reliable protected-state signal: Android's system `ACTION_SCREEN_OFF` transition and Linux systemd-logind's per-session `Lock` signal. These hooks call the same serialized session-controller lock path used by manual and inactivity locking. If a Linux environment does not expose the logind session signal, the normal inactivity policy remains the fallback rather than pretending a generic window-focus change is a device lock.
+Daymark additionally requests immediate journal lock when the supported host exposes the implemented protected-state signal:
 
-Moving the app to the background starts or continues the lock timeout rather than implicitly exposing decrypted content indefinitely.
+- Android system `ACTION_SCREEN_OFF`;
+- Linux systemd-logind per-session `Lock` signal.
 
-The inactivity implementation keeps timeout/lifecycle policy outside the cryptographic session manager. While the journal is unlocked, a presentation/lifecycle guard records real journal interaction and delegates expiration to the same session-controller lock path used by manual lock.
+These hooks call the same serialized session-controller lock path used by manual/inactivity locking. If a Linux environment does not expose the logind signal, normal inactivity policy remains the fallback rather than treating generic window-focus changes as device locks.
 
-The deadline is renewed by pointer/touch interaction and hardware-keyboard interaction. Text controls that may receive input through a mobile IME without emitting Flutter `KeyEvent`s explicitly report edit activity so active typing is not misclassified as inactivity. Widget rebuilds do not count as user activity.
+Moving the app to the background starts/continues the lock timeout rather than implicitly exposing decrypted content indefinitely.
 
-Background time does not reset the deadline. On resume, Daymark evaluates elapsed wall-clock time immediately. If the wall clock moved backwards relative to the last recorded interaction, the inactivity guard fails closed and requests a lock.
+The inactivity guard records real journal interaction and delegates expiration to the same session-controller lock path. Pointer/touch, hardware-keyboard interaction, and mobile IME text edits renew the deadline; widget rebuilds do not.
 
-Automatic timeout does not bypass session safety rules. An operation already inside the serialized session completes before persistence is closed, then the database is closed before journal-key material is destroyed.
+Background time does not reset the deadline. On resume, Daymark evaluates elapsed wall-clock time immediately. If the wall clock moved backwards relative to the last recorded interaction, the guard fails closed and requests lock.
 
-When the journal is locked, application components must release or invalidate decrypted journal-key material as far as the platform/runtime design reasonably permits and must not keep decrypted entry caches merely for convenience.
+An operation already inside the serialized session completes before persistence closes; then the database closes before journal-key material is destroyed.
 
-Platform-specific presentation layers should prevent sensitive journal contents from being unnecessarily exposed through operating-system surfaces such as recent-app previews or notification text when the platform allows it.
+The current locking behavior is part of the frozen product. Policy changes require a concrete bug/security reason rather than preference-driven expansion.
 
 ## Plaintext boundaries
 
-Sensitive journal content must not be persistently duplicated outside the encrypted data store without an explicit user action.
+Sensitive journal content must not be persistently duplicated outside the encrypted store without explicit user action.
 
 This applies to:
 
 - caches;
 - search indexes;
 - temporary plaintext files;
-- logs and crash diagnostics;
+- logs/crash diagnostics;
 - internal backups;
-- removable storage;
-- attachments when attachment support is introduced.
+- removable storage.
+
+Attachments are not a supported product feature.
 
 Internal backups created by Daymark remain encrypted by default, including backups stored on removable media.
 
-User-requested Open Export is an explicit security boundary. Before any plaintext representation is created, Daymark reauthenticates the current master password against the authenticated key envelope without replacing the live session. JSON and Markdown Open Export output may then be deliberately saved to a file or copied to the system clipboard. Both destinations are outside Daymark's encryption boundary; clipboard content may be readable by other applications or retained by a clipboard manager. Open Export is not a recovery/restore format.
+User-requested Open Export is an explicit security boundary. Before any plaintext representation is created, Daymark reauthenticates the current master password against the authenticated key envelope without replacing the live session. JSON and Markdown may then be deliberately saved or copied to clipboard.
+
+Both destinations are outside Daymark's encryption boundary. Clipboard content may be readable by other applications or retained by a clipboard manager. Open Export is not a recovery/restore format.
 
 ## Search security
 
 Search must not create an unencrypted shadow index of journal content.
 
-The current implementation searches inside the encrypted journal boundary. If full-text indexing is introduced later, the index must remain within the same encrypted database/security boundary or use an equivalently protected design.
+The frozen Search implementation searches inside the encrypted journal boundary using its existing literal matching behavior. A new full-text/ranking/indexing product feature is not planned.
 
-Search convenience is never a justification for persisting plaintext journal terms outside the encrypted store.
+If maintenance ever requires an internal indexing change for correctness/performance compatibility, the index must remain inside the same encrypted database/security boundary or use equivalent protection and must not expand user-visible Search scope without an explicit product-freeze reversal.
 
 ## Backup security
 
-Daymark provides manual full encrypted backup and restore. Automatic scheduling and retention policies remain later work.
+Daymark provides manual full encrypted Backup / Restore.
 
-A Daymark backup must be portable across supported devices and must not depend solely on a device-bound Android Keystore key, Linux keyring entry, filesystem path, or machine identity.
+Automatic scheduling and retention policies are not planned under the frozen product scope.
 
-The backup format is versioned and self-describing enough to identify the Daymark backup format, application/schema compatibility, cryptographic parameters, and integrity information before destructive restore work begins.
+A Daymark backup is portable across supported Linux/Android devices and does not depend solely on a device-bound Keystore/keyring/filesystem path/machine identity.
+
+The backup format is versioned and self-describing enough to identify format, application/schema compatibility, cryptographic parameters, and integrity information before destructive restore work begins.
 
 Backup payloads remain encrypted and authenticated.
 
@@ -225,56 +245,73 @@ Restore validates authentication/integrity, format compatibility, schema compati
 
 Restore is exposed only while the destination journal is locked or absent; the application must not replace files beneath an active encrypted database session.
 
-If a master password changes, existing external backups remain protected by the credentials with which they were created. Daymark should recommend creating a fresh backup after a password change.
+Plaintext Markdown/JSON Open Export is not a backup mechanism and remains clearly distinct from encrypted Daymark Backup.
 
-Plaintext Markdown or JSON Open Export is not a backup mechanism and remains clearly distinguished from encrypted Daymark backup.
-
-The authoritative container contract and current application/file-picker boundary are documented in `docs/BACKUP_FORMAT.md`.
+The authoritative container contract is documented in `docs/BACKUP_FORMAT.md`.
 
 ### Android operating-system backup boundary
 
-Daymark does not use Android's automatic application-data backup or device-to-device migration as its journal-backup mechanism.
+Daymark does not use Android automatic application-data backup or device-to-device migration as its journal-backup mechanism.
 
-The Android application manifest sets `android:allowBackup="false"` and supplies explicit backup/data-extraction rule files. Android 11-and-earlier full-backup rules exclude every Daymark application-data domain, and Android 12+ extraction rules exclude every domain from both cloud backup and device transfer.
+The Android manifest sets `android:allowBackup="false"` and supplies explicit backup/data-extraction rules. Android 11-and-earlier full-backup rules exclude every Daymark application-data domain, and Android 12+ extraction rules exclude every domain from cloud backup/device transfer.
 
-This is defense in depth. Platform/OEM behavior can evolve, so Daymark does not claim that a manifest flag alone is a universal cryptographic guarantee. The journal remains encrypted independently of the Android backup mechanism.
+This is defense in depth. Platform/OEM behavior can evolve, so Daymark does not claim that a manifest flag alone is a universal cryptographic guarantee. The journal remains encrypted independently of Android backup mechanisms.
 
-Portable migration between devices must use Daymark's explicit encrypted backup/restore design, not an opaque OS-managed copy of app-private state.
+Portable migration between supported devices uses Daymark's explicit encrypted Backup / Restore design.
 
 ## Release-signing boundary
 
 Android release signing material is local-only and must never be committed or printed into logs.
 
-Release Gradle tasks fail closed if the dedicated release signing configuration or keystore is absent. Daymark must never silently publish a release artifact signed with the debug key.
+Release Gradle tasks fail closed if dedicated release signing configuration/keystore is absent. Daymark must never silently publish an artifact signed with the debug key.
 
-The published `v1.0.0-alpha.2` Android APK is signed with the dedicated release certificate recorded in `PROJECT.md` and `docs/RELEASE.md`. Future Android upgrades intended to install over that public release must preserve signing continuity.
+Published `v1.0.0-alpha.2` uses certificate SHA-256:
+
+```text
+44342dcd1343643bc56da2545ec10e5624fc2e49d1bcc3b418f4f9ab160e1b88
+```
+
+The corresponding alpha.2 private signing key could not be recovered during alpha.3 release preparation. Android therefore cannot authenticate alpha.3 as an install-over update of alpha.2. This is a package-signing boundary, not a failure of Daymark's encrypted journal or backup formats.
+
+The supported alpha.2 -> alpha.3 transition is encrypted Backup / uninstall alpha.2 / clean-install alpha.3 / Restore with the existing journal master password. That path was validated on physical Android hardware with a retained alpha.2 encrypted backup and persisted successfully across force-stop/relaunch.
+
+Alpha.3 establishes the maintained Android release lineage with certificate SHA-256:
+
+```text
+77bca227f0cd95eb9e3c5a2c24902ba9d20e296dbdba9fde87d024cd0febb311
+```
+
+The alpha.3 candidate was verified with `apksigner` as one RSA-4096 signer. Its private keystore remains local-only and is backed up outside the repository. Every later Android release intended to install over alpha.3 must preserve this signing identity unless Android provides an explicit supported signing-migration mechanism that is deliberately adopted, tested, and documented for a concrete maintenance need.
+
+Loss of a release private signing key is operationally significant because the public certificate embedded in a published APK cannot reconstruct the private key. Signing-key backups are therefore part of release security even though they are never repository content.
 
 ## Data disposal
 
-Encryption is designed so destruction of the relevant encryption key renders residual encrypted database material unusable. This supports cryptographic-erasure scenarios, including device retirement or storage replacement.
+Encryption is designed so destruction of relevant encryption key material renders residual encrypted database material unusable. This supports cryptographic-erasure scenarios, including device retirement/storage replacement.
 
-Cryptographic erasure is not a replacement for appropriate full-device sanitization when transferring or disposing of storage media.
+Cryptographic erasure is not a replacement for appropriate full-device sanitization when transferring/discarding storage media.
 
 ## Cryptographic implementation rule
 
-Daymark must not implement custom cryptographic primitives or casually invent its own unauthenticated encryption format when established reviewed libraries and constructions are available.
+Daymark must not implement custom cryptographic primitives or casually invent unauthenticated encryption formats when established reviewed libraries/constructions are available.
 
-Application-level cryptography uses the selected published `cryptography` package and the encrypted database engine. New cryptographic formats or algorithm changes require explicit compatibility and threat-model review.
+Application-level cryptography uses the selected published `cryptography` package and encrypted database engine. New cryptographic formats or algorithm changes require a concrete security/compatibility reason, explicit threat-model review, and compatibility testing.
 
-Security-sensitive code requires negative-path tests, including wrong password, corrupted key envelope, corrupted backup, missing encrypted-database support, unavailable keyring/Keystore assistance when introduced, incompatible schema, and interrupted restore behavior.
+Security-sensitive code requires negative-path tests, including wrong password, corrupted key envelope, corrupted backup, missing encrypted-database support, incompatible schema, and interrupted restore behavior.
 
 ## Published compatibility boundary
 
-Because `v1.0.0-alpha.2` has been published with real journal-data support, changes to any of the following require an explicit tested compatibility or migration path for every predecessor version the new build claims to support:
+Because `v1.0.0-alpha.2` has been published with real journal-data support, changes to any of the following require an explicit tested compatibility/migration path for every predecessor version the new build claims to support:
 
 - key-envelope format or interpretation;
 - Argon2id parameter semantics;
 - 48-byte journal-key serialization;
 - database cipher/key representation;
 - published database schema versions;
-- recovery wrapping when introduced;
 - encrypted backup format/cryptography;
 - Open Export format interpretation where backward machine readability is claimed;
 - Android signing identity for install-over upgrades.
 
-Failure to unlock or restore old supported data is data loss even when the encrypted bytes remain intact. No release may solve compatibility by silently deleting and recreating a user's journal.
+For alpha.2 -> alpha.3 specifically, install-over is not a supported claim because the alpha.2 private signing key is unavailable; encrypted Backup / Restore is the validated compatibility path. From alpha.3 onward, the alpha.3 signing certificate is the install-over compatibility identity.
+
+Failure to unlock, upgrade, or restore old supported data is data loss even when encrypted bytes remain intact. No release may solve compatibility by silently deleting/recreating a user's journal.

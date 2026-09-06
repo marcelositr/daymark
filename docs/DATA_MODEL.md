@@ -2,29 +2,30 @@
 
 ## Purpose
 
-This document defines Daymark's current relational persistence contract. The Drift implementation, schema snapshots, migration tests, export contracts, and compatibility code must remain consistent with these rules rather than allowing database structure to redefine Bullet Journal semantics implicitly.
+This document defines Daymark's current relational persistence contract. Drift implementation, schema snapshots, migration tests, export contracts, and compatibility code must remain consistent with these rules rather than allowing database structure to redefine Bullet Journal semantics implicitly.
 
-The model follows `docs/DOMAIN.md`. Database structure must preserve Bullet Journal semantics, migration lineage, deliberate Index structure, and encrypted local ownership without turning the product into a generic task database.
+The model follows `docs/DOMAIN.md`. Database structure preserves the frozen Bullet Journal semantics, migration lineage, deliberate Index structure, Tracker adaptation, and encrypted local ownership without turning the product into a generic task database.
 
-Schema version 1 is published in `v1.0.0-alpha.2` and is therefore a real compatibility boundary.
+Schema version 1 is published in `v1.0.0-alpha.2` and is a real compatibility boundary. Schema version 2 is the current additive Tracker migration.
+
+Daymark's functional product scope is frozen. Schema changes are maintenance-only and require a concrete bug, security, compatibility, or supported-platform/toolchain reason. They are not a mechanism for adding new product capabilities.
 
 ## Database boundary
 
 One encrypted Daymark database file represents exactly one journal.
 
-Daymark must not model multiple journals as tenants inside one SQLite database with a `journal_id` repeated across every table. If multiple journals are supported later, each journal should normally have its own encrypted database file and independent journal key.
+Daymark does not model multiple journals as tenants inside one SQLite database with a `journal_id` repeated across every table. Multi-journal product support is not planned under the freeze.
 
-Reasons:
+The single-journal-file boundary keeps:
 
-- journal keys stay isolated;
-- backup and restore remain naturally journal-scoped;
-- deleting or transferring one journal does not require filtering a shared database;
-- accidental cross-journal queries become structurally impossible;
-- future multi-journal support does not require changing entry identity or relationships.
+- journal keys isolated;
+- Backup / Restore naturally journal-scoped;
+- journal transfer/deletion structurally bounded;
+- accidental cross-journal queries impossible.
 
 The database contains exactly one `journal_metadata` record with the journal's stable identity. Application code treats more than one metadata row as corruption.
 
-`v1.0.0-alpha.2` also repairs an older development journal that has zero metadata rows: successful unlock transactionally creates one UUID-v7 singleton row and preserves it thereafter. This compatibility repair does not change schema version 1.
+`v1.0.0-alpha.2` also repairs an older development journal with zero metadata rows: successful unlock transactionally creates one UUID-v7 singleton row and preserves it thereafter. This compatibility repair does not change schema version 1.
 
 ## Storage conventions
 
@@ -40,7 +41,7 @@ Built-in semantic codes such as `task`, `event`, `open`, or `priority` are stabl
 
 Instants such as creation, modification, references, and migrations are stored as UTC integer microseconds since Unix epoch.
 
-Method dates are different from instants. Daily, Monthly, and Future Log periods represent calendar dates in the user's journal context and must not shift because of timezone conversion. They are stored as ISO-8601 date text (`YYYY-MM-DD`). Monthly and Future periods use the first day of the represented month.
+Method dates are different from instants. Daily, Monthly, Future, and Tracker method periods represent calendar dates in the user's journal context and must not shift because of timezone conversion. They are stored as ISO-8601 date text (`YYYY-MM-DD`). Monthly/Future periods use the first day of the represented month.
 
 ### Foreign keys
 
@@ -50,7 +51,7 @@ Foreign-key violations are data-integrity failures. The application must not sil
 
 ### Text enums
 
-Small semantic enums use stable text values instead of ordinal integers. Adding or reordering an application enum must therefore not reinterpret old data.
+Small semantic enums use stable text values instead of ordinal integers. Internal enum reorderings must not reinterpret old data.
 
 ## Schema version 1
 
@@ -64,7 +65,7 @@ Fields:
 - `created_at` — UTC microseconds;
 - `updated_at` — UTC microseconds.
 
-This table deliberately does not contain password-derived keys, KDF salts, wrapped database keys, recovery material, or device-keystore handles. Those values are needed before the encrypted database can be opened and belong to the versioned key-envelope design defined by `SECURITY.md`.
+This table does not contain password-derived keys, KDF salts, wrapped database keys, or device-unlock material. Pre-unlock cryptographic metadata belongs to the key-envelope boundary defined by `SECURITY.md`.
 
 ### `logs`
 
@@ -87,7 +88,7 @@ Examples:
 - Monthly Log for September 2026: `monthly`, `2026-09-01`;
 - Future Log bucket for January 2027: `future`, `2027-01-01`.
 
-A digital Future Log is modeled as month-addressable buckets rather than a second general calendar system.
+Future Log is month-addressable rather than a second general calendar system.
 
 ### `collections`
 
@@ -100,17 +101,17 @@ Fields:
 - `created_at` — UTC microseconds;
 - `updated_at` — UTC microseconds.
 
-Collections are simple content containers. This table must not grow configurable database fields, Kanban metadata, arbitrary property schemas, or Notion-style structure without an explicit product decision.
+Collections are simple content containers. Configurable database fields, Kanban metadata, arbitrary property schemas, and workspace/Notion-style structures are outside the frozen product scope.
 
 ### `entries`
 
-Stores the semantic content of a Bullet Journal entry independently from where it is placed.
+Stores semantic content independently from placement.
 
 Fields:
 
 - `id` — UUID v7 primary key;
 - `entry_type` — `task`, `event`, or `note`;
-- `task_state` — nullable task lifecycle value;
+- `task_state` — nullable Task lifecycle value;
 - `content` — user content;
 - `created_at` — UTC microseconds;
 - `updated_at` — UTC microseconds.
@@ -123,11 +124,9 @@ Task-state invariant:
 
 Rendered Bullet symbols are not persisted as semantic state.
 
-Editing content updates the existing entry identity. It does not create a new identity merely because text changed.
-
 ### `entry_placements`
 
-Every entry has exactly one owning location.
+Every Entry has exactly one owning location.
 
 Fields:
 
@@ -135,24 +134,24 @@ Fields:
 - `log_id` — nullable foreign key to `logs`;
 - `collection_id` — nullable foreign key to `collections`;
 - `ordinal` — integer order within the owner;
-- `monthly_section` — nullable `calendar` or `tasks` when the owner is a Monthly Log;
-- `monthly_calendar_date` — nullable ISO date, required exactly when `monthly_section = calendar`.
+- `monthly_section` — nullable `calendar` or `tasks` when owner is Monthly;
+- `monthly_calendar_date` — nullable ISO date, required exactly for `monthly_section = calendar`.
 
 Ownership invariant:
 
 Exactly one of `log_id` and `collection_id` is non-null.
 
-`ordinal` preserves deliberate/capture ordering independently of timestamps and leaves room for transactional reordering later without changing entry identity.
+`ordinal` preserves deliberate/capture ordering independently of timestamps.
 
-`monthly_section` preserves the original Monthly Log distinction between the calendar side and task-list side. It is null for Daily Log, Future Log, and Collection ownership.
+`monthly_section` preserves the Monthly Calendar/Tasks distinction. It is null for Daily, Future, and Collection ownership.
 
-A Monthly calendar placement stores its calendar date explicitly. Daymark must not infer a date by parsing entry text such as `15 dentist`. Repository/application validation must also ensure that a Monthly calendar date belongs to the month represented by its owning Monthly Log; that cross-table invariant cannot be expressed as a normal SQLite `CHECK` constraint.
+A Monthly calendar placement stores calendar date explicitly. Repository/application validation ensures that date belongs to the owning Monthly month.
 
-An entry is never moved between owners in-place to implement Bullet Journal migration. Migration creates a destination entry and lineage record, leaving the source in its historical location.
+An Entry is never moved between owners in place to implement Bullet Journal movement. Scheduling/migration creates destination Entry plus lineage while retaining source history.
 
 ### `migrations`
 
-Records deliberate Bullet Journal movement as a lineage chain.
+Records deliberate movement lineage.
 
 Fields:
 
@@ -164,70 +163,66 @@ Fields:
 
 Invariants:
 
-- source and destination must be different entries;
-- one source entry may have at most one direct outgoing migration;
-- one destination entry may have at most one direct predecessor.
+- source and destination differ;
+- one source has at most one direct outgoing migration;
+- one destination has at most one direct predecessor.
 
-This deliberately forms chains rather than a many-parent graph. Repeated future movement creates another entry and edge:
+Lineage forms chains such as:
 
 ```text
 A -> B -> C
 ```
 
-rather than rewriting `A` or attaching several destinations to one historical decision.
+For Tasks:
 
-For tasks, application/domain logic keeps source task state consistent with migration kind:
+- `migrated` lineage corresponds to source state `migrated`;
+- `scheduled` lineage corresponds to source state `scheduled` and destination ownership in Future.
 
-- `migrated` lineage normally corresponds to source state `migrated`;
-- `scheduled` lineage corresponds to source state `scheduled` and destination ownership in a Future Log.
-
-Events and Notes may participate in traceable movement without acquiring task states when a future product flow legitimately exposes such movement.
-
-Source and destination locations are preserved through their entry placements, so lineage does not need to duplicate display text or denormalized location labels.
+The frozen product movement flows are Task-only from Today/Daily or Monthly Tasks to Future (scheduled) or an existing Collection (migrated). Event/Note movement product flows are not planned.
 
 ### `collection_references`
 
-Represents a Collection reference/link without changing entry ownership or task state.
+Represents a Collection reference without changing Entry ownership or Task state.
 
 Fields:
 
 - `collection_id` — foreign key to `collections`;
 - `entry_id` — foreign key to `entries`;
-- `ordinal` — order of the reference within the Collection;
+- `ordinal` — order in the Collection reference list;
 - `created_at` — UTC microseconds.
 
 Primary key:
 
 - `(collection_id, entry_id)`.
 
-This is intentionally distinct from migrating an entry into a Collection. A referenced Daily/Monthly/Future entry remains owned by its chronological Log and appears read-only through the Collection reference surface.
+A referenced Daily/Monthly/Future Entry remains owned by its chronological Log and appears read-only through the Collection reference surface.
 
 ### `signifiers`
 
-Defines signifier identities without turning them into entry types.
+Defines signifier identities without turning them into Entry types.
 
 Fields:
 
 - `id` — stable text primary key;
 - `kind` — `builtin` or `custom`;
 - `builtin_code` — nullable stable code for built-ins;
-- `custom_label` — nullable user-facing label for a future custom signifier;
-- `custom_symbol` — nullable user-facing symbol for a future custom signifier;
+- `custom_label` — nullable user-facing label;
+- `custom_symbol` — nullable user-facing symbol;
 - `created_at` — UTC microseconds.
 
-Initial built-in identities are expected to use stable IDs such as:
+Built-in stable IDs include concepts such as:
 
 - `builtin:priority`;
 - `builtin:inspiration`;
 - `builtin:explore`.
 
-Built-in translated labels are not stored in the database.
+Built-in translated labels are not stored.
 
-Custom signifiers are not required for the first stable product milestone, but this definition table prevents a future custom-signifier feature from requiring new `EntryType` values or new columns on `entries`.
+The `custom` representation remains part of the published schema shape but user-defined signifier product UI is not planned under the current freeze. Do not expand that schema capability into a new product feature without an explicit freeze reversal.
 
 ### `entry_signifiers`
 
-Many-to-many relationship between entries and signifiers.
+Many-to-many relationship between Entries and signifiers.
 
 Fields / primary key:
 
@@ -237,7 +232,7 @@ Fields / primary key:
 
 ### `index_items`
 
-Persists the Index as a deliberate Bullet Journal structure rather than deriving it from Search.
+Persists the deliberate Index independently from Search.
 
 Fields:
 
@@ -249,28 +244,28 @@ Fields:
 
 Exactly one target is non-null.
 
-The Index stores references to journal structures, not duplicated entry content.
+The Index stores references to journal structures, not duplicated Entry content.
 
 ## Schema version 2
 
-Schema version 2 is the first post-`v1.0.0-alpha.2` migration and extends published schema v1 additively for the optional Daymark Tracker adaptation. Existing v1 tables and semantic values are not reinterpreted.
+Schema v2 is the first post-alpha.2 migration and extends published schema v1 additively for the optional Daymark Tracker adaptation. Existing v1 tables/semantic values are not reinterpreted.
 
 ### `trackers`
 
-Stores one finite Tracker independently from Bullet Journal Entries and placements.
+Stores one finite Tracker independently from Entries/placements.
 
 Fields:
 
 - `id` — UUID v7 primary key;
 - `title` — non-empty user content;
 - `start_date` — inclusive ISO method date;
-- `planned_end_date` — inclusive ISO method date, not earlier than `start_date`;
-- `ended_date` — nullable inclusive early-end method date between start and planned end;
-- `color_slot` — stable integer visual slot `0..4`;
+- `planned_end_date` — inclusive ISO method date, not earlier than start;
+- `ended_date` — nullable inclusive early-end date between start/planned end;
+- `color_slot` — stable visual slot `0..4`;
 - `created_at` — UTC microseconds;
 - `updated_at` — UTC microseconds.
 
-A Tracker's effective end is `ended_date` when present, otherwise `planned_end_date`. The persisted slot keeps one visual identity for the Tracker across the months it intersects. Version 1 of the feature requires one slot to be available across the entire proposed period; this deliberately favors stable color identity over recoloring existing Tracker history.
+Effective end is `ended_date` when present, otherwise `planned_end_date`. One persisted slot keeps visual identity across the full intersecting period. The frozen Tracker behavior requires a slot to be available across the proposed period rather than recoloring history.
 
 ### `tracker_marks`
 
@@ -285,92 +280,98 @@ Fields / primary key:
 - `updated_at` — UTC microseconds;
 - primary key `(tracker_id, method_date)`.
 
-There is deliberately no persisted zero row. Inside the Tracker's effective interval, absence of a row means `0` / no explicit mark. Outside the interval there is no datum at all. Repository validation rejects marks outside the Tracker interval.
+There is no persisted zero row. Inside effective interval, absence means `0` / no explicit mark. Outside interval there is no datum. Repository validation rejects marks outside interval.
 
 ### Migration from v1
 
-The v1-to-v2 migration uses Drift's generated versioned-schema helper and creates `trackers`, `tracker_marks`, and their declared indexes without rewriting v1 journal rows. CI retains the v1 and v2 schema snapshots and migration verification. A representative v1 journal is migrated in tests to prove existing data survives while the new Tracker tables begin empty.
+The v1-to-v2 migration uses Drift generated versioned-schema helpers and creates `trackers`, `tracker_marks`, and declared indexes without rewriting v1 journal rows.
 
-## Deliberately absent from schema v1
+CI retains v1/v2 schema snapshots and migration verification. A representative v1 journal is migrated in tests to prove existing data survives while Tracker tables begin empty.
 
-### Search index
+## Deliberately absent product/storage systems
 
-Search queries the encrypted journal database directly. If an FTS index is introduced later, it must live inside the same encrypted database boundary. No plaintext external search index is allowed.
+### External/full-text Search index
 
-### Application preferences
+Frozen Search queries the encrypted database directly. No plaintext external Search index is allowed, and richer full-text/ranking product functionality is not planned.
 
-Theme, language override, window state, and similar application preferences are not journal domain records and do not belong in the encrypted journal relational model merely for convenience.
+A maintenance optimization, if ever concretely required, must remain inside the encrypted boundary and preserve existing Search semantics.
 
-Appearance is currently stored as non-secret device/application state outside the encrypted journal database. Security-sensitive preferences such as future lock configuration still must not be mixed into entry/domain tables.
+### Journal-scoped application preferences
+
+Theme/Appearance, window state, and similar application preferences are not journal domain records.
+
+Appearance remains non-secret device/application state outside the encrypted journal database.
+
+Explicit language override and additional lock-configuration product settings are not planned under the freeze.
 
 ### Key-envelope metadata
 
-Master-password KDF parameters, salts, wrapped journal-key material, recovery metadata, and device-assisted unlock handles are intentionally outside this Drift schema because they are required to unlock the database itself.
+Master-password KDF parameters, salts, and wrapped journal-key material remain outside Drift because they are required before opening the database.
 
-The current versioned authenticated envelope is defined by `SECURITY.md` and the historical foundation record in `docs/SECURITY_FOUNDATION.md`.
+Device-assisted unlock and recovery-secret product systems are not planned. Do not add schema or envelope fields for them speculatively.
 
 ### Attachments
 
-Attachments are not part of schema v1. If introduced, they must use encrypted files plus database metadata rather than create a plaintext side channel.
+Attachments are not part of the frozen product and no attachment schema is planned.
 
 ### Reflection records
 
-Reflection is a method behavior, not automatically a stored entity. No reflection table is added until a concrete user-visible requirement demonstrates what must persist.
+Reflection is current method behavior, not a persisted standalone entity. No reflection table is planned under the frozen scope.
 
 ### Trash / soft delete
 
-Daymark does not add a generic trash subsystem preemptively. `discarded` is a Bullet Journal task state and remains distinct from destructive deletion.
+Daymark does not add a generic trash subsystem. `discarded` is a Bullet Journal Task state and remains distinct from destructive deletion.
 
 ## Deletion and referential behavior
 
-Deletion is an explicit destructive operation, not a task state.
+Deletion is an explicit destructive operation, not a Task state.
 
-The implementation should prefer referential rules that prevent accidental orphaning. Where a user explicitly destroys an entry, dependent relationship rows such as signifier links and Collection references may cascade with it. Migration lineage involving an entry must be handled deliberately so deletion cannot silently leave a false historical edge.
+Referential rules prevent accidental orphaning. When a user explicitly destroys an Entry, dependent relationship rows such as signifier links/references may cascade according to the implemented schema. Migration lineage must never silently become a false historical edge.
 
-Deleting a Collection or Log that owns entries must not silently destroy those entries. The application must require an explicit data decision first.
+Deleting a Collection or Log that owns Entries must not silently destroy those Entries. Existing product/UI rules remain authoritative.
 
-Exact `ON DELETE` actions are part of the Drift schema implementation and tests and must match these rules.
+### Immediate capture Undo
 
-### Immediate capture undo
+The UI may briefly offer Undo immediately after capture. Persistence operation is intentionally narrower than generic deletion: it transactionally removes Entry plus owning placement only while the Entry remains untouched and has no migration, reference, signifier, or other journal relationship.
 
-The UI may briefly offer Undo immediately after capture. The persistence
-operation is intentionally narrower than generic deletion: it transactionally
-removes the Entry and its owning placement only while the Entry remains
-untouched and has no migration, Collection reference, signifier, or other
-journal relationship.
-
-This behavior requires no schema change and does not introduce Trash or soft
-delete.
+This requires no schema change and does not introduce Trash/soft delete.
 
 ## Ordering
 
 Do not use timestamps alone as UI order.
 
-`ordinal` is scoped to the owning structure or reference list. Initial insertion may use monotonically increasing integers. If manual insertion/reordering is later needed, the application may renumber a container transactionally. No fractional-position package or collaborative ordering algorithm is justified for the initial local-only product.
+`ordinal` is scoped to the owning structure/reference list and preserves the existing deliberate order behavior. Index reorder/remove is implemented at its supported boundary.
+
+Do not add new manual-ordering systems, fractional-position packages, or collaborative ordering algorithms under the frozen product scope.
 
 ## Published schema and migration policy
 
-Daymark uses Drift's versioned migration tooling rather than ad-hoc `ALTER TABLE` strings as the normal path.
+Daymark uses Drift versioned migration tooling rather than ad-hoc schema strings as the normal path.
 
 The implementation must:
 
 1. retain exported schema snapshots under `drift_schemas/`;
-2. use Drift's migration tooling/generated helpers for subsequent versions;
-3. keep migration verification code under the test tree;
+2. use Drift migration tooling/generated helpers for later maintenance schema versions;
+3. keep migration verification code under tests;
 4. test target schema shape and representative data preservation across every supported predecessor upgrade;
-5. enable foreign keys before normal use and verify foreign-key integrity around migrations;
+5. enable foreign keys before normal use and verify integrity around migrations;
 6. keep schema/migration checks in CI.
 
-Schema version 1 is published in `v1.0.0-alpha.2`. The earlier pre-publication freedom to regenerate an unreleased schema no longer applies to the supported release line.
+Schema v1 is published in alpha.2. Schema v2 is the current additive Tracker migration with v1 as supported predecessor.
 
-Schema version 2 is the current additive Tracker migration. Its supported predecessor is published schema v1, and that exact upgrade path is retained in Drift schema snapshots and migration tests.
+A later maintenance build that claims alpha.2 compatibility must preserve an explicit tested path from schema v1. Any schema v3+ change must have a concrete maintenance/security/compatibility reason, migrate forward explicitly, and must not silently reinterpret semantic values, delete content, or recreate the database to avoid migration.
 
-Any later build that claims to support alpha.2 data must have an explicit tested path from published schema v1. A future schema version may migrate forward, but it must not silently reinterpret semantic values, delete journal content, or solve incompatibility by deleting/recreating the database.
-
-Compatibility code that repairs missing data required by an already-published semantic invariant, such as the alpha.2 `journal_metadata` singleton repair for older development journals, must be transactional, idempotent, tested, and must not conceal genuine corruption.
+Compatibility repairs for already-published semantic invariants, such as the alpha.2 `journal_metadata` singleton repair for older development journals, must be transactional, idempotent, tested, and must not conceal genuine corruption.
 
 ## Review rule
 
-A schema change is a product/data-compatibility change, not a private implementation detail.
+A schema change is a data-compatibility/security maintenance change, not a private implementation detail.
 
-Any future change to tables, semantic values, constraints, or migration behavior must update the schema snapshot, migration tests, relevant documentation, `CHANGELOG.md` when release-facing, and `PROJECT.md` in the same pull request.
+Any post-freeze change to tables, semantic values, constraints, or migration behavior must:
+
+- have a concrete maintenance/security/compatibility justification;
+- preserve the frozen product semantics;
+- update schema snapshots/migration tests;
+- update relevant documentation;
+- update `CHANGELOG.md` when release-facing;
+- update `PROJECT.md` in the same PR.
