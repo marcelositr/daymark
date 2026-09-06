@@ -25,7 +25,11 @@ WORK_DIR="$ROOT_DIR/build/linux-packaging"
 OUTPUT_DIR="$ROOT_DIR/build/distributables"
 DESKTOP_FILE="io.github.marcelositr.daymark.desktop"
 METAINFO_FILE="io.github.marcelositr.daymark.appdata.xml"
-ICON_FILE="io.github.marcelositr.daymark.png"
+ICON_BASENAME="io.github.marcelositr.daymark"
+ICON_PNG="$ICON_BASENAME.png"
+ICON_SVG="$ICON_BASENAME.svg"
+SOURCE_ICON_PNG="$ROOT_DIR/assets/branding/daymark-icon.png"
+SOURCE_ICON_SVG="$ROOT_DIR/assets/branding/daymark-icon.svg"
 DECLARED_VERSION=$(awk '/^version: / { print $2; exit }' "$ROOT_DIR/pubspec.yaml")
 VERSION=${DECLARED_VERSION%%+*}
 case "$VERSION" in
@@ -45,6 +49,10 @@ if [ ! -x "$BUNDLE_DIR/daymark" ]; then
   echo "Missing Linux release bundle. Run flutter build linux --release first." >&2
   exit 66
 fi
+if [ ! -f "$SOURCE_ICON_PNG" ] || [ ! -f "$SOURCE_ICON_SVG" ]; then
+  echo "Missing canonical Daymark icon assets under assets/branding." >&2
+  exit 66
+fi
 
 rm -rf "$WORK_DIR" "$OUTPUT_DIR"
 mkdir -p \
@@ -53,11 +61,15 @@ mkdir -p \
   "$DEB_ROOT/usr/bin" \
   "$DEB_ROOT/usr/share/applications" \
   "$DEB_ROOT/usr/share/icons/hicolor/1024x1024/apps" \
+  "$DEB_ROOT/usr/share/icons/hicolor/scalable/apps" \
+  "$DEB_ROOT/usr/share/pixmaps" \
   "$DEB_ROOT/usr/share/metainfo" \
   "$APP_DIR/usr/lib/daymark" \
   "$APP_DIR/usr/bin" \
   "$APP_DIR/usr/share/applications" \
   "$APP_DIR/usr/share/icons/hicolor/1024x1024/apps" \
+  "$APP_DIR/usr/share/icons/hicolor/scalable/apps" \
+  "$APP_DIR/usr/share/pixmaps" \
   "$APP_DIR/usr/share/metainfo" \
   "$OUTPUT_DIR"
 
@@ -66,8 +78,12 @@ cp "$PACKAGING_DIR/$DESKTOP_FILE" \
   "$DEB_ROOT/usr/share/applications/$DESKTOP_FILE"
 cp "$PACKAGING_DIR/$METAINFO_FILE" \
   "$DEB_ROOT/usr/share/metainfo/$METAINFO_FILE"
-cp "$ROOT_DIR/assets/branding/daymark-icon.png" \
-  "$DEB_ROOT/usr/share/icons/hicolor/1024x1024/apps/$ICON_FILE"
+cp "$SOURCE_ICON_PNG" \
+  "$DEB_ROOT/usr/share/icons/hicolor/1024x1024/apps/$ICON_PNG"
+cp "$SOURCE_ICON_SVG" \
+  "$DEB_ROOT/usr/share/icons/hicolor/scalable/apps/$ICON_SVG"
+cp "$SOURCE_ICON_PNG" \
+  "$DEB_ROOT/usr/share/pixmaps/$ICON_PNG"
 
 cat > "$DEB_ROOT/usr/bin/daymark" <<'EOF'
 #!/bin/sh
@@ -97,11 +113,15 @@ cp "$PACKAGING_DIR/$DESKTOP_FILE" \
 cp "$PACKAGING_DIR/$METAINFO_FILE" \
   "$APP_DIR/usr/share/metainfo/$METAINFO_FILE"
 cp "$PACKAGING_DIR/$DESKTOP_FILE" "$APP_DIR/$DESKTOP_FILE"
-cp "$ROOT_DIR/assets/branding/daymark-icon.png" \
-  "$APP_DIR/usr/share/icons/hicolor/1024x1024/apps/$ICON_FILE"
-cp "$ROOT_DIR/assets/branding/daymark-icon.png" "$APP_DIR/$ICON_FILE"
+cp "$SOURCE_ICON_PNG" \
+  "$APP_DIR/usr/share/icons/hicolor/1024x1024/apps/$ICON_PNG"
+cp "$SOURCE_ICON_SVG" \
+  "$APP_DIR/usr/share/icons/hicolor/scalable/apps/$ICON_SVG"
+cp "$SOURCE_ICON_PNG" \
+  "$APP_DIR/usr/share/pixmaps/$ICON_PNG"
+cp "$SOURCE_ICON_PNG" "$APP_DIR/$ICON_PNG"
 ln -s ../lib/daymark/daymark "$APP_DIR/usr/bin/daymark"
-ln -s "$ICON_FILE" "$APP_DIR/.DirIcon"
+ln -s "$ICON_PNG" "$APP_DIR/.DirIcon"
 
 cat > "$APP_DIR/AppRun" <<'EOF'
 #!/bin/sh
@@ -120,9 +140,18 @@ desktop-file-validate "$PACKAGING_DIR/$DESKTOP_FILE"
 if command -v appstreamcli >/dev/null 2>&1; then
   appstreamcli validate --no-net "$PACKAGING_DIR/$METAINFO_FILE"
 fi
+
 dpkg-deb --info "$DEB_OUTPUT" >/dev/null
-dpkg-deb --contents "$DEB_OUTPUT" >/dev/null
+dpkg-deb --contents "$DEB_OUTPUT" | grep -q "usr/share/icons/hicolor/1024x1024/apps/$ICON_PNG"
+dpkg-deb --contents "$DEB_OUTPUT" | grep -q "usr/share/icons/hicolor/scalable/apps/$ICON_SVG"
+dpkg-deb --contents "$DEB_OUTPUT" | grep -q "usr/share/pixmaps/$ICON_PNG"
+
 "$APPIMAGE_OUTPUT" --appimage-extract >/dev/null
+test -f "$ROOT_DIR/squashfs-root/$ICON_PNG"
+test -L "$ROOT_DIR/squashfs-root/.DirIcon"
+test -f "$ROOT_DIR/squashfs-root/usr/share/icons/hicolor/1024x1024/apps/$ICON_PNG"
+test -f "$ROOT_DIR/squashfs-root/usr/share/icons/hicolor/scalable/apps/$ICON_SVG"
+test -f "$ROOT_DIR/squashfs-root/usr/share/pixmaps/$ICON_PNG"
 rm -rf "$ROOT_DIR/squashfs-root"
 
 printf 'Created %s\nCreated %s\n' "$DEB_OUTPUT" "$APPIMAGE_OUTPUT"
