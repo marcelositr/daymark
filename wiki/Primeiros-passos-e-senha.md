@@ -1,37 +1,49 @@
-# Primeiros passos e segurança da senha
+# Primeiros passos e senha
 
-## Criar o diário
+Na primeira execução, o Daymark pede que você crie o Journal e defina uma **senha mestra**.
 
-Na primeira abertura, escolha **Criar diário**, digite uma senha mestra e confirme-a. Um banco de dados criptografado representa um único diário local.
+Essa senha protege a chave usada para abrir o banco de dados criptografado.
 
-A senha mestra protege o material criptográfico usado para abrir o diário. Ela não é armazenada pelo Daymark e não é usada diretamente como chave do banco.
+## Criando o Journal
 
-## Escolher e guardar a senha
+1. abra o Daymark
+2. escolha uma senha mestra
+3. confirme a criação
+4. depois da criação, o Journal já fica disponível para uso
 
-Use uma senha longa, exclusiva e difícil de adivinhar. Uma frase-senha com várias palavras aleatórias costuma ser mais fácil de guardar e mais resistente que uma senha curta. Evite reutilizar senha de e-mail, banco ou redes sociais.
+Não use uma senha que você não consiga recuperar por conta própria. O Daymark não possui conta online nem serviço de redefinição de senha.
 
-Considere armazená-la em um gerenciador de senhas confiável ou em outro método seguro sob seu controle.
+## Desbloqueando
 
-> **Não existe redefinição de senha, conta, segredo de recuperação, biometria, backdoor ou recuperação pelo mantenedor. Se a senha for perdida, o diário e seus backups podem ficar permanentemente inacessíveis.**
+Quando o Journal estiver bloqueado, informe a mesma senha mestra usada na criação.
 
-Nunca envie sua senha, conteúdo do diário, arquivo de Backup/Open Export, chaves ou outros segredos ao suporte.
+Uma senha incorreta não abre o banco de dados.
 
-## Desbloquear e bloquear
+## Bloqueio manual
 
-- Digite a senha mestra em **Desbloquear Daymark** para abrir o diário.
-- Use **Bloquear** quando terminar ou antes de se afastar.
-- O Daymark bloqueia após cinco minutos sem interação com o diário.
-- No Android, apagar a tela solicita bloqueio imediato.
-- No Linux, o bloqueio de sessão via systemd-logind solicita bloqueio imediato quando disponível; o bloqueio por inatividade continua sendo a proteção de fallback.
-- O tempo em segundo plano conta para o limite de inatividade.
+Use o ícone de cadeado para fechar a sessão do Journal imediatamente.
 
-A criptografia em repouso não protege contra um invasor com controle total de um dispositivo já desbloqueado. Mantenha o sistema atualizado e bloqueie o dispositivo.
+Ao bloquear, o Daymark fecha o acesso ao banco criptografado e descarta o material de chave mantido na sessão.
 
-## Primeira rotina recomendada
+## Bloqueio automático
 
-1. Conheça a [[Navegação|Navegacao]].
-2. Faça alguns registros em [[Today|Today-Rapid-Logging-Reflexao-e-Undo]].
-3. Crie uma Coleção somente quando precisar reunir um assunto.
-4. Crie e preserve um [[Backup criptografado|Backup-e-Restore]].
+O Daymark também bloqueia automaticamente após cerca de **cinco minutos sem atividade**.
 
-O Daymark funciona sem conta e sem conexão para suas funções principais.
+O tempo passado em segundo plano continua contando. Ao voltar para o aplicativo, o Daymark verifica se o prazo de inatividade já terminou.
+
+Além disso:
+
+- no Android, o bloqueio da tela dispara o bloqueio do Journal
+- no Linux, o Daymark reage ao bloqueio real da sessão do sistema
+
+## Aparência não depende do desbloqueio
+
+A preferência de aparência do dispositivo é armazenada separadamente do conteúdo criptografado do Journal.
+
+Veja [[Aparência|Aparencia]].
+
+## Proteja também seus Backups
+
+Backups do Daymark continuam criptografados, mas dependem da mesma senha mestra para serem restaurados.
+
+Veja [[Backup e Restore|Backup-e-Restore]].
