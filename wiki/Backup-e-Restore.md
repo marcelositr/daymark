@@ -1,46 +1,61 @@
 # Backup e Restore
 
-Backup/Restore é o mecanismo protegido de recuperação e migração do Daymark entre dispositivos suportados.
+O **Backup** é a forma protegida de guardar ou transportar um Journal completo.
 
-> **Backup do Daymark é criptografado e autenticado. Exportação aberta é texto simples e não pode ser restaurada.**
+Diferente do Open Export, o Backup continua criptografado.
 
-## Criar Backup
+## Criar um Backup
 
-Com o diário desbloqueado:
+Para criar um Backup:
 
-1. abra **Backup**;
-2. escolha **Criar backup**;
-3. informe a senha mestra atual;
-4. selecione onde salvar o arquivo `.daymark-backup`;
-5. espere a confirmação **Backup criptografado salvo**.
+1. desbloqueie o Journal
+2. abra **Backup**
+3. escolha onde salvar
+4. confirme sua senha mestra
 
-A senha confirma que o diário e a credencial portátil correspondem. O Backup contém uma fotografia consistente do banco ainda criptografado e o envelope de chave protegido pela senha.
+A senha é pedida novamente para garantir que o Backup corresponde ao Journal desbloqueado.
 
-Guarde cópias em locais confiáveis e separados do dispositivo. O Daymark não agenda backups, não mantém rotação automática e não envia o arquivo à nuvem. Se você escolher um serviço de armazenamento no seletor do sistema, essa transferência ocorre fora do Daymark e fica sujeita às políticas desse serviço.
+O Daymark não sobrescreve silenciosamente um arquivo de Backup já existente.
 
-## Restaurar
+## O que o Backup contém
 
-Restore só é oferecido quando o diário de destino está bloqueado ou ausente:
+O arquivo inclui:
 
-1. escolha **Restaurar backup**;
-2. selecione o arquivo `.daymark-backup`;
-3. informe a senha mestra que pertencia ao diário quando aquele backup foi criado;
-4. confirme **Restaurar**;
-5. aguarde a validação e a conclusão.
+- uma cópia consistente do banco de dados criptografado
+- o envelope de chave do Journal
+- metadados de compatibilidade
+- autenticação de integridade
 
-Ao restaurar sobre um diário existente, ele é substituído **somente depois** que formato, senha/autenticação, integridade, compatibilidade e banco criptografado forem validados. O processo usa preparação e recuperação de rollback para evitar substituir silenciosamente um diário válido em caso de falha/interrupção.
+O conteúdo do Journal continua protegido pela criptografia do Daymark.
 
-Senha errada, arquivo adulterado/truncado, formato inválido ou versão incompatível fazem a restauração falhar antes da substituição.
+## Restore
 
-## Cuidados essenciais
+O Restore recupera um Backup para o armazenamento local do Daymark.
 
-- Teste a existência e a acessibilidade do arquivo antes de desinstalar ou trocar de dispositivo.
-- Preserve a senha correspondente ao Backup; o mantenedor não pode recuperá-la.
-- Não publique nem envie Backup ou senha ao suporte.
-- Android não usa backup automático do sistema nem transferência automática de dados como mecanismo de migração do Daymark.
-- Para Android `alpha.2 → alpha.3`, siga exatamente [[Instalação e atualização|Instalacao-e-atualizacao]].
-- A atualização `alpha.3 → beta.1` ainda está em validação e não deve ser presumida antes da publicação.
+Ele pode ser usado quando:
 
-Cada Backup continua ligado à senha que protegia o diário quando o arquivo foi criado.
+- o Daymark ainda não possui Journal local
+- existe um Journal local bloqueado que será substituído deliberadamente
 
-Compare com [[Exportação aberta|Open-Export]].
+O Daymark valida o Backup antes de instalar os arquivos.
+
+Entre as verificações estão senha, integridade do container, compatibilidade do banco e integridade do SQLite.
+
+## Segurança durante o Restore
+
+O Daymark prepara e valida os arquivos em uma área temporária antes de substituir o Journal ativo.
+
+Se uma substituição for interrompida no meio, existe um mecanismo de recuperação para evitar deixar o armazenamento em um estado parcial sem tratamento.
+
+## Backup não é Open Export
+
+Use:
+
+- **Backup / Restore** quando quiser recuperar o Journal dentro do Daymark mantendo a proteção criptográfica
+- **Open Export** quando quiser uma cópia legível em JSON ou Markdown
+
+Veja [[Open Export|Open-Export]].
+
+## Guarde sua senha
+
+O Backup não cria uma senha de recuperação paralela. Para abrir/restaurar o Journal, a senha mestra continua sendo necessária.
