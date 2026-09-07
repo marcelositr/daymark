@@ -1,22 +1,22 @@
-## Daymark
+### Daymark
 
 - [[Início|Home]]
 - [[Instalação e atualização|Instalacao-e-atualizacao]]
 - [[Primeiros passos e senha|Primeiros-passos-e-senha]]
 - [[Navegação|Navegacao]]
 
-## Usar o diário
+### Journal
 
-- [[Today, Rapid Logging, Reflexão e Undo|Today-Rapid-Logging-Reflexao-e-Undo]]
-- [[Histórico e Monthly|Historico-e-Monthly]]
+- [[Today e reflexão|Today-Rapid-Logging-Reflexao-e-Undo]]
+- [[Monthly e histórico|Historico-e-Monthly]]
 - [[Future|Future]]
-- [[Collections, migração e referências|Collections-migracao-e-referencias]]
-- [[Trackers|Trackers]]
+- [[Collections|Collections-migracao-e-referencias]]
 - [[Search e Index|Search-e-Index]]
+- [[Trackers|Trackers]]
 
-## Dados e preferências
+### Dados e ajustes
 
 - [[Backup e Restore|Backup-e-Restore]]
-- [[Exportação aberta|Open-Export]]
+- [[Open Export|Open-Export]]
 - [[Aparência|Aparencia]]
 - [[Suporte e privacidade|Suporte-e-privacidade]]
