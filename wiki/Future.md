@@ -1,29 +1,47 @@
 # Future
 
-Future é o Registro Futuro com uma janela móvel de **seis meses**, começando no mês seguinte ao atual.
+O **Future** guarda entradas para meses que ainda não chegaram.
 
-## Registrar no futuro
+O Daymark mostra uma janela contínua dos **próximos seis meses**, começando pelo mês seguinte ao atual.
 
-1. Abra **Future**.
-2. Escolha um dos seis meses exibidos.
-3. Faça Rapid Logging de **Tarefa**, **Evento** ou **Nota**.
+## O que pode ser registrado
 
-Cada destino é um mês inteiro. Future não atribui uma data específica dentro do mês e não funciona como um segundo calendário diário.
+Em cada mês do Future você pode criar:
 
-## Agendar uma Tarefa existente
+- **Task**
+- **Event**
+- **Note**
 
-Em uma Tarefa aberta de Today ou das Tarefas de Monthly:
+O Future é organizado por mês, não como um segundo calendário diário.
 
-1. abra as ações;
-2. escolha **Agendar** (`<`);
-3. selecione um dos meses visíveis em Future.
+## Quando o mês chega
 
-A origem permanece no histórico como **Agendada** e o mês escolhido recebe uma nova Tarefa aberta ligada à origem. Capturar diretamente em Future não é a mesma coisa que agendar uma Tarefa existente.
+Quando um mês que estava no Future se torna o mês atual, o Daymark oferece uma **revisão de chegada**.
 
-## Janela móvel e histórico
+Essa revisão existe para que nada seja transferido automaticamente.
 
-Quando o mês atual muda, a janela avança. Dados de meses que saem dos seis meses visíveis não são apagados. Ao navegar para uma origem futura histórica por Search ou Index, essa visualização é somente leitura.
+### Future Task
 
-Não há agendamento automático, data diária dentro de Future nem migração de entradas de Future para outros destinos.
+Uma Task aberta pode ser:
 
-Veja também: [[Collections, migração e referências|Collections-migracao-e-referencias]].
+- migrada para **Monthly > Tasks** do mês atual
+- concluída
+- descartada
+
+### Future Event
+
+Um Event ainda não migrado pode ser enviado para o **Monthly Calendar**.
+
+Nesse caso, o Daymark pede que você escolha uma data dentro daquele mesmo mês.
+
+## Histórico
+
+Meses do Future que já passaram ficam disponíveis como histórico.
+
+Fora da revisão do mês que acabou de chegar, esse histórico é somente leitura.
+
+## Signifiers e referências
+
+Entradas do Future podem receber Signifiers e também podem ser referenciadas em Collections sem sair do lugar original.
+
+Quando uma entrada é realmente migrada, o Daymark preserva o histórico da origem e cria a entrada correspondente no destino.
