@@ -1,229 +1,124 @@
 # Encrypted backup format
 
-## Status
+## Purpose
 
-This document defines Daymark's portable encrypted backup container and restore safety contract.
+Daymark Backup / Restore is the protected recovery and migration format for a complete journal.
 
-Backup format version 1 shipped in public prerelease `v1.0.0-alpha.2` and is now a compatibility-sensitive boundary. A later supported build must either preserve version-1 restore support or provide an explicit tested migration path. A future format must not silently reinterpret version-1 bytes.
+It is distinct from Open Export. Backups remain encrypted; Open Export is plaintext.
 
-## Goals
+## Current format
 
-A Daymark backup must:
+Format name: `daymark-backup`
 
-- remain encrypted at rest;
-- be portable between supported platforms;
-- remain recoverable without the original Android/Linux device when the user has the portable credential;
-- identify its format and database schema version before destructive restore work;
-- detect modification, truncation, splicing, or accidental corruption before restore commit;
-- validate the encrypted database before replacing an existing journal;
-- recover safely from an application/process interruption during replacement;
-- avoid dependencies on Android Keystore, Linux keyrings, machine identity, filesystem paths, or cloud accounts.
+Version: **1**
 
-Version 1 intentionally does not define scheduled backup, retention rotation, remote storage, attachments, or recovery-secret UX. The current application does provide user-facing manual file selection/save and restore around this container; those presentation/file-gateway details are not part of the binary format contract.
+A backup contains:
 
-## Security composition
+1. fixed binary header
+2. JSON manifest
+3. encoded Daymark key envelope
+4. encrypted SQLite snapshot
+5. trailing HMAC-SHA256 authentication tag
 
-Version 1 does not introduce a new encryption primitive.
+The authenticated region covers the entire container except the trailing MAC itself.
 
-The payload database is already encrypted with the journal's SQLite3MultipleCiphers ChaCha20-Poly1305 key material. The included key envelope is already authenticated and encrypted with the master-password Argon2id + XChaCha20-Poly1305 construction defined in `SECURITY.md`.
+## Database snapshot
 
-The backup container adds whole-container integrity with:
+Daymark creates the database payload using SQLite's online backup API through the configured encrypted database connection.
 
-- HKDF-SHA256 for key separation;
-- HMAC-SHA256 for container authentication;
-- a random 16-byte integrity salt per backup.
+This produces a transactionally consistent encrypted snapshot rather than copying a potentially changing database file byte-for-byte.
 
-The HKDF input keying material is the existing 48-byte serialized journal key material. The HKDF context string is:
-
-```text
-daymark-backup-v1-integrity
-```
-
-The derived integrity key is used only for HMAC-SHA256. It is not used as a database key or key-encryption key.
-
-## Version-1 binary layout
-
-All fixed-width integers use unsigned big-endian encoding.
-
-```text
-+----------------------+-------------------------------------------+
-| Field                | Size                                      |
-+----------------------+-------------------------------------------+
-| Magic                | 16 bytes                                  |
-| Format version       | uint32                                    |
-| Manifest length      | uint32                                    |
-| Key-envelope length  | uint32                                    |
-| Database length      | uint64                                    |
-| Manifest             | manifest length bytes, UTF-8 JSON         |
-| Key envelope         | envelope length bytes, UTF-8 JSON         |
-| Encrypted database   | database length bytes                     |
-| HMAC-SHA256          | 32 bytes                                  |
-+----------------------+-------------------------------------------+
-```
-
-The fixed header is 36 bytes.
-
-The 16-byte magic value is:
-
-```text
-DAYMARK-BACKUP\0\0
-```
-
-The HMAC covers every byte from the magic through the final encrypted-database byte. The trailing 32-byte HMAC itself is not included in its own input.
-
-The parser validates fixed lengths and the exact total file size before allocating or staging payload data. Version 1 limits the manifest and key envelope to 64 KiB each.
-
-The backup service streams the encrypted database payload while constructing/validating the container rather than requiring the encrypted SQLite snapshot to be held as one application byte array.
-
-### Application/file-picker memory boundary
-
-Do not describe Daymark's current user-facing backup save path as streaming end-to-end.
-
-The service produces a completed encrypted backup container, but the current application/file-picker gateway may read that **already-encrypted container** into memory before handing bytes to the native file-save API. The owned mutable byte buffer is cleared after the handoff where practical.
-
-This distinction matters:
-
-- the buffered bytes are encrypted backup-container bytes, not plaintext journal content;
-- the binary format/service design remains streaming-capable for the database payload;
-- the current native file-save handoff can have memory cost proportional to the completed encrypted container size;
-- a future file API may remove that buffering without changing backup format v1.
-
-Never claim plaintext buffering or full end-to-end streaming unless the implementation actually demonstrates it.
+The snapshot uses the same journal key material and remains independently encrypted at rest.
 
 ## Manifest
 
-The version-1 manifest is strict JSON. Unknown or missing fields are rejected rather than silently ignored.
+The manifest records compatibility and integrity metadata, including:
 
-Logical shape:
+- creation timestamp
+- database schema version
+- random integrity salt
+- database cipher identity
+- integrity KDF/MAC identity
 
-```json
-{
-  "format": "daymark-backup",
-  "version": 1,
-  "createdAtUtcMicros": 0,
-  "databaseSchemaVersion": 1,
-  "databaseCipher": "sqlite3mc-chacha20",
-  "keyEnvelopeFormat": "daymark-key-envelope",
-  "keyEnvelopeVersion": 1,
-  "integrity": {
-    "kdf": "hkdf-sha256",
-    "mac": "hmac-sha256",
-    "salt": "base64url-encoded-16-byte-random-salt"
-  }
-}
-```
+Implementations must reject unsupported or malformed metadata rather than guessing compatibility.
 
-The creation timestamp is metadata only and is not used to order or choose restore candidates automatically.
+## Integrity key
 
-`databaseSchemaVersion` is an explicit compatibility declaration. Version-1 alpha.2 backups contain schema version 1. Future schema versions require a reviewed compatibility/migration path before accepting older or newer backup schemas.
+The backup authentication key is derived from journal key material with:
 
-## Backup creation
+- HKDF-SHA256
+- random per-backup salt
+- Daymark-specific context string
 
-Backup creation follows this sequence:
+Authentication uses HMAC-SHA256.
 
-1. require a currently valid encrypted journal database;
-2. require the master password and the journal's current portable key envelope;
-3. unwrap the envelope and constant-time compare the recovered serialized journal key material with the active journal key material;
-4. create a transactionally consistent encrypted SQLite snapshot through SQLite's online backup API;
-5. generate the random backup-integrity salt;
-6. build the strict manifest and fixed header;
-7. derive the HMAC key with HKDF-SHA256;
-8. stream header, manifest, key envelope, and encrypted snapshot into a temporary backup container while calculating HMAC-SHA256 over the same bytes;
-9. append the MAC;
-10. flush and finalize the completed temporary container;
-11. remove temporary encrypted snapshot/container files when no longer needed.
+This keeps the backup-integrity key separate from the database key.
 
-The service refuses to intentionally overwrite an existing backup path. The user-facing application layer may request an explicit destination/replace operation through the platform file provider, but replacement remains a deliberate user action.
+## Creation requirements
 
-A stale or unrelated key envelope is rejected during backup creation. This prevents generating a container whose database and portable credential refer to different journal keys.
+Backup creation requires:
+
+- an unlocked journal
+- the master password for reauthentication
+- matching active key material and key envelope
+- a destination path that does not already exist
+
+Daymark refuses to overwrite an existing backup.
+
+Before producing the container, Daymark verifies that the supplied master password can unwrap the current key envelope and that the recovered key material matches the active journal key.
+
+Temporary snapshot/container files are removed on a best-effort basis after success or failure.
 
 ## Restore validation
 
-Restore performs no destructive journal replacement until all of these checks pass:
+Restore is staged. The active journal is not replaced before the incoming backup passes validation.
 
-1. fixed magic/version/length parsing;
-2. strict manifest parsing and metadata bounds;
-3. key-envelope unwrap with the supplied master password;
-4. whole-container HMAC verification using constant-time MAC comparison;
-5. supported backup/database-schema compatibility;
-6. extraction of the still-encrypted database into a staging file;
-7. encrypted SQLite capability and correct-key read validation;
-8. exact expected SQLite `user_version` validation;
-9. `PRAGMA integrity_check` validation;
-10. `PRAGMA foreign_key_check` validation.
+Validation includes:
 
-Wrong password, invalid key envelope, modified authenticated bytes, truncated data, unsupported format versions, incompatible schema versions, and invalid encrypted databases therefore fail before restore commit.
+1. parse container metadata and bounds
+2. unwrap the embedded key envelope with the supplied master password
+3. authenticate the backup container
+4. verify supported format/schema compatibility
+5. extract encrypted database to staging
+6. stage the key envelope
+7. open/validate the encrypted database
+8. verify expected schema version
+9. run SQLite integrity check
+10. run foreign-key check
 
-## Restore transaction and rollback
+Only after these checks does commit begin.
 
-The database and key envelope are a logical pair. Version 1 uses staged files plus a small restore-transaction marker so replacing that pair is rollback-safe across an application/process interruption.
+## Restore commit and recovery
 
-Reserved sibling paths use these suffixes:
+Restore uses staged files plus rollback files and a durable transaction marker.
 
-```text
-.restore-staged
-.restore-rollback
-.restore-transaction
-```
+If a previous journal exists, commit preserves enough rollback material to restore the original pair after an interrupted commit.
 
-The marker records only the Daymark restore-transaction format/version and whether a complete destination journal pair existed before the restore.
+If no journal existed before restore, interruption recovery removes any partially installed pair.
 
-Commit sequence:
+`JournalSessionManager.inspect()` asks the backup service to recover interrupted restore state before deciding whether storage is locked, empty, or invalid.
 
-1. fully stage and validate the replacement database and envelope;
-2. write and flush the restore-transaction marker before moving any current journal file;
-3. when a current pair exists, rename both current files to rollback paths;
-4. rename the staged database into the destination;
-5. rename the staged key envelope into the destination;
-6. delete the transaction marker; this is the logical commit point;
-7. delete the old encrypted rollback copies on a best-effort basis.
+## Fail-closed rules
 
-If an in-process failure occurs before the marker is deleted, the service immediately invokes interrupted-restore recovery.
+Daymark must reject, rather than auto-repair:
 
-If the application/process terminates before the marker is deleted, the next storage startup/restore recovery pass must call `recoverInterruptedRestore` before opening the destination journal. Recovery always aborts the interrupted replacement:
+- invalid authentication
+- malformed key envelope
+- unsupported backup format
+- incompatible database schema
+- invalid encrypted database
+- incomplete destination journal pair without valid restore transaction state
+- unexpected rollback material
 
-- when an old journal pair existed, rollback files replace any partially installed new files;
-- when the destination was new, partially installed files are removed.
+## Compatibility
 
-If the marker has already been deleted, the new pair is committed. Any rollback files left by a crash after that commit point are stale encrypted cleanup residue and may be deleted when a complete committed destination pair is present.
+Changing any of the following requires a new compatible parser/version strategy and tests:
 
-Dart does not expose a portable directory-fsync transaction primitive across Linux and Android. Daymark therefore describes this contract as rollback-safe application-level recovery rather than claiming filesystem/power-loss atomicity stronger than the runtime can guarantee.
+- binary header layout
+- manifest meaning
+- authentication derivation
+- key-envelope embedding
+- database payload expectations
+- restore transaction semantics
 
-## Session and UI boundary
-
-The backup snapshot may be taken while normal journal persistence exists because SQLite's backup API provides a transactionally consistent snapshot.
-
-Restore replacement is different: an active application session using the destination journal must be closed before commit. The application exposes restore only while the journal is locked or absent so it cannot replace files beneath a live encrypted database connection.
-
-The session/application boundary responsible for restore must:
-
-1. ensure the destination persistence session is not active;
-2. invoke interrupted-restore recovery before opening journal storage;
-3. perform restore and validate before replacement commit;
-4. reopen only from the committed destination pair.
-
-`JournalSession` remains the unlocked journal-lifetime boundary. Backup/restore UI and platform file selection must integrate with that existing lifecycle rather than creating a competing session abstraction.
-
-## Password changes
-
-A backup contains the key envelope that was current when the backup was created. Changing the live journal's master password re-wraps the same random journal key but does not rewrite historical external backups.
-
-Therefore an older backup remains protected by the older password with which its included envelope was created. Daymark should recommend creating a fresh backup after a password change.
-
-## Future attachments
-
-Version 1 contains only the encrypted SQLite snapshot because attachments are not part of schema/product scope yet.
-
-Future attachment support must not append unauthenticated plaintext files beside the backup. A later backup format version may add framed encrypted payload members while preserving:
-
-- authenticated interpretation-sensitive metadata;
-- encryption at rest;
-- streaming validation/copying where the platform API permits it;
-- explicit format versioning;
-- restore staging before commit.
-
-## Plaintext export remains separate
-
-Markdown/JSON Open Export is intentionally outside this format. A user-requested human-readable export is plaintext and must remain a different operation with a clear security warning.
-
-Encrypted Backup / Restore is the recovery and migration boundary. Open Export is portability for reading/machine processing, not restore.
+Never reinterpret an existing version number with incompatible behavior.

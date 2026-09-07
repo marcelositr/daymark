@@ -1,19 +1,29 @@
 # Aparência
 
-Abra **Aparência** nos controles secundários e escolha:
+O Daymark oferece três modos de aparência:
 
-- **Sistema** — acompanha o tema claro/escuro do dispositivo;
-- **Claro** — mantém a interface clara;
-- **Escuro** — mantém a interface escura.
+- **Sistema**
+- **Claro**
+- **Escuro**
 
-A preferência é salva localmente neste dispositivo. Ela não altera o conteúdo do diário nem é sincronizada por conta ou nuvem.
+## Sistema
 
-O Daymark usa o idioma do sistema na primeira execução quando ele corresponde a um idioma suportado:
+No modo Sistema, o Daymark acompanha a preferência clara/escura informada pelo sistema operacional.
 
-- inglês;
-- português do Brasil (`pt_BR`);
-- espanhol geral (`es`) para variantes regionais do espanhol.
+## Claro e Escuro
 
-Outros idiomas usam inglês como fallback. Não há seletor de idioma dentro do aplicativo.
+Os modos Claro e Escuro mantêm a escolha explicitamente, independentemente da preferência atual do sistema.
 
-A aparência de caderno é apenas visual. O Daymark não é uma tela livre, ferramenta de desenho ou editor de layout.
+## Onde alterar
+
+Abra **Aparência** pelo menu lateral em telas largas ou por **Mais > Aparência** em telas compactas.
+
+## Preferência local
+
+A escolha de aparência é uma preferência do dispositivo. Ela fica fora do conteúdo criptografado do Journal e não faz parte do Backup do Journal.
+
+Se o arquivo local de preferência estiver ausente ou inválido, o Daymark volta ao modo **Sistema**.
+
+## Direção visual
+
+A interface do Daymark segue uma ideia de minimalismo digital: o conteúdo do Journal recebe prioridade visual, com poucos elementos decorativos e sem indicadores de engajamento, gamificação ou painéis de produtividade.
