@@ -91,11 +91,21 @@ Preserve the established signing lineage. Losing the private key breaks seamless
 
 ## Android build
 
-For a signed release build:
+Resolve the locked dependency set first:
 
 ```bash
-flutter build apk --release --no-pub
+flutter pub get --enforce-lockfile
 ```
+
+Then build the signed release APK:
+
+```bash
+flutter build apk --release
+```
+
+Do not add `--no-pub` to the Android release command. With `integration_test` kept as a development dependency, Flutter currently needs its normal build-time package/configuration refresh to generate a release-safe Android plugin registrant.
+
+CI validates the release compilation path with a disposable CI-only signing key. The published APK must still be built locally with the established private Daymark upload key.
 
 Verify the produced APK's package identity, version, and signing certificate before publication.
 
