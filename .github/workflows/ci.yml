@@ -179,8 +179,27 @@ jobs:
       - name: Reject stale Android launcher icons
         run: git diff --exit-code -- android/app/src/main/res/mipmap-*
 
-      - name: Build Android debug APK
-        run: flutter build apk --debug
+      - name: Configure disposable Android release signing
+        run: |
+          CI_KEYSTORE="$RUNNER_TEMP/daymark-ci-release.jks"
+          keytool -genkeypair -noprompt \
+            -keystore "$CI_KEYSTORE" \
+            -storepass daymark-ci-only \
+            -keypass daymark-ci-only \
+            -alias daymark-ci \
+            -keyalg RSA \
+            -keysize 2048 \
+            -validity 1 \
+            -dname "CN=Daymark CI"
+          cat > android/key.properties <<EOF
+          storeFile=$CI_KEYSTORE
+          storePassword=daymark-ci-only
+          keyAlias=daymark-ci
+          keyPassword=daymark-ci-only
+          EOF
+
+      - name: Build Android release APK
+        run: flutter build apk --release
 
   dependency-review:
     name: dependency-review
