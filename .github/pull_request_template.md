@@ -4,39 +4,34 @@ Describe the change briefly and keep the PR to one coherent responsibility.
 
 ## Why it belongs in Daymark
 
-Explain how this supports the Bullet Journal method, digital minimalism, security, reliability, or portability without adding unnecessary complexity.
+Explain how this supports the Bullet Journal method, digital minimalism, security, reliability, portability, accessibility, localization, or supported-platform maintenance.
 
 ## Validation
 
-- [ ] Formatting passes
-- [ ] Static analysis passes
-- [ ] Tests pass
+- [ ] Formatting passes where relevant
+- [ ] Static analysis passes where relevant
+- [ ] Tests pass where relevant
 - [ ] Linux behavior considered
 - [ ] Android behavior considered
 - [ ] Failure paths tested where relevant
 - [ ] Documentation updated when needed
-- [ ] `PROJECT.md` updated for handoff/current state
 
 ## Data, security, and architecture impact
 
-- [ ] No persistence change
-- [ ] Persistence/schema/migration impact documented and tested
-- [ ] Backup/restore/export impact documented
-- [ ] No plaintext security boundary changed, or change explicitly reviewed
-- [ ] No cryptographic/key-management change, or security design updated
-- [ ] No new dependency, or dependency rationale/security/license review documented
+- [ ] No persistence change, or schema/migration impact documented and tested
+- [ ] Backup/Restore/Open Export impact considered
+- [ ] No cryptographic/key-management change, or `docs/SECURITY.md` updated and focused tests added
+- [ ] No new dependency, or dependency rationale/security/license impact reviewed
 - [ ] No new network behavior, or network behavior explicitly documented
 - [ ] Localization/domain identifiers remain language-neutral
 
 ## Release impact
 
-- [ ] No release-facing change
-- [ ] `CHANGELOG.md` updated if release-facing
-- [ ] Version bump is not required for this PR
-- [ ] Version/release change follows `docs/WORKFLOW.md`
+- [ ] No release-facing change, or `docs/CHANGELOG.md` updated
+- [ ] Version bump is not required for this PR, or follows `docs/RELEASE.md`
 
 ## Handoff
 
 State the next concrete step, any blocker, and any decision intentionally left open.
 
-> AI agents must not merge this PR unless the user explicitly requests the merge.
+> Do not merge, tag, publish, or delete historical branches without explicit maintainer approval.

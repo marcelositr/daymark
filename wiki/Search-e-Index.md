@@ -1,36 +1,49 @@
 # Search e Index
 
-Search e Index ajudam a recuperar informações, mas têm funções diferentes.
+Search e Index ajudam a encontrar informações, mas têm papéis diferentes.
 
 ## Search
 
-Search é uma busca local, transitória e somente leitura sobre o conteúdo das entradas existentes.
+A **Search** faz uma busca local sobre entradas que já existem no Journal.
 
-1. Abra **Search** — em telas compactas, fica em **Mais**.
-2. Digite um texto.
-3. Envie a busca deliberadamente.
-4. Abra um resultado para ir à origem real.
+Você pode pesquisar por:
 
-A correspondência procura um trecho literal sem diferenciar maiúsculas de minúsculas. Cada resultado mostra o tipo, o estado da Tarefa quando aplicável e o contexto proprietário: Daily, Monthly, Future ou Collection.
+- texto
+- Signifier
+- texto + Signifier
 
-Search não oferece ações de Tarefa, migração, agendamento, referência ou mudança de proprietário. Também não cria histórico de buscas, filtros, ranking, índice externo em texto simples nem itens do Index. Ao retornar à seção mantida na navegação, a última consulta enviada é atualizada para refletir mudanças feitas em outras áreas.
+Os Signifiers disponíveis atualmente são:
+
+- prioridade
+- inspiração
+- explorar
+
+A Search não cria cópias, não muda o estado das entradas e não adiciona nada automaticamente ao Index.
+
+Os resultados mantêm o contexto real da entrada. Ao abrir um resultado, o Daymark volta para o Daily, Monthly, Future ou Collection de origem.
 
 ## Index
 
-Index é um catálogo persistente e deliberadamente ordenado de estruturas existentes:
+O **Index** é uma lista persistente e deliberada.
 
-- Registros Diários existentes;
-- Registros Mensais existentes;
-- Registros Futuros existentes;
-- Collections existentes.
+Você escolhe o que entra nele.
 
-Abra **Index** — em telas compactas, fica em **Mais** — e adicione uma estrutura existente. Um item já indexado não é oferecido novamente. Use as ações do item para **mover para cima**, **mover para baixo** ou **remover**. Abra o item para navegar à estrutura real.
+O Index pode apontar para:
 
-Adicionar ao Index não cria, copia ou move entradas; não muda estados; e não cria um Registro ou Collection. O Daymark não indexa tudo automaticamente. Remover um item retira somente a referência do catálogo, sem apagar a estrutura de origem.
+- Daily Logs
+- Monthly Logs
+- Future Logs
+- Collections
 
-## Resumo
+Você pode adicionar, remover e reorganizar esses itens.
 
-- **Search:** resultado temporário de texto em entradas.
-- **Index:** catálogo persistente e ordenado de Registros e Collections escolhidos por você.
+Remover algo do Index não apaga o Log ou a Collection correspondente.
 
-Não há ação automática de Search para Index.
+## Diferença principal
+
+Pense assim:
+
+- **Search:** encontrar conteúdo agora
+- **Index:** manter uma estrutura que você escolheu catalogar
+
+A Search é transitória. O Index é parte persistente da organização do Journal.

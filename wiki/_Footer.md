@@ -1,1 +1,1 @@
-Daymark — Bullet Journal minimalista, local-first, offline-first e criptografado. Disponível para Linux x64 e Android, em inglês, português do Brasil e espanhol. · [[Início|Home]] · [[Suporte e privacidade|Suporte-e-privacidade]]
+Daymark · Bullet Journal local-first para Linux e Android · [Projeto](https://devnux.com.br/daymark) · [Código-fonte](https://github.com/marcelositr/daymark)

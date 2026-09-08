@@ -1,50 +1,50 @@
-# Daymark — Wiki do usuário
+# Daymark
 
-Daymark é um Bullet Journal digital minimalista, local-first e offline-first. O diário fica criptografado no dispositivo e as decisões de registrar, concluir, migrar, agendar, descartar e refletir continuam sob seu controle.
+O Daymark é um Bullet Journal digital minimalista, local e criptografado para Linux e Android.
 
-> **Versão pública atual:** `v1.0.0-alpha.3`, para **Linux x64** e **Android**. A beta.1 ainda está em validação e não foi publicada.
+Ele foi pensado para manter o método no centro: registrar rapidamente, refletir, decidir o que continua importante e migrar de forma deliberada. Não é uma agenda genérica, não usa conta online e não depende de nuvem para funcionar.
 
-## Comece aqui
+## Por onde começar
 
-1. [[Instale ou atualize o Daymark|Instalacao-e-atualizacao]].
-2. [[Crie o diário e proteja sua senha mestra|Primeiros-passos-e-senha]].
-3. [[Conheça a navegação|Navegacao]].
-4. [[Registre o dia e faça a reflexão|Today-Rapid-Logging-Reflexao-e-Undo]].
-5. [[Crie um Backup criptografado|Backup-e-Restore]].
+Se acabou de instalar:
 
-## O que o Daymark oferece
+1. leia [[Primeiros passos e senha|Primeiros-passos-e-senha]]
+2. veja como funciona o [[Today, Rapid Logging, reflexão e Undo|Today-Rapid-Logging-Reflexao-e-Undo]]
+3. entenda o [[Monthly e o histórico|Historico-e-Monthly]]
+4. conheça o [[Future|Future]]
+5. depois explore [[Collections|Collections-migracao-e-referencias]], [[Search e Index|Search-e-Index]] e [[Trackers|Trackers]]
 
-- Today e Rapid Logging de Tarefa, Evento e Nota;
-- Reflexão diária com decisões deliberadas;
-- histórico diário e Registro Mensal;
-- Registro Futuro de seis meses;
-- Coleções, migração e referências;
-- Trackers mensais opcionais;
-- Busca local e Índice deliberado;
-- Backup/Restore criptografado;
-- Exportação aberta em JSON ou Markdown **não criptografados**;
-- aparência Sistema, Claro ou Escuro.
+## Estrutura do método no Daymark
 
-## Limites importantes
+- **Today / Daily Log:** registro diário de Tasks, Events e Notes.
+- **Monthly:** Calendar, Tasks e Tracker do mês atual.
+- **Future:** visão dos próximos seis meses e revisão quando um mês futuro chega.
+- **Collections:** assuntos e projetos com entradas próprias ou referências a entradas existentes.
+- **Index:** catálogo deliberado de Logs e Collections.
+- **Search:** busca local e somente leitura sobre o conteúdo já registrado.
 
-- Somente **Linux x64** e **Android** são alvos do produto.
-- Somente **inglês**, **português do Brasil (`pt_BR`)** e **espanhol (`es`)** são idiomas suportados. O idioma segue o sistema; variantes regionais do espanhol usam espanhol geral e idiomas não suportados usam inglês.
-- Não há conta, nuvem, sincronização, recuperação de senha, biometria nem acesso do mantenedor ao diário.
-- Não há edição livre de entradas históricas. Histórico diário e meses anteriores são somente leitura.
-- O Daymark é inspirado no método Bullet Journal e é software independente.
+## Privacidade
 
-## Ajuda por assunto
+O conteúdo do Journal fica em um banco de dados local criptografado. O Daymark também oferece bloqueio manual, bloqueio por inatividade e integração com o bloqueio do sistema.
+
+Para proteger e transportar o Journal, use [[Backup e Restore|Backup-e-Restore]].
+
+Para gerar uma cópia legível fora do Daymark, use [[Open Export|Open-Export]]. O Open Export é texto puro e não possui a proteção criptográfica do Backup.
+
+## Navegação da Wiki
 
 - [[Instalação e atualização|Instalacao-e-atualizacao]]
 - [[Primeiros passos e senha|Primeiros-passos-e-senha]]
 - [[Navegação|Navegacao]]
-- [[Today, Rapid Logging, Reflexão e Undo|Today-Rapid-Logging-Reflexao-e-Undo]]
-- [[Histórico e Monthly|Historico-e-Monthly]]
+- [[Today, Rapid Logging, reflexão e Undo|Today-Rapid-Logging-Reflexao-e-Undo]]
+- [[Monthly e histórico|Historico-e-Monthly]]
 - [[Future|Future]]
 - [[Collections, migração e referências|Collections-migracao-e-referencias]]
-- [[Trackers|Trackers]]
 - [[Search e Index|Search-e-Index]]
+- [[Trackers|Trackers]]
 - [[Backup e Restore|Backup-e-Restore]]
-- [[Exportação aberta|Open-Export]]
+- [[Open Export|Open-Export]]
 - [[Aparência|Aparencia]]
 - [[Suporte e privacidade|Suporte-e-privacidade]]
+
+Projeto: https://devnux.com.br/daymark

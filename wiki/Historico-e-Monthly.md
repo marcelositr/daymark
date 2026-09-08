@@ -1,38 +1,50 @@
-# Histórico e Monthly
+# Monthly e histórico
 
-## Histórico diário
+O **Monthly** organiza o mês atual e também permite consultar meses anteriores.
 
-Em Today, abra **Histórico diário** para consultar datas anteriores. Use **Dia anterior** e **Próximo dia** dentro do limite histórico.
+O mês atual possui três áreas:
 
-O histórico diário é **somente leitura**:
+- **Calendar**
+- **Tasks**
+- **Tracker**
 
-- não permite captura;
-- não oferece ações de Tarefa, migração, agendamento, referência, conclusão ou descarte;
-- consultar uma data vazia não cria um Registro Diário;
-- a navegação histórica não avança para Today como se o dia atual fosse histórico.
+## Calendar
 
-Volte a Today para registrar ou agir sobre o dia atual.
+O Calendar mostra todos os dias do mês.
 
-## Monthly
+Cada dia pode receber:
 
-O mês atual tem três áreas:
+- **Event**
+- **Task**
 
-### Calendário
+A entrada fica associada àquela data.
 
-Mostra uma linha por data e recebe **Eventos** naquela data. A data escolhida deve pertencer ao mês exibido.
+Em datas passadas ou no dia atual, tocar/clicar no número do dia abre o Daily Log correspondente.
 
-### Tarefas
+## Tasks
 
-Recebe Tarefas mensais sem atribuir um dia oculto. Tarefas abertas podem ser concluídas, migradas para uma Coleção existente, agendadas em Future ou descartadas.
+A área **Tasks** é a lista mensal de tarefas sem uma data específica no Calendar.
 
-### Tracker
+Uma Task aberta pode ser concluída, migrada, agendada para o Future, movida para uma Collection ou descartada.
 
-Área opcional para criar, marcar, encerrar e refletir sobre Trackers finitos. Consulte [[Trackers|Trackers]].
+## Reflexão mensal
 
-Uma captura bem-sucedida pode oferecer o [[Undo imediato|Today-Rapid-Logging-Reflexao-e-Undo]].
+No mês atual, a área Tasks oferece um modo de reflexão que mostra somente Tasks ainda abertas.
+
+Assim como no Today, a decisão continua sendo sua: concluir, migrar, agendar, mover ou descartar.
+
+## Tracker
+
+A terceira área mostra os Trackers ativos naquele mês.
+
+Veja [[Trackers|Trackers]] para entender como criar, marcar e encerrar um Tracker.
 
 ## Meses anteriores
 
-Use **Mês anterior** e **Próximo mês** para navegar. Meses anteriores são **somente leitura** e não permitem capturas, ações de Tarefa ou alterações de Tracker. Consultar um mês inexistente não cria dados. A navegação não segue além do mês atual.
+Você pode navegar para meses anteriores.
 
-O histórico serve para consulta, não como calendário editável ou espaço de planejamento genérico.
+O histórico mensal é **somente leitura**. Isso preserva o Monthly como registro histórico em vez de permitir reescrever meses já encerrados.
+
+## Voltar ao mês atual
+
+Quando estiver consultando um mês anterior, use o controle de retorno ao mês atual para voltar rapidamente ao Monthly ativo.

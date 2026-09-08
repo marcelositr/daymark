@@ -1,40 +1,70 @@
-# Today, Rapid Logging, Reflexão e Undo
+# Today, Rapid Logging, reflexão e Undo
+
+O **Today** é o Daily Log do dia atual.
+
+É aqui que o Daymark concentra o registro rápido do que acontece durante o dia.
 
 ## Rapid Logging
 
-Today é o Registro Diário da data atual. Digite o conteúdo, selecione o tipo e confirme:
+Você pode registrar:
 
-- **Tarefa** (`•`) — algo acionável;
-- **Evento** (`○`) — uma ocorrência relacionada à data;
-- **Nota** (`–`) — informação, pensamento, observação ou fato.
+- **Task** — algo que precisa ser feito
+- **Event** — algo que aconteceu ou está acontecendo
+- **Note** — uma informação, pensamento ou observação
 
-Somente Tarefas possuem estado. Eventos e Notas não podem ser concluídos, migrados, agendados ou descartados como se fossem Tarefas.
+O registro é propositalmente simples: escolha o tipo, escreva e envie.
 
-## Ações de Tarefa
+## Tasks
 
-Abra as ações de uma Tarefa aberta para decidir:
+Uma Task aberta pode ser:
 
-- **Concluir** (`×`) — foi realizada;
-- **Migrar** (`>`) — enviar para uma Coleção existente;
-- **Agendar** (`<`) — enviar para um dos meses visíveis em Future;
-- **Descartar** — registrar que não vale mais a pena fazê-la.
+- concluída
+- migrada
+- agendada para o Future
+- movida para uma Collection
+- descartada
 
-Descartar preserva a decisão no histórico; não é uma exclusão. Migrar ou agendar preserva a Tarefa de origem em seu estado final e cria uma nova Tarefa aberta no destino, com ligação de histórico. O Daymark não move tarefas automaticamente quando o dia muda.
+O Daymark não toma essas decisões automaticamente.
 
 ## Reflexão diária
 
-Use **Iniciar reflexão** em Today. O modo de Reflexão isola as Tarefas abertas para que você decida conscientemente o destino de cada uma. Use **Encerrar reflexão** quando terminar.
+O botão de reflexão mostra somente as **Tasks ainda abertas** daquele Daily Log.
 
-A Reflexão não prioriza, pontua, recomenda nem faz rollover automático. Se não houver Tarefas abertas, o Daymark informa isso de forma discreta.
+A ideia é reduzir o ruído e permitir decidir uma a uma:
 
-## Undo imediato
+- ainda importa?
+- já foi concluída?
+- deve continuar em outro dia ou mês?
+- pertence a uma Collection?
+- deve ir para o Future?
+- pode ser descartada?
 
-Após capturar uma entrada em Today, Monthly, Future ou Collection, uma ação **Desfazer** pode aparecer por cerca de cinco segundos.
+Ao terminar a reflexão, volte ao modo normal do Today.
 
-Undo serve apenas para corrigir uma captura recém-feita e ainda intocada. Não é edição/exclusão geral. Ele deixa de ser válido se a entrada já ganhou estado, migração, referência, significador ou outra relação.
+## Histórico diário
 
-## Trackers em Today
+Você pode voltar para dias anteriores pelo seletor de data ou pela navegação do Monthly.
 
-Trackers ativos podem aparecer em uma área compacta para marcar o dia com `+1` ou `-1`. Eles não criam uma Tarefa diária. Consulte [[Trackers|Trackers]].
+Daily Logs anteriores são somente leitura. O histórico permanece como registro do que realmente aconteceu naquele dia.
 
-Para consultar dias anteriores, veja [[Histórico e Monthly|Historico-e-Monthly]].
+## Undo após captura
+
+Depois de uma nova captura, o Daymark pode oferecer **Undo** para desfazer imediatamente aquela criação.
+
+O Undo existe para corrigir uma captura acidental. Depois que a entrada ganha relações, Signifiers, migração ou outra alteração, ela deixa de ser uma captura intocada e não pode mais ser simplesmente apagada por esse Undo.
+
+## Signifiers
+
+Uma entrada pode receber Signifiers como:
+
+- prioridade
+- inspiração
+- explorar
+
+Eles também podem ser usados como filtro na Search.
+
+## Bloqueio
+
+O ícone de cadeado bloqueia o Journal imediatamente.
+
+O Daymark também bloqueia automaticamente após inatividade e quando recebe um evento real de bloqueio do sistema/dispositivo.

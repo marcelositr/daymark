@@ -1,42 +1,52 @@
 # Collections, migração e referências
 
-Collections são recipientes simples para assuntos ou projetos. Não são workspaces, bancos de dados configuráveis ou quadros Kanban.
+**Collections** são espaços simples para reunir um assunto, projeto ou conjunto de informações relacionadas.
 
-## Criar e usar uma Collection
+Elas não funcionam como workspaces configuráveis. A ideia continua sendo a de uma Collection do Bullet Journal.
 
-1. Abra **Collections**.
-2. Crie uma Coleção com um título.
-3. Abra-a para registrar **Tarefas**, **Eventos** e **Notas** próprios.
+## Entradas próprias
 
-Tarefas abertas pertencentes à Coleção podem ser concluídas ou descartadas. Entradas próprias ficam separadas da seção **Referências**.
+Dentro de uma Collection você pode criar:
 
-## Migrar uma Tarefa para uma Collection
+- Task
+- Event
+- Note
 
-A migração (`>`) está disponível para Tarefas abertas de Today e das Tarefas de Monthly:
+Essas entradas pertencem à própria Collection.
 
-1. abra as ações da Tarefa;
-2. escolha **Migrar**;
-3. selecione deliberadamente uma Coleção já existente.
+## Migrar uma Task para uma Collection
 
-O Daymark não cria nem escolhe o destino automaticamente. A origem permanece no local original como **Migrada**; uma nova Tarefa aberta é criada na Coleção com ligação de histórico.
+Uma Task aberta de outro lugar pode ser migrada para uma Collection.
 
-Não é possível migrar Evento/Nota, Tarefa já resolvida, entrada de Future ou entrada pertencente a Collection. Agendar para Future é uma ação diferente (`<`).
+Nesse caso, acontece uma migração real:
+
+1. a Task original permanece no lugar de origem como histórico
+2. a origem é marcada como migrada
+3. uma nova Task aberta é criada dentro da Collection
+4. a ligação entre origem e destino é preservada
+
+Você não precisa redigitar o conteúdo.
 
 ## Referenciar uma entrada
 
-Uma referência torna uma entrada de Today, Monthly ou Future visível em uma Collection sem movê-la nem copiá-la:
+Uma referência é diferente de uma migração.
 
-1. abra as ações da entrada na origem compatível;
-2. escolha **Referenciar**;
-3. selecione a Collection.
+Ao referenciar uma entrada em uma Collection:
 
-Na Collection, a referência aparece em área separada e somente leitura. As ações de Tarefa continuam disponíveis apenas na origem real.
+- a entrada continua pertencendo ao lugar original
+- a Collection apenas mostra uma referência para ela
+- não é criada uma cópia independente
 
-**Remover referência** apaga somente o vínculo com a Collection. A entrada de origem, seu conteúdo, proprietário e estado permanecem intactos.
+Isso é útil quando uma anotação do Today, Monthly ou Future também faz sentido dentro de uma Collection, mas não deve sair do seu contexto original.
 
-## Diferença essencial
+## Remover referência
 
-- **Migração:** somente Tarefa aberta; cria nova Tarefa no destino e encerra a origem como Migrada.
-- **Referência:** mantém a mesma entrada e estado na origem; apenas cria um vínculo removível para consulta.
+Remover uma referência da Collection não apaga a entrada original.
 
-Veja também: [[Search e Index|Search-e-Index]].
+## Signifiers
+
+Entradas próprias e entradas referenciadas continuam exibindo seus Signifiers.
+
+## Histórico
+
+Como nas outras partes do Daymark, migração preserva o contexto original em vez de apagar o caminho que a entrada percorreu.

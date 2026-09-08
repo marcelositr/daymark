@@ -1,39 +1,53 @@
 # Trackers
 
-Tracker é uma adaptação opcional do Daymark, inspirada em práticas de acompanhamento usadas em Bullet Journals e na prática pessoal do mantenedor. O modelo `+1 / 0 / -1`, o gráfico e o limite de cores não são regras canônicas do método Bullet Journal.
+Os **Trackers** são uma adaptação opcional do Daymark para acompanhar algo por um período definido.
 
-## Criar
+Eles ficam separados de Tasks e não mudam a lógica de migração do Journal.
 
-Em **Monthly → Tracker**, escolha **Novo Tracker** e informe:
+## Onde aparecem
 
-- título;
-- data de início;
-- data de fim planejado.
+Você encontra Trackers em:
 
-O período é finito e uma das cinco identidades visuais fixas precisa estar disponível durante todo ele. No máximo cinco Trackers podem se sobrepor na mesma data; não há seletor de cores.
+- **Monthly > Tracker**, para visualizar o mês
+- **Today**, quando o Tracker está ativo naquele dia
 
-## Marcar cada dia
+## Criar um Tracker
 
-Durante o período efetivo:
+Um Tracker tem:
 
-- **Cumpri (`+1`)** — marcação positiva explícita;
-- **Não cumpri (`-1`)** — marcação negativa explícita;
-- **`0`** — nenhuma marcação explícita.
+- nome
+- data de início
+- data prevista para terminar
 
-Você não seleciona `0` diretamente. Tocar/remover a marca existente devolve o dia à ausência, exibida como `0`. **Zero não significa falha.** Fora do período do Tracker, não existe dado a ser preenchido.
+O Daymark suporta até **cinco Trackers sobrepostos no mesmo período**.
 
-Trackers ativos também podem aparecer em Today para a marcação do dia. Um Tracker não é Tarefa, Evento ou Nota e não cria uma Tarefa diária.
+Cada Tracker recebe uma faixa visual própria para facilitar a leitura.
 
-## Gráfico e reflexão
+## Marcas diárias
 
-O gráfico reúne os Trackers que cruzam o mês e mostra os pontos `+1`, `0` e `-1` dentro de seus períodos. Ele ajuda sua própria reflexão; o Daymark não calcula sucesso, sequência, pontuação, ranking, diagnóstico ou previsão.
+Em um dia ativo, você pode marcar:
 
-## Encerrar antes do fim
+- ✓ cumprido
+- ✕ não cumprido
+- nenhuma marca
 
-Use **Encerrar Tracker antes do fim** e confirme. O período termina após o dia atual, o histórico até esse ponto é preservado e marcas posteriores ao novo fim deixam de fazer parte dele.
+Tocar novamente na mesma opção remove a marca explícita.
 
-Um Tracker concluído ou encerrado não é renovado, estendido, clonado ou reiniciado automaticamente. Para outro compromisso, crie um novo Tracker.
+## Visualização mensal
 
-## Histórico
+No Monthly, o Tracker mostra o período e as marcas registradas em cada dia.
 
-Meses anteriores exibem dados e trajetórias em modo **somente leitura**. Não é possível criar, marcar ou encerrar Trackers em histórico.
+Meses anteriores podem ser consultados, mas não reescritos.
+
+## Encerrar antes do previsto
+
+Um Tracker ativo pode ser encerrado antes da data planejada.
+
+Quando isso acontece:
+
+- a nova data passa a ser o fim efetivo
+- marcas posteriores a essa data são removidas
+
+## Uma adaptação do Daymark
+
+Trackers não são apresentados como uma regra canônica do método Bullet Journal. Eles são uma ferramenta opcional do Daymark, mantida simples e limitada para não transformar o Journal em um painel de métricas.
