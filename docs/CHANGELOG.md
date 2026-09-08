@@ -2,7 +2,7 @@
 
 This file summarizes published Daymark releases and notable unreleased product changes. Detailed implementation history remains in Git commits and pull requests.
 
-## Unreleased
+## 1.0.0-beta.3 — Unreleased
 
 ### Method fidelity and journal flow
 
