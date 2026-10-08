@@ -198,7 +198,7 @@ final class _MonthlyJournal implements MonthlyJournalDataSource {
     content: 'Monthly event',
     ordinal: 0,
     section: JournalMonthlySection.calendar,
-    calendarDate: '2026-09-03',
+    calendarDate: '2026-10-03',
   );
 
   @override
