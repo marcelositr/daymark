@@ -70,7 +70,12 @@ void main() {
             references,
           ),
         ],
-        child: _app(MonthlyScreen(initialMonth: DateTime(2026, 9, 3))),
+        child: _app(
+          MonthlyScreen(
+            initialMonth: DateTime(2026, 10, 3),
+            now: () => DateTime(2026, 10, 8),
+          ),
+        ),
       ),
     );
     await tester.pumpAndSettle();
