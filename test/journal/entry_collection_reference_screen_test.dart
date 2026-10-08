@@ -88,7 +88,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(references.entryId, 'monthly-event');
-    expect(monthly.entry.calendarDate, '2026-09-03');
+    expect(monthly.entry.calendarDate, '2026-10-03');
     expect(monthly.entry.taskState, isNull);
     expect(find.text('Monthly event'), findsOneWidget);
     expect(find.byType(SnackBar), findsNothing);
