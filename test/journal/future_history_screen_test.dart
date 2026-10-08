@@ -20,14 +20,14 @@ void main() {
         child: const MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
-          home: Scaffold(body: FutureHistoryScreen(periodStart: '2026-10-01')),
+          home: Scaffold(body: FutureHistoryScreen(periodStart: '2026-09-01')),
         ),
       ),
     );
     await tester.pumpAndSettle();
 
-    expect(dataSource.requestedPeriod, '2026-10-01');
-    expect(find.text('October 2026'), findsOneWidget);
+    expect(dataSource.requestedPeriod, '2026-09-01');
+    expect(find.text('September 2026'), findsOneWidget);
     expect(find.text('This Future Log is read-only.'), findsOneWidget);
     expect(find.text('Persisted future note'), findsOneWidget);
     expect(find.byType(TextField), findsNothing);

@@ -70,7 +70,12 @@ void main() {
             references,
           ),
         ],
-        child: _app(MonthlyScreen(initialMonth: DateTime(2026, 9, 3))),
+        child: _app(
+          MonthlyScreen(
+            initialMonth: DateTime(2026, 10, 3),
+            now: () => DateTime(2026, 10, 8),
+          ),
+        ),
       ),
     );
     await tester.pumpAndSettle();
@@ -83,7 +88,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(references.entryId, 'monthly-event');
-    expect(monthly.entry.calendarDate, '2026-09-03');
+    expect(monthly.entry.calendarDate, '2026-10-03');
     expect(monthly.entry.taskState, isNull);
     expect(find.text('Monthly event'), findsOneWidget);
     expect(find.byType(SnackBar), findsNothing);
@@ -193,7 +198,7 @@ final class _MonthlyJournal implements MonthlyJournalDataSource {
     content: 'Monthly event',
     ordinal: 0,
     section: JournalMonthlySection.calendar,
-    calendarDate: '2026-09-03',
+    calendarDate: '2026-10-03',
   );
 
   @override

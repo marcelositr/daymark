@@ -2,7 +2,7 @@
 
 ![Daymark](assets/branding/social_preview.png)
 
-Daymark is a minimal, local-first Bullet Journal application for Linux and Android. It keeps the journal, reflection, and deliberate migration decisions at the center while avoiding the usual digital productivity clutter.
+Daymark is a minimal, local-first Bullet Journal application for Linux, Android, and iOS. It keeps the journal, reflection, and deliberate migration decisions at the center while avoiding the usual digital productivity clutter.
 
 Daymark is offline-first, stores journal data in an encrypted local database, and follows the core Bullet Journal method with a small number of explicit digital adaptations.
 
@@ -41,6 +41,7 @@ Daymark currently targets:
 
 - Linux x64, distributed as Debian package and AppImage
 - Android
+- iOS, with an unsigned CI build suitable for sideloading after re-signing
 
 The project uses Flutter and Dart. The exact supported toolchain and dependency set are documented in the developer documentation and lockfile.
 
