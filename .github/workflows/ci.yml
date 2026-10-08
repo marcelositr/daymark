@@ -201,6 +201,57 @@ jobs:
       - name: Build Android release APK
         run: flutter build apk --release
 
+  ios-build:
+    name: ios-build
+    if: github.event_name == 'push' || (github.event_name == 'pull_request' && !github.event.pull_request.draft)
+    runs-on: macos-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+
+      - name: Set up Flutter 3.47.2
+        uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2
+        with:
+          flutter-version: '3.47.2'
+          channel: stable
+          cache: true
+
+      - name: Generate iOS platform project
+        run: flutter create --platforms=ios --project-name daymark .
+
+      - name: Resolve locked dependencies
+        run: flutter pub get --enforce-lockfile
+
+      - name: Generate localization sources
+        run: flutter gen-l10n
+
+      - name: Generate Drift sources
+        run: dart run build_runner build
+
+      - name: Generate iOS launcher icons
+        run: dart run icons_launcher:create
+
+      - name: Build unsigned iOS release
+        run: flutter build ios --release --no-codesign --no-pub
+
+      - name: Package unsigned IPA
+        run: |
+          set -euo pipefail
+          APP_DIR="build/ios/iphoneos"
+          test -d "$APP_DIR/Runner.app"
+          mkdir -p "$APP_DIR/Payload"
+          cp -R "$APP_DIR/Runner.app" "$APP_DIR/Payload/"
+          (cd "$APP_DIR" && zip -qq -r daymark-ios-beta.ipa Payload)
+          mkdir -p build/distributables
+          mv "$APP_DIR/daymark-ios-beta.ipa" build/distributables/daymark-ios-beta.ipa
+
+      - name: Upload iOS distribution candidate
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: daymark-ios-beta
+          path: build/distributables/daymark-ios-beta.ipa
+          if-no-files-found: error
+
   dependency-review:
     name: dependency-review
     if: github.event_name == 'pull_request' && !github.event.pull_request.draft
@@ -222,6 +273,7 @@ jobs:
       - linux-build
       - android-build
       - dependency-review
+      - ios-build
     runs-on: ubuntu-24.04
     steps:
       - name: Require all merge checks
@@ -230,8 +282,10 @@ jobs:
           LINUX_BUILD: ${{ needs.linux-build.result }}
           ANDROID_BUILD: ${{ needs.android-build.result }}
           DEPENDENCY_REVIEW: ${{ needs.dependency-review.result }}
+          IOS_BUILD: ${{ needs.ios-build.result }}
         run: |
           test "$QUALITY" = success
           test "$LINUX_BUILD" = success
           test "$ANDROID_BUILD" = success
           test "$DEPENDENCY_REVIEW" = success
+          test "$IOS_BUILD" = success
