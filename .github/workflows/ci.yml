@@ -13,13 +13,15 @@ on:
   push:
     branches:
       - main
+    tags:
+      - 'v*'
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   dev-check:
@@ -201,6 +203,13 @@ jobs:
       - name: Build Android release APK
         run: flutter build apk --release
 
+      - name: Upload Android distribution candidate
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: daymark-android
+          path: build/app/outputs/flutter-apk/app-release.apk
+          if-no-files-found: error
+
   ios-build:
     name: ios-build
     if: github.event_name == 'push' || (github.event_name == 'pull_request' && !github.event.pull_request.draft)
@@ -264,6 +273,69 @@ jobs:
         uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294
         with:
           fail-on-severity: low
+
+  release:
+    name: release
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    needs:
+      - quality
+      - linux-build
+      - android-build
+      - ios-build
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out tagged commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+
+      - name: Download Linux distribution
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: daymark-linux-x64
+          path: release-assets/linux
+
+      - name: Download Android distribution
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: daymark-android
+          path: release-assets/android
+
+      - name: Download iOS distribution
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: daymark-ios-beta
+          path: release-assets/ios
+
+      - name: Verify release inputs
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          VERSION="$(sed -n 's/^version: //p' pubspec.yaml | head -n1 | cut -d+ -f1)"
+          test -n "$VERSION"
+          test "$TAG" = "v$VERSION"
+          test -f release-assets/android/app-release.apk
+          test -f release-assets/ios/daymark-ios-beta.ipa
+          test -f release-assets/linux/*.deb
+          test -f release-assets/linux/*.AppImage
+
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          PRERELEASE_ARGS=()
+          case "$TAG" in
+            *-alpha.*|*-beta.*|*-rc.*) PRERELEASE_ARGS+=(--prerelease) ;;
+          esac
+          gh release create "$TAG" \
+            release-assets/linux/*.deb \
+            release-assets/linux/*.AppImage \
+            release-assets/android/app-release.apk \
+            release-assets/ios/daymark-ios-beta.ipa \
+            --title "Daymark $TAG" \
+            --generate-notes \
+            "${PRERELEASE_ARGS[@]}"
 
   merge-gate:
     name: merge-gate
